@@ -1,5 +1,5 @@
 /* Second Scoop — settings.js
-   Exported from the Backend on 10/06/2026, 01:27:39.
+   Exported from the Backend on 10/06/2026, 01:42:39.
    Replace the matching file in assets/js/config/ to publish. */
 
 window.SS_SETTINGS = {
