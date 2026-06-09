@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contact — Second Scoop</title>
+<meta name="description" content="Get in touch with Second Scoop — Pakistan & Toronto.">
+<link rel="icon" href="assets/img/logo-mark.svg">
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<div id="ss-announcement"></div>
+<div id="ss-header-slot"></div>
+
+<div class="ss-page-head">
+  <div class="wrap"><span class="eyebrow">Say Hello</span><h2>Contact</h2>
+  <p>Orders, collabs, wholesale or just to tell us the OG Scoopie changed your life.</p></div>
+</div>
+
+<section class="ss-sec">
+  <div class="wrap" style="display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:start" id="contact-cols">
+    <div class="ss-form-card">
+      <h3>Send a message</h3>
+      <form id="contact-form">
+        <div style="margin-bottom:14px"><label class="ss-label">Name</label><input class="ss-field" name="name" required></div>
+        <div style="margin-bottom:14px"><label class="ss-label">Email</label><input class="ss-field" type="email" name="email" required></div>
+        <div style="margin-bottom:14px"><label class="ss-label">Message</label><textarea class="ss-field" name="message" required></textarea></div>
+        <button class="ss-btn ss-btn--block" type="submit">Send</button>
+        <p id="contact-msg" style="color:var(--ok);font-weight:700;margin-top:.8em;min-height:1.2em"></p>
+      </form>
+    </div>
+    <div>
+      <div class="ss-form-card" id="contact-info"></div>
+      <div class="ss-form-card">
+        <h3>Follow the drops</h3>
+        <p style="color:var(--ink-60)">New flavours, restocks and Vault codes land on Instagram first.</p>
+        <a class="ss-btn ss-btn--blush" href="https://instagram.com/secondscoop" target="_blank" rel="noopener">@secondscoop</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div id="ss-footer-slot"></div>
+
+<script src="assets/js/config/settings.js"></script>
+<script src="assets/js/config/regions.js"></script>
+<script src="assets/js/config/products.js"></script>
+<script src="assets/js/config/vault.js"></script>
+<script src="assets/js/config/content.js"></script>
+<script src="assets/js/store.js"></script>
+<script src="assets/js/app.js"></script>
+<script>
+  SSApp.mount({recentlySold:false});
+  (function(){
+    var r = SS.region();
+    document.getElementById("contact-info").innerHTML =
+      "<h3>"+r.flag+" "+r.name+"</h3>"+
+      "<p style='color:var(--ink-60)'><strong>WhatsApp:</strong> "+r.contact.whatsapp+"<br>"+
+      "<strong>Email:</strong> "+r.contact.email+"<br>"+
+      "<strong>Pickup:</strong> "+r.pickup.address+" ("+r.pickup.hours+")<br>"+
+      "<strong>Delivery:</strong> "+r.delivery.cities.join(", ")+"</p>"+
+      "<p style='font-size:.82rem;color:var(--ink-40)'>Switch region at the top to see our other storefront.</p>";
+    var f = document.getElementById("contact-form");
+    f.addEventListener("submit", function(e){
+      e.preventDefault();
+      SS.addSignup({name:f.name.value, email:f.email.value, message:f.message.value, source:"contact"});
+      f.reset();
+      document.getElementById("contact-msg").textContent = "Thanks! We'll be in touch soon. 🍪";
+    });
+  })();
+</script>
+</body>
+</html>

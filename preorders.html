@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How Pre-Orders Work — Second Scoop</title>
+<meta name="description" content="How Second Scoop pre-orders and limited drops work.">
+<link rel="icon" href="assets/img/logo-mark.svg">
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<div id="ss-announcement"></div>
+<div id="ss-header-slot"></div>
+
+<div class="ss-page-head">
+  <div class="wrap"><span class="eyebrow">Drops &amp; Batches</span><h2>How Pre-Orders Work</h2>
+  <p>We bake in small batches and drop in limited windows. Here's how to never miss one.</p></div>
+</div>
+
+<section class="ss-sec">
+  <div class="wrap">
+    <div class="ss-steps">
+      <div class="ss-step"><div class="ss-step-num">1</div><h3>A drop opens</h3><p>We announce a batch. The bar at the top of the site shows the live status and deadline.</p></div>
+      <div class="ss-step"><div class="ss-step-num">2</div><h3>You pre-order</h3><p>Add pre-order items to your cart and check out as normal. You'll get an order number instantly.</p></div>
+      <div class="ss-step"><div class="ss-step-num">3</div><h3>The window closes</h3><p>Once the deadline hits, we lock the batch and start baking. No late orders — that's what keeps it fresh.</p></div>
+      <div class="ss-step"><div class="ss-step-num">4</div><h3>Pickup or delivery</h3><p>We fulfil on the drop date you chose, by pickup or delivery, and confirm timing with you directly.</p></div>
+    </div>
+
+    <div class="ss-prose" style="margin-top:48px">
+      <h2>Product statuses, explained</h2>
+      <p>Every product shows one of these statuses so you always know where things stand:</p>
+      <p>
+        <span class="ss-status ss-status--preorder" style="position:static;display:inline-block;margin:4px">Pre-Order</span> Buy now, fulfilled on the next drop date.<br>
+        <span class="ss-status ss-status--closing" style="position:static;display:inline-block;margin:4px">Closing Soon</span> The pre-order window is about to shut.<br>
+        <span class="ss-status ss-status--coming" style="position:static;display:inline-block;margin:4px">Coming Soon</span> Teased now, not yet orderable.<br>
+        <span class="ss-status ss-status--sold" style="position:static;display:inline-block;margin:4px">Sold Out</span> This batch is gone — watch for a restock.
+      </p>
+
+      <h2 id="preorder-deadline">Current drop</h2>
+      <p id="preorder-status"></p>
+      <p><a class="ss-btn" id="preorder-shop" href="shop.html">Shop the current drop →</a></p>
+    </div>
+  </div>
+</section>
+
+<div id="ss-footer-slot"></div>
+
+<script src="assets/js/config/settings.js"></script>
+<script src="assets/js/config/regions.js"></script>
+<script src="assets/js/config/products.js"></script>
+<script src="assets/js/config/vault.js"></script>
+<script src="assets/js/config/content.js"></script>
+<script src="assets/js/store.js"></script>
+<script src="assets/js/app.js"></script>
+<script>
+  SSApp.mount({recentlySold:false});
+  (function(){
+    var r = SS.region();
+    document.getElementById("preorder-status").textContent =
+      r.name + ": " + (r.announcement && r.announcement.enabled ? r.announcement.text : "No active drop right now — join the list to hear first.");
+    document.getElementById("preorder-shop").href = "shop.html?region=" + r.id;
+  })();
+</script>
+</body>
+</html>

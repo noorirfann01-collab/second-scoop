@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Vault — Second Scoop</title>
+<meta name="description" content="Secret scoops. Invite-only flavours. Enter the code to unlock The Vault.">
+<meta name="robots" content="noindex">
+<link rel="icon" href="assets/img/logo-mark.svg">
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<div id="ss-announcement"></div>
+<div id="ss-header-slot"></div>
+
+<!-- locked screen -->
+<section class="ss-vault-page" id="vault-locked">
+  <div class="ss-vault-glow"></div>
+  <div class="ss-vault-box">
+    <div class="ss-vault-lockicon">🔒</div>
+    <span class="eyebrow" style="color:var(--gold-soft)">Invite-Only</span>
+    <h1 id="vault-title">THE VAULT</h1>
+    <p id="vault-subtitle">Secret scoops. Invite-only flavours. Enter the code.</p>
+    <form class="ss-vault-form" id="vault-form">
+      <input id="vault-code" placeholder="ENTER CODE" autocomplete="off" aria-label="Vault code">
+      <button class="ss-btn" type="submit">Unlock</button>
+    </form>
+    <div class="ss-vault-msg" id="vault-msg"></div>
+    <p class="ss-vault-hint" id="vault-hint">Codes drop to our list and on @secondscoop.</p>
+  </div>
+</section>
+
+<!-- revealed secret products -->
+<section class="ss-sec ss-vault-revealed" id="vault-revealed" style="display:none">
+  <div class="wrap">
+    <div class="ss-sec-head">
+      <div style="text-align:center;width:100%">
+        <span class="eyebrow">🔓 Unlocked</span>
+        <h2>Welcome to The Vault</h2>
+        <p style="color:var(--ink-60);max-width:46ch;margin:.4em auto 0">These never appear in the normal shop. Grab them before they vanish.</p>
+      </div>
+    </div>
+    <div class="ss-grid" id="vault-grid"></div>
+    <div class="center" style="margin-top:30px">
+      <button class="ss-btn ss-btn--ghost" id="vault-add-more">Enter another code</button>
+    </div>
+  </div>
+</section>
+
+<div id="ss-footer-slot"></div>
+
+<script src="assets/js/config/settings.js"></script>
+<script src="assets/js/config/regions.js"></script>
+<script src="assets/js/config/products.js"></script>
+<script src="assets/js/config/vault.js"></script>
+<script src="assets/js/config/content.js"></script>
+<script src="assets/js/store.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/pages/vault.js"></script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FAQ — Second Scoop</title>
+<meta name="description" content="Second Scoop FAQ: what is a Scoopie, edible cookie dough, secret scoops, pre-orders, delivery and more.">
+<link rel="icon" href="assets/img/logo-mark.svg">
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<div id="ss-announcement"></div>
+<div id="ss-header-slot"></div>
+
+<div class="ss-page-head">
+  <div class="wrap"><span class="eyebrow">Good Questions</span><h2>FAQ</h2>
+  <p>Everything you need to know before your first scoop.</p></div>
+</div>
+
+<section class="ss-sec">
+  <div class="wrap ss-faq" id="faq-list"></div>
+</section>
+
+<div id="ss-footer-slot"></div>
+
+<script src="assets/js/config/settings.js"></script>
+<script src="assets/js/config/regions.js"></script>
+<script src="assets/js/config/products.js"></script>
+<script src="assets/js/config/vault.js"></script>
+<script src="assets/js/config/content.js"></script>
+<script src="assets/js/store.js"></script>
+<script src="assets/js/app.js"></script>
+<script>
+  SSApp.mount({recentlySold:false});
+  (function(){
+    var faqs = (SS.getContent().faq) || [];
+    var r = SS.region();
+    var html = faqs.map(function(f, i){
+      var ans = f.a;
+      // live-fill the delivery answer with the current region's details
+      if (/do you deliver/i.test(f.q)) {
+        ans = "Yes — both delivery and pickup are available. In <strong>"+r.name+"</strong>: "+r.delivery.etaText+
+          " Delivery fee "+SS.money(r.delivery.fee)+(r.delivery.freeOver? " (free over "+SS.money(r.delivery.freeOver)+")":"")+
+          ". Pickup at "+r.pickup.address+" — "+r.pickup.hours+". Switch region at the top to see the other storefront.";
+      }
+      return '<details class="ss-acc"'+(i===0?' open':'')+'><summary>'+f.q+'</summary>'+
+             '<div class="ss-acc-body">'+ans+'</div></details>';
+    }).join("");
+    document.getElementById("faq-list").innerHTML = html;
+  })();
+</script>
+</body>
+</html>

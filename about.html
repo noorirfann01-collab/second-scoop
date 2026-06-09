@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>About — Second Scoop</title>
+<meta name="description" content="The Second Scoop story — premium scoopable cookies, edible dough and limited drops, built around craving.">
+<link rel="icon" href="assets/img/logo-mark.svg">
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<div id="ss-announcement"></div>
+<div id="ss-header-slot"></div>
+
+<div class="ss-page-head">
+  <div class="wrap">
+    <span class="eyebrow" id="about-eyebrow">Our Story</span>
+    <h2 id="about-title">The First Scoop Is Never Enough.</h2>
+    <p id="about-lead"></p>
+  </div>
+</div>
+
+<section class="ss-sec">
+  <div class="wrap ss-prose" id="about-body"></div>
+</section>
+
+<div id="ss-footer-slot"></div>
+
+<script src="assets/js/config/settings.js"></script>
+<script src="assets/js/config/regions.js"></script>
+<script src="assets/js/config/products.js"></script>
+<script src="assets/js/config/vault.js"></script>
+<script src="assets/js/config/content.js"></script>
+<script src="assets/js/store.js"></script>
+<script src="assets/js/app.js"></script>
+<script>
+  SSApp.mount({recentlySold:false});
+  (function(){
+    var a = (SS.getContent().about) || {};
+    var rid = SS.getRegion();
+    if (a.eyebrow) document.getElementById("about-eyebrow").textContent = a.eyebrow;
+    if (a.title) document.getElementById("about-title").textContent = a.title;
+    if (a.lead) document.getElementById("about-lead").textContent = a.lead;
+    var html = "";
+    (a.paragraphs || []).forEach(function(p){ html += "<p>"+p+"</p>"; });
+    if (a.values && a.values.length){
+      html += '<div class="ss-values">';
+      a.values.forEach(function(v){
+        html += '<div class="ss-value"><div class="ss-value-emoji">'+v.emoji+'</div><h3>'+v.title+'</h3><p>'+v.text+'</p></div>';
+      });
+      html += '</div>';
+    }
+    html += '<h2>Where to find us</h2><p>We currently run two storefronts. Each has its own products, pricing and drops:</p>'+
+      '<p><a class="ss-btn" href="shop.html?region=pakistan">Shop Pakistan 🇵🇰</a> '+
+      '<a class="ss-btn ss-btn--ghost" href="shop.html?region=toronto">Shop Toronto 🇨🇦</a></p>';
+    document.getElementById("about-body").innerHTML = html;
+  })();
+</script>
+</body>
+</html>
