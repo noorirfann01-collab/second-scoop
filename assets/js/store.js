@@ -1,0 +1,432 @@
+/* =====================================================================
+   SECOND SCOOP — STORE ENGINE
+   ---------------------------------------------------------------------
+   Central state: region, cart, orders, vault unlocks, signups.
+   Persisted to localStorage. Every page uses these helpers.
+   ===================================================================== */
+
+(function () {
+  "use strict";
+
+  const LS = {
+    region:   "ss_region",
+    cart:     "ss_cart",
+    orders:   "ss_orders",
+    vault:    "ss_vault_unlocks",
+    signups:  "ss_signups",
+    customers:"ss_customers",
+  };
+
+  /* ------------------------------------------------ persistence ---- */
+  function read(key, fallback) {
+    try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
+    catch (e) { return fallback; }
+  }
+  function write(key, val) {
+    try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {}
+  }
+  // Deep merge plain objects (arrays replaced, not merged).
+  function deepMerge(base, over) {
+    if (Array.isArray(over)) return over.slice();
+    if (over && typeof over === "object" && base && typeof base === "object" && !Array.isArray(base)) {
+      const out = Object.assign({}, base);
+      Object.keys(over).forEach(k => { out[k] = deepMerge(base[k], over[k]); });
+      return out;
+    }
+    return over === undefined ? base : over;
+  }
+
+  /* -------------------------------- override layers (backend edits) --
+     Content, settings and region info can be edited live in the Backend
+     and are stored as overrides here, merged over the config files.     */
+  function getContent() { return deepMerge(window.SS_CONTENT || {}, read("ss_content_override", {}) || {}); }
+  function saveContent(c) { write("ss_content_override", c); }
+  function resetContent() { try { localStorage.removeItem("ss_content_override"); } catch (e) {} }
+
+  function getSettings() { return deepMerge(window.SS_SETTINGS || {}, read("ss_settings_override", {}) || {}); }
+  function saveSettings(s) { write("ss_settings_override", s); }
+  function resetSettings() { try { localStorage.removeItem("ss_settings_override"); } catch (e) {} }
+
+  // Merged region (locations, delivery, contact, announcement overrides).
+  function regionById(rid) {
+    const base = SS_REGIONS[rid];
+    if (!base) return base;
+    const ov = (read("ss_region_overrides", {}) || {})[rid];
+    return ov ? deepMerge(base, ov) : base;
+  }
+  function saveRegionPatch(rid, patch) {
+    const all = read("ss_region_overrides", {}) || {};
+    all[rid] = deepMerge(all[rid] || {}, patch); write("ss_region_overrides", all);
+  }
+  function resetRegions() { try { localStorage.removeItem("ss_region_overrides"); localStorage.removeItem("ss_announce_override"); } catch (e) {} }
+
+  /* ----------------------------------------------------- region ---- */
+  function getRegion() {
+    const url = new URLSearchParams(location.search).get("region");
+    if (url && SS_REGIONS[url]) { write(LS.region, url); return url; }
+    const saved = read(LS.region, null);
+    if (saved && SS_REGIONS[saved]) return saved;
+    return SS_DEFAULT_REGION;
+  }
+  function setRegion(id) {
+    if (SS_REGIONS[id]) { write(LS.region, id); document.dispatchEvent(new CustomEvent("ss:region", { detail: id })); }
+  }
+  function region() {
+    const base = regionById(getRegion());
+    const ann = (read("ss_announce_override", {}) || {})[getRegion()];
+    if (ann) return Object.assign({}, base, { announcement: Object.assign({}, base.announcement, ann) });
+    return base;
+  }
+  // Announcement overrides (edited in the Backend → live site).
+  function saveAnnounce(regionId, ann) {
+    const all = read("ss_announce_override", {}) || {};
+    all[regionId] = ann; write("ss_announce_override", all);
+  }
+  function getAnnounce(regionId) {
+    const all = read("ss_announce_override", {}) || {};
+    return all[regionId] || (regionById(regionId) && regionById(regionId).announcement) || null;
+  }
+  function resetAnnounce() { try { localStorage.removeItem("ss_announce_override"); } catch (e) {} }
+
+  /* --------------------------------------------------- currency ---- */
+  function money(amount, regionId) {
+    const r = SS_REGIONS[regionId || getRegion()];
+    const n = Number(amount) || 0;
+    const formatted = n.toLocaleString(r.locale, {
+      minimumFractionDigits: r.currency === "PKR" ? 0 : 2,
+      maximumFractionDigits: r.currency === "PKR" ? 0 : 2,
+    });
+    return r.currencyPosition === "before"
+      ? `${r.currencySymbol} ${formatted}`
+      : `${formatted} ${r.currencySymbol}`;
+  }
+
+  /* --------------------------------------------------- products ---- */
+  // CATALOG OVERRIDE LAYER
+  // The Product Manager (manager.html) saves an edited catalog to
+  // localStorage. When present, the whole site uses it instead of the
+  // products.js file — so edits go live instantly. "Save/Export" in the
+  // manager downloads a new products.js to make changes permanent.
+  function effectiveCatalog() {
+    const ov = read("ss_catalog_override", null);
+    return (ov && Array.isArray(ov) && ov.length) ? ov : (window.SS_PRODUCTS || []);
+  }
+  function getCatalog() { return effectiveCatalog(); }
+  function saveCatalog(arr) { write("ss_catalog_override", arr); }
+  function resetCatalog() { try { localStorage.removeItem("ss_catalog_override"); } catch (e) {} }
+  function hasOverride() { return !!read("ss_catalog_override", null); }
+
+  // Resolve an image value to a usable src: bare filename → assets/img/,
+  // but full URLs and uploaded data: URLs are used as-is.
+  function imgSrc(image) {
+    if (!image) return "";
+    if (/^(https?:|data:|\/|\.\.?\/)/.test(image)) return image;
+    return "assets/img/" + image;
+  }
+
+  // Returns products visible in a region: not hidden, region entry exists,
+  // and (unless includeSecret) not secret.
+  function productsForRegion(regionId, opts) {
+    opts = opts || {};
+    const rid = regionId || getRegion();
+    return effectiveCatalog().filter(p => {
+      if (p.hidden) return false;
+      if (!p.regions || !p.regions[rid]) return false;
+      if (p.secret && !opts.includeSecret) return false;
+      return true;
+    });
+  }
+  function getProduct(id) { return effectiveCatalog().find(p => p.id === id) || null; }
+
+  // Region-aware view of a product (merges shared + region fields).
+  function productView(p, regionId) {
+    if (!p) return null;
+    const rid = regionId || getRegion();
+    const r = p.regions[rid];
+    if (!r) return null;
+    return {
+      id: p.id, name: p.name, category: p.category, tagline: p.tagline,
+      description: p.description, longDescription: p.longDescription,
+      images: p.images, image: (p.images && p.images[0]) || null,
+      imageSrc: imgSrc((p.images && p.images[0]) || null),
+      badge: p.badge, featured: !!p.featured, hero: !!p.hero, secret: !!p.secret,
+      reviews: p.reviews || { rating: 0, count: 0 },
+      status: r.status, price: r.price, inventory: r.inventory,
+      deliveryNotes: r.deliveryNotes || "",
+      buyable: r.status === "available" || r.status === "preorder" || r.status === "closing",
+    };
+  }
+  function categoryName(id) {
+    const c = (window.SS_CATEGORIES || []).find(c => c.id === id);
+    return c ? c.name : id;
+  }
+
+  /* ------------------------------------------------------- cart ---- */
+  // Cart items keyed by productId; cart belongs to a region.
+  function getCart() {
+    const c = read(LS.cart, { region: getRegion(), items: {} });
+    if (c.region !== getRegion()) return { region: getRegion(), items: {} }; // region switch clears view
+    return c;
+  }
+  function saveCart(c) { write(LS.cart, c); document.dispatchEvent(new CustomEvent("ss:cart")); }
+
+  function addToCart(productId, qty) {
+    qty = qty || 1;
+    const p = getProduct(productId);
+    const pv = productView(p);
+    if (!pv || !pv.buyable) return false;
+    const c = getCart();
+    c.region = getRegion();
+    const cur = c.items[productId] ? c.items[productId].qty : 0;
+    const max = pv.inventory > 0 ? pv.inventory : 999;
+    c.items[productId] = { qty: Math.min(cur + qty, max) };
+    saveCart(c);
+    return true;
+  }
+  function setQty(productId, qty) {
+    const c = getCart();
+    if (qty <= 0) { delete c.items[productId]; }
+    else {
+      const pv = productView(getProduct(productId));
+      const max = pv && pv.inventory > 0 ? pv.inventory : 999;
+      c.items[productId] = { qty: Math.min(qty, max) };
+    }
+    saveCart(c);
+  }
+  function removeFromCart(productId) { const c = getCart(); delete c.items[productId]; saveCart(c); }
+  function clearCart() { saveCart({ region: getRegion(), items: {} }); }
+  function cartCount() {
+    const c = getCart();
+    return Object.values(c.items).reduce((n, it) => n + it.qty, 0);
+  }
+  // Detailed cart lines + totals for current region.
+  function cartDetail() {
+    const c = getCart();
+    const rid = c.region;
+    const lines = [];
+    Object.entries(c.items).forEach(([id, it]) => {
+      const pv = productView(getProduct(id), rid);
+      if (!pv) return;
+      lines.push({ id, name: pv.name, qty: it.qty, price: pv.price,
+                   lineTotal: pv.price * it.qty, image: pv.image, status: pv.status, secret: pv.secret });
+    });
+    const subtotal = lines.reduce((s, l) => s + l.lineTotal, 0);
+    return { region: rid, lines, subtotal };
+  }
+  function deliveryFee(method, subtotal, regionId) {
+    const r = regionById(regionId || getRegion());
+    if (method !== "delivery") return 0;
+    if (r.delivery.freeOver && subtotal >= r.delivery.freeOver) return 0;
+    return r.delivery.fee || 0;
+  }
+
+  /* ------------------------------------------------------ vault ---- */
+  // Vault config override (edited in the Product Manager → live site).
+  function effectiveVault() { return read("ss_vault_override", null) || window.SS_VAULT; }
+  function getVault() { return effectiveVault(); }
+  function saveVault(v) { write("ss_vault_override", v); }
+  function resetVault() { try { localStorage.removeItem("ss_vault_override"); } catch (e) {} }
+
+  function vaultUnlocks(regionId) {
+    const rid = regionId || getRegion();
+    const all = read(LS.vault, {});
+    return all[rid] || [];
+  }
+  function tryVaultCode(rawCode, regionId) {
+    const rid = regionId || getRegion();
+    const code = (rawCode || "").trim().toLowerCase();
+    const entries = ((effectiveVault().codes || {})[rid] || []).filter(e => e.code.toLowerCase() === code);
+    if (!entries.length) return { ok: false, products: [] };
+    const unlockedIds = [];
+    entries.forEach(e => e.products.forEach(pid => { if (!unlockedIds.includes(pid)) unlockedIds.push(pid); }));
+    const all = read(LS.vault, {});
+    const existing = all[rid] || [];
+    all[rid] = Array.from(new Set(existing.concat(unlockedIds)));
+    write(LS.vault, all);
+    return { ok: true, products: unlockedIds, label: entries.map(e => e.label).join(" + ") };
+  }
+  function unlockedSecretProducts(regionId) {
+    const rid = regionId || getRegion();
+    const ids = vaultUnlocks(rid);
+    return ids.map(id => productView(getProduct(id), rid)).filter(Boolean);
+  }
+  function isUnlocked(productId, regionId) {
+    return vaultUnlocks(regionId).includes(productId);
+  }
+
+  /* ----------------------------------------------------- orders ---- */
+  function genOrderNumber() {
+    const d = new Date();
+    const yy = String(d.getFullYear()).slice(2);
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    const rnd = Math.floor(1000 + Math.random() * 9000);
+    return `${SS_SETTINGS.order.prefix}-${yy}${mm}${dd}-${rnd}`;
+  }
+
+  async function placeOrder(form) {
+    const detail = cartDetail();
+    if (!detail.lines.length) return { ok: false, error: "Your cart is empty." };
+
+    const rid = detail.region;
+    const r = regionById(rid);
+    const fee = deliveryFee(form.fulfilment, detail.subtotal, rid);
+    const grand = detail.subtotal + fee;
+    const orderNumber = genOrderNumber();
+    const ts = new Date().toISOString();
+
+    const nameParts = (form.name || "").trim().split(/\s+/);
+    const firstName = nameParts.shift() || form.name || "";
+    const lastName = nameParts.join(" ");
+
+    const order = {
+      orderNumber, timestamp: ts, region: rid, currency: r.currency,
+      customer: {
+        name: form.name, firstName, lastName,
+        phone: form.phone, email: form.email, instagram: form.instagram || "",
+        address: form.fulfilment === "delivery" ? form.address : "(Pickup)",
+        address2: form.address2 || "",
+        fulfilment: form.fulfilment, preferredDate: form.preferredDate, notes: form.notes || "",
+      },
+      lines: detail.lines.map(l => ({ id: l.id, name: l.name, qty: l.qty, price: l.price, lineTotal: l.lineTotal, secret: l.secret })),
+      subtotal: detail.subtotal, deliveryFee: fee, grandTotal: grand,
+      orderStatus: "New", paymentStatus: "Pending",
+      vaultProducts: detail.lines.filter(l => l.secret).map(l => l.name).join(", "),
+    };
+
+    // Save locally first (source of truth for the backend dashboard).
+    const orders = read(LS.orders, []);
+    orders.push(order);
+    write(LS.orders, orders);
+    trackCustomer(form.email, form.name, rid);
+
+    // Best-effort push to Google Sheets.
+    let synced = false;
+    const gs = getSettings().googleSheets || {};
+    if (gs.enabled && gs.webhookUrl) synced = await pushToSheets(order);
+
+    clearCart();
+    return { ok: true, order, synced };
+  }
+
+  // Human-readable "Preferred Method" string for the sheet.
+  function preferredMethodText(order) {
+    const r = regionById(order.region);
+    if (order.customer.fulfilment === "pickup") {
+      return `Pick up (${r.pickup && r.pickup.address ? r.pickup.address : "pickup"})`;
+    }
+    const fee = order.deliveryFee;
+    return fee ? `Delivery (Rs.${fee})` : "Delivery";
+  }
+  // Products block formatted like the existing Monthly orders sheet.
+  function productsBlock(order) {
+    const sym = (SS_REGIONS[order.region] || {}).currency || "PKR";
+    const lines = order.lines.map(l => `${l.name} (Amount: ${Number(l.price).toFixed(2)} ${sym}, Quantity: ${l.qty})`);
+    lines.push(`Total: ${Number(order.subtotal).toLocaleString("en-US", { minimumFractionDigits: 2 })} ${sym}`);
+    return lines.join("\n");
+  }
+
+  // Local-friendly timestamp "YYYY-MM-DD HH:MM:SS".
+  function sheetDate(iso) {
+    const d = new Date(iso);
+    const p = n => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+  }
+
+  function flattenForSheet(order) {
+    return {
+      // routing
+      region: SS_REGIONS[order.region] ? SS_REGIONS[order.region].name : order.region,
+      regionId: order.region,
+
+      // --- exact "Monthly orders" sheet columns (Pakistan) ---
+      submissionDate: sheetDate(order.timestamp),
+      firstName: order.customer.firstName || order.customer.name,
+      lastName: order.customer.lastName || "",
+      email: order.customer.email,
+      phone: order.customer.phone,
+      instagram: order.customer.instagram || "",
+      addressLine1: order.customer.fulfilment === "delivery" ? order.customer.address : "(Pickup)",
+      addressLine2: order.customer.address2 || "",
+      productsFormatted: productsBlock(order),
+      preferredMethod: preferredMethodText(order),
+      submissionId: order.orderNumber,
+      paymentStatus: order.paymentStatus,
+      preferredDate: order.customer.preferredDate,
+      revenue: order.subtotal,
+
+      // --- extra fields (used for the Toronto tab / general logging) ---
+      orderNumber: order.orderNumber,
+      timestamp: order.timestamp,
+      customerName: order.customer.name,
+      fulfilment: order.customer.fulfilment,
+      address: order.customer.address,
+      products: order.lines.map(l => l.name).join(" | "),
+      quantities: order.lines.map(l => `${l.name} x${l.qty}`).join(" | "),
+      productTotal: order.subtotal,
+      deliveryFee: order.deliveryFee,
+      grandTotal: order.grandTotal,
+      currency: order.currency,
+      orderStatus: order.orderStatus,
+      notes: order.customer.notes,
+      vaultProduct: order.vaultProducts,
+    };
+  }
+
+  async function pushToSheets(order) {
+    try {
+      const url = (getSettings().googleSheets || {}).webhookUrl;
+      if (!url) return false;
+      // text/plain avoids a CORS preflight against Apps Script.
+      await fetch(url, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(flattenForSheet(order)),
+      });
+      return true; // no-cors gives an opaque response; assume queued
+    } catch (e) { return false; }
+  }
+
+  function getOrders() { return read(LS.orders, []); }
+  function updateOrderStatus(orderNumber, field, value) {
+    const orders = read(LS.orders, []);
+    const o = orders.find(o => o.orderNumber === orderNumber);
+    if (o) { o[field] = value; write(LS.orders, orders); }
+  }
+
+  /* -------------------------------------------------- customers ---- */
+  function trackCustomer(email, name, regionId) {
+    if (!email) return;
+    const all = read(LS.customers, {});
+    const key = email.toLowerCase();
+    if (!all[key]) all[key] = { name, region: regionId, orders: 0, first: new Date().toISOString() };
+    all[key].orders += 1;
+    all[key].last = new Date().toISOString();
+    write(LS.customers, all);
+  }
+  function getCustomers() { return read(LS.customers, {}); }
+
+  /* ----------------------------------------------------- signups --- */
+  function addSignup(data) {
+    const list = read(LS.signups, []);
+    list.push(Object.assign({ ts: new Date().toISOString(), region: getRegion() }, data));
+    write(LS.signups, list);
+  }
+  function getSignups() { return read(LS.signups, []); }
+
+  /* ----------------------------------------------------- expose ---- */
+  window.SS = {
+    LS, read, write,
+    getRegion, setRegion, region, money,
+    productsForRegion, getProduct, productView, categoryName,
+    getCatalog, saveCatalog, resetCatalog, hasOverride, imgSrc,
+    getVault, saveVault, resetVault, saveAnnounce, getAnnounce, resetAnnounce,
+    getContent, saveContent, resetContent, getSettings, saveSettings, resetSettings,
+    regionById, saveRegionPatch, resetRegions, deepMerge,
+    getCart, saveCart, addToCart, setQty, removeFromCart, clearCart, cartCount, cartDetail, deliveryFee,
+    vaultUnlocks, tryVaultCode, unlockedSecretProducts, isUnlocked,
+    genOrderNumber, placeOrder, getOrders, updateOrderStatus, flattenForSheet,
+    getCustomers, addSignup, getSignups,
+  };
+})();
