@@ -96,4 +96,30 @@
     .concat(SS.productsForRegion(region).map(p => SS.productView(p, region)).filter(p => p.id !== pv.id && p.category !== pv.category))
     .slice(0, 4);
   document.getElementById("pdp-related").innerHTML = related.map(p => SSApp.productCard(p)).join("");
+
+  // --- live reviews for this product ---
+  (function () {
+    if (!window.SSReviews || !SSReviews.enabled()) return;
+    const sec = document.getElementById("pdp-reviews-sec");
+    const listEl = document.getElementById("pdp-reviews-list");
+    const formWrap = document.getElementById("pdp-review-form");
+    const toggle = document.getElementById("pdp-review-toggle");
+    sec.style.display = "block";
+    document.getElementById("pdp-reviews-title").textContent = `What scoopers say about ${pv.name}`;
+    toggle.onclick = () => {
+      const open = formWrap.style.display === "none";
+      formWrap.style.display = open ? "block" : "none";
+      if (open && !formWrap.dataset.ready) {
+        SSReviews.renderForm(formWrap, { product: pv.name, region: region, onDone: load });
+        formWrap.dataset.ready = "1";
+      }
+    };
+    function load() {
+      SSReviews.fetchPublic().then(reviews => {
+        const has = SSReviews.renderList(listEl, reviews, { product: pv.name, limit: 12,
+          emptyHtml: `<p class="ss-empty" style="grid-column:1/-1">No reviews yet — be the first! 🍪</p>` });
+      }).catch(() => { listEl.innerHTML = ""; });
+    }
+    load();
+  })();
 })();

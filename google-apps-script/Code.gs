@@ -25,6 +25,7 @@ function doPost(e) {
   try {
     var d = JSON.parse(e.postData.contents);
     var ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (d.type === "review") { writeReview_(ss, d); return out_(null, { ok: true }); }
     if (String(d.region).toLowerCase().indexOf("pakistan") > -1 || String(d.regionId).toLowerCase() === "pakistan") {
       writePakistan_(ss, d);
     } else {
@@ -36,6 +37,55 @@ function doPost(e) {
   } finally {
     lock.releaseLock();
   }
+}
+
+/* --------------------------------- REVIEWS ------------------------- */
+var REV_SHEET = "Reviews";
+var REV_HEADERS = ["Timestamp", "Region", "Name", "Rating", "Product", "Review", "Status", "ID"];
+
+function reviewSheet_(ss) {
+  var sheet = ss.getSheetByName(REV_SHEET);
+  if (!sheet) {
+    sheet = ss.insertSheet(REV_SHEET);
+    sheet.appendRow(REV_HEADERS);
+    sheet.getRange(1, 1, 1, REV_HEADERS.length).setFontWeight("bold");
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+function writeReview_(ss, d) {
+  var sheet = reviewSheet_(ss);
+  var id = "R" + Date.now() + Math.floor(Math.random() * 1000);
+  var rating = Math.max(1, Math.min(5, Number(d.rating) || 5));
+  sheet.appendRow([new Date(), d.region || "", String(d.name || "Anonymous").slice(0, 60),
+    rating, String(d.product || "").slice(0, 80), String(d.review || "").slice(0, 1000), "visible", id]);
+}
+function readReviews_(includeHidden) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(REV_SHEET);
+  if (!sheet) return [];
+  var v = sheet.getDataRange().getValues(), out = [];
+  for (var i = 1; i < v.length; i++) {
+    var r = v[i]; var status = String(r[6] || "visible");
+    if (!r[5] && !r[2]) continue;
+    if (!includeHidden && status !== "visible") continue;
+    out.push({
+      ts: (r[0] instanceof Date) ? r[0].toISOString() : String(r[0] || ""),
+      region: r[1] || "", name: r[2] || "Anonymous", rating: Number(r[3]) || 5,
+      product: r[4] || "", review: r[5] || "", status: status, id: String(r[7] || "")
+    });
+  }
+  return out;
+}
+function delReview_(id) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(REV_SHEET);
+  if (!sheet) return false;
+  var v = sheet.getDataRange().getValues();
+  for (var i = 1; i < v.length; i++) {
+    if (String(v[i][7] || "") === String(id)) { sheet.getRange(i + 1, 7).setValue("hidden"); return true; }
+  }
+  return false;
 }
 
 function writePakistan_(ss, d) {
@@ -85,6 +135,14 @@ function doGet(e) {
     if (p.key !== READ_KEY) return out_(p.callback, { ok: false, error: "unauthorized" });
     var done = setStatus_(p.order, p.status, p.field || "payment");
     return out_(p.callback, { ok: done, error: done ? "" : "order not found" });
+  }
+  if (p.action === "reviews") {
+    // public read of visible reviews; admin (with key) also gets hidden ones
+    return out_(p.callback, { ok: true, reviews: readReviews_(p.key === READ_KEY) });
+  }
+  if (p.action === "delreview") {
+    if (p.key !== READ_KEY) return out_(p.callback, { ok: false, error: "unauthorized" });
+    return out_(p.callback, { ok: delReview_(p.id) });
   }
   return out_(p.callback, { ok: true, service: "Second Scoop order webhook" });
 }

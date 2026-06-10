@@ -23,9 +23,11 @@
   const NAV = [
     { id: "dashboard", label: "Dashboard", icon: "📊" },
     { id: "orders", label: "Orders", icon: "🧾" },
+    { id: "reviews", label: "Reviews", icon: "⭐" },
     { id: "products", label: "Products", icon: "🍪" },
     { id: "vault", label: "The Vault", icon: "🔒" },
     { id: "content", label: "Content & Copy", icon: "✍️" },
+    { id: "design", label: "Design & Logo", icon: "🎨" },
     { id: "announce", label: "Announcements", icon: "📣" },
     { id: "settings", label: "Settings", icon: "⚙️" },
     { id: "export", label: "Save & Export", icon: "💾" },
@@ -199,10 +201,11 @@
       announce[rid] = clone(SS.getAnnounce(rid) || { enabled: false, style: "available", text: "" });
       regionView[rid] = clone(SS.regionById(rid));
     });
+    if (window.SSApp && SSApp.applyTheme) SSApp.applyTheme();   // preview saved colours
     renderShell();
   }
 
-  function persistCatalog() { SS.saveCatalog(cat); }
+  function persistCatalog() { return SS.saveCatalog(cat); }
   function persistVault() { SS.saveVault(vault); }
   function persistAnnounce() { REGION_IDS.forEach(rid => SS.saveAnnounce(rid, announce[rid])); }
   function persistContent() { SS.saveContent(content); }
@@ -249,8 +252,8 @@
   function body() { return document.getElementById("bk-body"); }
 
   function renderSection() {
-    ({ dashboard: renderDashboard, orders: renderOrders, products: renderProducts,
-       vault: renderVault, content: renderContent, announce: renderAnnounce,
+    ({ dashboard: renderDashboard, orders: renderOrders, reviews: renderReviews, products: renderProducts,
+       vault: renderVault, content: renderContent, design: renderDesign, announce: renderAnnounce,
        settings: renderSettings, export: renderExport }[section] || renderDashboard)();
   }
 
@@ -539,10 +542,59 @@
     download("second-scoop-orders.csv", cols.join(",") + "\n" + rows.join("\n"), "text/csv");
   }
 
+  /* ====================================================== REVIEWS == */
+  function renderReviews() {
+    if (!window.SSReviews || !remoteConfigured()) {
+      body().innerHTML = `<div class="ss-livebar" style="background:var(--cream-3);color:var(--caramel)">Reviews need the live link. Set your Google Sheets URL + read key in <a href="#settings" data-gosettings>Settings</a> first.</div>`;
+      wireBanner(); return;
+    }
+    body().innerHTML = `<div class="ss-panel" style="text-align:center;padding:40px"><div class="ss-pub-dot" style="margin:0 auto 12px;border-color:var(--caramel);border-top-color:transparent;animation:spin .7s linear infinite"></div><p style="color:var(--ink-60)">Loading reviews…</p></div>`;
+    const key = SS.read("ss_orders_key", "");
+    SSReviews.fetchAll(key).then(reviews => {
+      reviews.sort((a, b) => new Date(b.ts) - new Date(a.ts));
+      const live = reviews.filter(r => r.status === "visible").length;
+      body().innerHTML = `
+        <div class="ss-bk-actionbar"><button class="ss-chip" id="r-refresh">↻ Refresh</button>
+          <span class="ss-seed">${live} live · ${reviews.length - live} hidden</span></div>
+        <div class="ss-panel" style="padding:0;overflow:hidden"><div style="overflow-x:auto">
+        <table class="ss-table"><tr><th>Date</th><th>Name</th><th>Rating</th><th>Product</th><th>Review</th><th>Status</th><th></th></tr>
+        ${reviews.length ? reviews.map(reviewRow).join("") : `<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--ink-40)">No reviews yet.</td></tr>`}
+        </table></div></div>
+        <p class="ss-seed" style="margin-top:10px">Delete removes a review from the website right away (it's kept in your sheet marked “hidden”).</p>`;
+      document.getElementById("r-refresh").onclick = renderReviews;
+      body().querySelectorAll("[data-delrev]").forEach(b => b.onclick = () => {
+        if (!confirm("Hide this review from the website?")) return;
+        b.disabled = true; b.textContent = "…";
+        SSReviews.del(b.getAttribute("data-delrev"), key).then(ok => {
+          SSApp.toast(ok ? "Review hidden" : "Failed", ok ? "ok" : "err"); renderReviews();
+        });
+      });
+    }).catch(err => {
+      body().innerHTML = `<div class="ss-livebar" style="background:#f5d9d2;color:var(--err)">⚠️ Couldn't load reviews (${esc(String(err))}). Re-deploy the Apps Script (with the reviews update) and check your read key in Settings.</div>`;
+    });
+  }
+  function reviewRow(r) {
+    const region = SS_REGIONS[r.region] ? SS_REGIONS[r.region].name : "";
+    const d = new Date(r.ts);
+    return `<tr style="${r.status !== "visible" ? "opacity:.5" : ""}">
+      <td>${isNaN(d) ? esc(r.ts) : d.toLocaleDateString()}</td>
+      <td>${esc(r.name)}</td>
+      <td style="color:var(--gold);white-space:nowrap">${SSReviews.stars(r.rating)}</td>
+      <td>${esc(r.product || "—")}<br><span class="ss-seed">${esc(region)}</span></td>
+      <td style="max-width:320px;font-size:.85rem">${esc(r.review)}</td>
+      <td>${r.status === "visible" ? '<span class="ss-pill ss-pill--Paid">live</span>' : '<span class="ss-pill ss-pill--Cancelled">hidden</span>'}</td>
+      <td>${r.status === "visible" ? `<button class="ss-chip ss-chip--sm ss-chip--danger" data-delrev="${esc(r.id)}">Delete</button>` : ""}</td>
+    </tr>`;
+  }
+
   /* ====================================================== PRODUCTS == */
   function renderProducts() {
     const list = cat.filter(p => !productSearch || (p.name + " " + p.id + " " + p.category).toLowerCase().includes(productSearch));
+    const hasEdits = SS.hasOverride();
     body().innerHTML = `
+      ${hasEdits
+        ? `<div class="ss-livebar">📝 You have <strong>unpublished product edits</strong> (saved as a preview on this device). They go live for customers when you press <strong>⤴ Publish to live site</strong>. <a href="#" data-discard>Discard preview edits</a></div>`
+        : `<div class="ss-livebar" style="background:#e6f4ea;border-color:#b7e0c4;color:#2a6b43">✓ Products match what's published live.</div>`}
       <div class="ss-bk-actionbar">
         <div class="ss-search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="m20 20-3-3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
           <input id="p-q" type="search" placeholder="Search products…" value="${esc(productSearch)}"></div>
@@ -555,6 +607,13 @@
     const s = document.getElementById("p-q");
     s.oninput = () => { productSearch = s.value.toLowerCase().trim(); const p = s.selectionStart; renderProducts(); const n = document.getElementById("p-q"); n.focus(); n.setSelectionRange(p, p); };
     document.getElementById("p-add").onclick = () => openEditor(null);
+    const disc = body().querySelector("[data-discard]");
+    if (disc) disc.onclick = e => {
+      e.preventDefault();
+      if (confirm("Discard your local product edits and reload what's currently published live?")) {
+        SS.resetCatalog(); cat = clone(SS.getCatalog()); renderProducts(); SSApp.toast("Reverted to published products", "ok");
+      }
+    };
     body().querySelectorAll("[data-act]").forEach(b => b.onclick = () => action(b.getAttribute("data-act"), b.getAttribute("data-id")));
   }
   function productRow(p) {
@@ -646,8 +705,17 @@
     REGION_IDS.forEach(rid => { if (document.getElementById("rg-on-" + rid).checked) regions[rid] = { status: val("rg-status-" + rid), price: Number(val("rg-price-" + rid)) || 0, inventory: Math.max(0, parseInt(val("rg-inv-" + rid), 10) || 0), deliveryNotes: val("rg-notes-" + rid).trim() }; });
     if (!Object.keys(regions).length) { SSApp.toast("Enable at least one region.", "err"); return; }
     const product = { id, name, category: val("f-cat"), tagline: val("f-tag").trim(), description: val("f-desc").trim(), longDescription: val("f-long").trim(), images: images.slice(), badge: val("f-badge") || null, featured: chkd("f-featured"), hero: chkd("f-hero"), secret: chkd("f-secret"), hidden: chkd("f-hidden"), reviews: { rating: clampNum(val("f-rating"), 0, 5), count: Math.max(0, parseInt(val("f-rcount"), 10) || 0) }, regions };
+    const prevCat = cat.slice();
     if (isNew) cat.push(product); else cat[index] = product;
-    persistCatalog(); closeDrawer(); updateLiveBadge(); renderProducts(); SSApp.toast(isNew ? "Product added — live 🍪" : "Saved — live 🍪", "ok");
+    const ok = persistCatalog();
+    if (!ok) {
+      // storage full — almost always an uploaded image is too large to save
+      cat = prevCat;   // roll back so we don't show an unsaved state
+      SSApp.toast("Couldn't save — an uploaded image is too large. Use a smaller photo, or save it as a file in assets/img/ and reference the filename.", "err");
+      return;
+    }
+    closeDrawer(); updateLiveBadge(); renderProducts();
+    SSApp.toast(isNew ? "Product saved (preview). Press Publish to go live 🍪" : "Saved (preview). Press Publish to go live 🍪", "ok");
   }
 
   /* ========================================================= VAULT == */
@@ -739,6 +807,81 @@
       wrap.querySelector("[data-add]").onclick = () => { arr.push(blank()); render(); };
     }
     render();
+  }
+
+  /* ===================================================== DESIGN ===== */
+  const THEME_FIELDS = [
+    ["choc", "Brand / text"], ["caramel", "Accent"], ["cookie", "Cookie tone"],
+    ["cream", "Page background"], ["blush", "Blush pink"], ["gold", "Gold"],
+  ];
+  function renderDesign() {
+    const C = content;
+    C.theme = C.theme || {}; C.header = C.header || {}; C.effects = C.effects || {}; C.gallery = C.gallery || { images: [] };
+    const g = C.gallery;
+    body().innerHTML = `
+      <div class="ss-panel" style="margin-bottom:14px"><h3>Colour scheme</h3>
+        <p style="color:var(--ink-60);font-size:.9rem">Pick your colours — the whole site (and this backend) updates live as you choose. Press Save to keep them, then Publish to go live.</p>
+        <div class="ss-design-colors">
+          ${THEME_FIELDS.map(([k, label]) => `
+            <label class="ss-color-row">
+              <input type="color" id="th-${k}" value="${esc(C.theme[k] || defaultTheme(k))}">
+              <div><strong>${label}</strong><br><input class="ss-field ss-field--sm" id="thx-${k}" value="${esc(C.theme[k] || defaultTheme(k))}" style="width:110px"></div>
+            </label>`).join("")}
+        </div>
+        <button class="ss-chip" id="th-reset" style="margin-top:10px">↺ Reset to original colours</button>
+      </div>
+
+      <div class="ss-panel" style="margin-bottom:14px"><h3>Logo &amp; header</h3>
+        <div class="ss-grid2">
+          <div><label class="ss-label">Logo placement</label>
+            <select class="ss-field" id="h-align"><option value="left" ${C.header.logoAlign !== "center" ? "selected" : ""}>Left (with menu)</option><option value="center" ${C.header.logoAlign === "center" ? "selected" : ""}>Centered</option></select></div>
+          <div><label class="ss-label">Logo size (px)</label><input class="ss-field" id="h-size" type="number" min="20" max="60" value="${C.header.logoSize || 34}"></div>
+        </div>
+        <label class="ss-switch ss-switch--chip" style="margin-top:10px"><input type="checkbox" id="h-word" ${C.header.showWordmark !== false ? "checked" : ""}><span>Show “Second Scoop.” text beside the logo</span></label>
+      </div>
+
+      <div class="ss-panel" style="margin-bottom:14px"><h3>Motion &amp; effects</h3>
+        <label class="ss-switch ss-switch--chip"><input type="checkbox" id="e-reveal" ${C.effects.scrollReveal !== false ? "checked" : ""}><span>Fade sections in as you scroll</span></label>
+        <label class="ss-switch ss-switch--chip" style="margin-top:8px"><input type="checkbox" id="e-parallax" ${C.effects.heroParallax !== false ? "checked" : ""}><span>Hero parallax on scroll</span></label>
+      </div>
+
+      <div class="ss-panel" style="margin-bottom:14px"><h3>Photo carousel (homepage)</h3>
+        <label class="ss-switch ss-switch--chip"><input type="checkbox" id="g-on" ${g.enabled !== false ? "checked" : ""}><span>Show the carousel</span></label>
+        <div class="ss-grid2" style="margin-top:10px">
+          <div><label class="ss-label">Eyebrow</label><input class="ss-field" id="g-eye" value="${esc(g.eyebrow || "")}"></div>
+          <div><label class="ss-label">Title</label><input class="ss-field" id="g-title" value="${esc(g.title || "")}"></div>
+        </div>
+        <label class="ss-switch ss-switch--chip" style="margin-top:8px"><input type="checkbox" id="g-auto" ${g.autoplay !== false ? "checked" : ""}><span>Auto-advance slides</span></label>
+        <label class="ss-label" style="margin-top:12px">Photos (filename in assets/img/ or a full URL — one per line)</label>
+        <textarea class="ss-field" id="g-imgs" style="min-height:110px">${esc((g.images || []).join("\n"))}</textarea>
+        <small class="ss-seed">Tip: add image files to <code>assets/img/</code> (via GitHub Desktop) and list their filenames here — that's the reliable way.</small>
+      </div>
+
+      <button class="ss-btn" id="d-save">Save design (go live preview)</button>`;
+
+    // live colour preview
+    THEME_FIELDS.forEach(([k]) => {
+      const picker = document.getElementById("th-" + k), hex = document.getElementById("thx-" + k);
+      const apply = (v) => { C.theme[k] = v; picker.value = v; hex.value = v; document.documentElement.style.setProperty("--" + k, v); if (k === "cream" || k === "blush") SSApp.applyTheme(); };
+      picker.oninput = () => apply(picker.value);
+      hex.onchange = () => { if (/^#[0-9a-fA-F]{6}$/.test(hex.value)) apply(hex.value); };
+    });
+    document.getElementById("th-reset").onclick = () => {
+      THEME_FIELDS.forEach(([k]) => { C.theme[k] = defaultTheme(k); document.documentElement.style.setProperty("--" + k, defaultTheme(k)); });
+      SSApp.applyTheme(); renderDesign(); SSApp.toast("Colours reset", "ok");
+    };
+    document.getElementById("d-save").onclick = () => {
+      C.header.logoAlign = val("h-align"); C.header.logoSize = Math.max(20, Math.min(60, parseInt(val("h-size"), 10) || 34)); C.header.showWordmark = chkd("h-word");
+      C.effects.scrollReveal = chkd("e-reveal"); C.effects.heroParallax = chkd("e-parallax");
+      g.enabled = chkd("g-on"); g.eyebrow = val("g-eye"); g.title = val("g-title"); g.autoplay = chkd("g-auto");
+      g.images = val("g-imgs").split("\n").map(s => s.trim()).filter(Boolean);
+      const ok = persistContent();
+      if (!ok) { SSApp.toast("Couldn't save — too much data (avoid uploading huge images here).", "err"); return; }
+      updateLiveBadge(); SSApp.applyTheme(); SSApp.toast("Design saved — preview live. Press Publish to go live 🎨", "ok");
+    };
+  }
+  function defaultTheme(k) {
+    return ({ choc: "#2e1a0e", caramel: "#b0763c", cookie: "#c68a4e", cream: "#fbf4e6", blush: "#f3c9c7", gold: "#c9a24b" })[k] || "#000000";
   }
 
   /* ==================================================== ANNOUNCE ==== */

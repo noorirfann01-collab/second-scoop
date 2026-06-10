@@ -37,16 +37,21 @@
     </svg>`;
   }
 
+  function headerOpts() {
+    try { return (SS.getContent().header) || {}; } catch (e) { return {}; }
+  }
   function logoHTML(opts) {
     opts = opts || {};
-    const size = opts.size || 34;
+    const h = headerOpts();
+    const size = opts.size || h.logoSize || 34;
     const dark = !!opts.dark;
     const src = dark ? markImgDark : markImg;
     const wordColor = dark ? "var(--cream)" : "var(--choc)";
+    const showWord = opts.forceWord || h.showWordmark !== false;
     return `<a class="ss-logo" href="index.html" aria-label="Second Scoop home">
       <img class="ss-logo-mark-img" src="${src}" alt="" style="height:${Math.round(size * 1.3)}px"
            onerror="this.style.display='none'">
-      <span class="ss-logo-word" style="color:${wordColor}">Second Scoop<span style="color:var(--caramel)">.</span></span>
+      ${showWord ? `<span class="ss-logo-word" style="color:${wordColor}">Second Scoop<span style="color:var(--caramel)">.</span></span>` : ""}
     </a>`;
   }
   // Full stacked wordmark image, for hero / large brand moments.
@@ -87,10 +92,11 @@
       return `<a class="ss-nav-link${active}${vault}" href="${n.href}">${n.label}</a>`;
     }).join("");
 
+    const center = headerOpts().logoAlign === "center";
     return `
-    <header class="ss-header" id="ss-header">
+    <header class="ss-header${center ? " ss-header--center" : ""}" id="ss-header">
       <div class="ss-header-inner">
-        ${logoHTML({ size: 34 })}
+        ${logoHTML({})}
         <nav class="ss-nav" aria-label="Primary">${links}</nav>
         <div class="ss-header-actions">
           <div class="ss-region-switch" title="Choose your region">
@@ -322,8 +328,65 @@
   function bump(btn) { btn.classList.add("bump"); setTimeout(() => btn.classList.remove("bump"), 250); }
 
   /* ----------------------------------------------------- mount ----- */
+  /* ---------------------------------------------- theme + effects -- */
+  function content() { try { return SS.getContent() || {}; } catch (e) { return {}; } }
+
+  // Apply editable colours by setting CSS variables on :root.
+  function applyTheme() {
+    const t = content().theme; if (!t) return;
+    const root = document.documentElement;
+    const map = { choc: "--choc", caramel: "--caramel", cookie: "--cookie", cream: "--cream", blush: "--blush", gold: "--gold" };
+    Object.keys(map).forEach(k => { if (t[k]) root.style.setProperty(map[k], t[k]); });
+    // a couple of derived tints so backgrounds stay cohesive
+    if (t.cream) { root.style.setProperty("--cream-2", shade(t.cream, -6)); root.style.setProperty("--cream-3", shade(t.cream, -12)); }
+    if (t.blush) root.style.setProperty("--blush-soft", shade(t.blush, 8));
+  }
+  function shade(hex, pct) {
+    try {
+      const n = parseInt(hex.replace("#", ""), 16);
+      let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+      const f = 1 + pct / 100;
+      r = Math.max(0, Math.min(255, Math.round(r * f)));
+      g = Math.max(0, Math.min(255, Math.round(g * f)));
+      b = Math.max(0, Math.min(255, Math.round(b * f)));
+      return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+    } catch (e) { return hex; }
+  }
+
+  // Scroll-reveal + hero parallax. Tags sections, animates on entry.
+  function initScrollFX() {
+    const fx = content().effects || {};
+    const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) return;
+    if (fx.scrollReveal !== false && "IntersectionObserver" in window) {
+      const targets = document.querySelectorAll(".ss-sec, .ss-card, .ss-step, .ss-review, .ss-value, .ss-kpi, .ss-hero-copy, .ss-hero-media, .ss-vault-teaser, .ss-signup");
+      targets.forEach((el, i) => { el.classList.add("reveal"); el.style.transitionDelay = Math.min((i % 4) * 60, 180) + "ms"; });
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } });
+      }, { threshold: 0.12, rootMargin: "0px 0px -40px 0px" });
+      targets.forEach(el => io.observe(el));
+    }
+    if (fx.heroParallax !== false) {
+      const media = document.querySelector(".ss-hero-media");
+      const blobs = document.querySelectorAll(".ss-hero-blob, .ss-hero-float");
+      if (media || blobs.length) {
+        let ticking = false;
+        window.addEventListener("scroll", () => {
+          if (ticking) return; ticking = true;
+          requestAnimationFrame(() => {
+            const y = window.scrollY;
+            if (media && y < 900) media.style.transform = `translateY(${y * 0.06}px)`;
+            blobs.forEach((b, i) => { if (y < 900) b.style.transform = `translateY(${y * (0.04 + i * 0.02)}px)`; });
+            ticking = false;
+          });
+        }, { passive: true });
+      }
+    }
+  }
+
   function mount(opts) {
     opts = opts || {};
+    applyTheme();
     const ann = document.getElementById("ss-announcement");
     if (ann) ann.innerHTML = announcementHTML();
     const hdr = document.getElementById("ss-header-slot");
@@ -333,7 +396,8 @@
     bindShell();
     refreshCartCount();
     if (opts.recentlySold !== false) startRecentlySold();
+    setTimeout(initScrollFX, 50);   // after page scripts inject their content
   }
 
-  window.SSApp = { mount, productCard, toast, logoHTML, logoMarkSVG, wordmarkImg, refreshCartCount, statusBadge, topBadge };
+  window.SSApp = { mount, productCard, toast, logoHTML, logoMarkSVG, wordmarkImg, refreshCartCount, statusBadge, topBadge, applyTheme, initScrollFX };
 })();

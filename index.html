@@ -113,12 +113,22 @@
 <!-- ========================= CUSTOMER REVIEWS ================= -->
 <section class="ss-sec">
   <div class="wrap">
-    <div class="ss-sec-head"><div><span class="eyebrow">Real Scoopers</span><h2>People Are Obsessed</h2></div></div>
-    <div class="ss-reviews">
+    <div class="ss-sec-head"><div><span class="eyebrow">Real Scoopers</span><h2>People Are Obsessed</h2></div>
+      <button class="ss-btn ss-btn--ghost" id="home-review-toggle">✍️ Leave a review</button></div>
+    <div class="ss-reviews" id="home-reviews-list">
       <div class="ss-review"><div class="ss-review-stars">★★★★★</div><p>"Microwaved it for 15 seconds and genuinely could not stop. The middle is pure molten chaos. Ordering again tonight."</p><div class="ss-review-who">Ayesha K. <span>· Lahore</span></div></div>
       <div class="ss-review"><div class="ss-review-stars">★★★★★</div><p>"The Doughiginal tub didn't survive the car ride home. Egg-free so I let my kids dig in too. Dangerous stuff."</p><div class="ss-review-who">Maya R. <span>· Toronto</span></div></div>
       <div class="ss-review"><div class="ss-review-stars">★★★★★</div><p>"Got a Vault code off Instagram and the salted caramel Scoopie changed me. Feels like a secret club."</p><div class="ss-review-who">Bilal A. <span>· Karachi</span></div></div>
     </div>
+    <div class="ss-review-form-wrap" id="home-review-form" style="display:none"></div>
+  </div>
+</section>
+
+<!-- ========================= PHOTO CAROUSEL =================== -->
+<section class="ss-sec" id="home-carousel-sec" style="display:none">
+  <div class="wrap">
+    <div class="ss-sec-head"><div><span class="eyebrow" id="carousel-eyebrow">The Gallery</span><h2 id="carousel-title">Straight Off The Spoon</h2></div></div>
+    <div id="home-carousel"></div>
   </div>
 </section>
 
@@ -160,6 +170,7 @@
 <script src="assets/js/config/content.js"></script>
 <script src="assets/js/store.js"></script>
 <script src="assets/js/app.js"></script>
+<script src="assets/js/reviews.js"></script>
 <script src="assets/js/pages/home.js"></script>
 </body>
 </html>

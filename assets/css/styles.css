@@ -248,6 +248,41 @@ section{position:relative}
 .ss-review-who{font-weight:700;font-size:.85rem}
 .ss-review-who span{color:var(--ink-40);font-weight:500}
 
+/* ---- scroll reveal + motion ---------------------------------------- */
+.reveal{opacity:0;transform:translateY(30px);transition:opacity .7s var(--ease),transform .7s var(--ease);will-change:opacity,transform}
+.reveal.in{opacity:1;transform:none}
+.ss-hero-media{transition:transform .1s linear}
+@media (prefers-reduced-motion:reduce){.reveal{opacity:1!important;transform:none!important}}
+
+/* ---- centered logo header option ----------------------------------- */
+.ss-header--center .ss-logo{position:absolute;left:50%;transform:translateX(-50%);margin:0}
+.ss-header--center .ss-nav{display:none}
+.ss-header--center .ss-menu-toggle{display:flex}
+.ss-header--center .ss-header-actions{margin-left:auto}
+
+/* ---- photo carousel ------------------------------------------------- */
+.ss-carousel{position:relative;border-radius:var(--r-xl);overflow:hidden;box-shadow:var(--shadow-lg);background:var(--cream-2)}
+.ss-carousel-track{display:flex;transition:transform .6s var(--ease)}
+.ss-carousel-slide{min-width:100%;aspect-ratio:21/9;position:relative}
+.ss-carousel-slide img{width:100%;height:100%;object-fit:cover;display:block}
+.ss-carousel-slide.ss-noimg{display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--cream-2),var(--blush-soft));color:var(--caramel);font-family:'Fredoka';font-size:1.4rem}
+.ss-carousel-arrow{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:50%;background:rgba(251,244,230,.9);color:var(--choc);display:flex;align-items:center;justify-content:center;font-size:1.3rem;box-shadow:var(--shadow-sm);z-index:3;transition:background .15s}
+.ss-carousel-arrow:hover{background:var(--white)}
+.ss-carousel-arrow.prev{left:14px}.ss-carousel-arrow.next{right:14px}
+.ss-carousel-dots{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:3}
+.ss-carousel-dot{width:9px;height:9px;border-radius:50%;background:rgba(251,244,230,.6);cursor:pointer;transition:.2s}
+.ss-carousel-dot.on{background:var(--white);width:22px;border-radius:var(--r-pill)}
+@media (max-width:680px){.ss-carousel-slide{aspect-ratio:4/3}}
+
+/* ---- review form ---------------------------------------------------- */
+.ss-review-form-wrap{margin-top:18px}
+.ss-review-form{background:var(--white);border:1px solid var(--line);border-radius:var(--r-lg);padding:22px;max-width:560px}
+.ss-review-form h4{font-family:'Fredoka';margin:0 0 12px}
+.ss-stars-pick{display:flex;gap:4px;margin-bottom:12px}
+.ss-star{font-size:1.8rem;line-height:1;color:var(--line);transition:color .12s;background:none;padding:0}
+.ss-star.on{color:var(--gold)}
+.ss-star:hover{transform:scale(1.1)}
+
 /* ---- instagram ------------------------------------------------------ */
 .ss-ig-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
 .ss-ig-tile{aspect-ratio:1;border-radius:var(--r-md);background:linear-gradient(135deg,var(--cream-2),var(--blush-soft));position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--caramel);font-size:1.8rem;transition:transform .25s}
@@ -460,6 +495,12 @@ textarea.ss-field{min-height:90px;border-radius:var(--r-md);resize:vertical}
   .ss-list-row{grid-template-columns:1fr 34px}
   .ss-list-row input[data-k]{grid-column:1/-1}
 }
+
+/* ---- design tab ---------------------------------------------------- */
+.ss-design-colors{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:6px}
+.ss-color-row{display:flex;align-items:center;gap:12px;background:var(--white);border:1px solid var(--line);border-radius:var(--r-md);padding:10px 12px;cursor:pointer}
+.ss-color-row input[type=color]{width:46px;height:46px;border:none;border-radius:10px;background:none;cursor:pointer;padding:0}
+.ss-color-row strong{font-size:.85rem}
 
 /* ---- one-click publish --------------------------------------------- */
 .ss-bk-publish{background:linear-gradient(135deg,var(--gold),var(--caramel));color:var(--white);flex:none}

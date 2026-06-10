@@ -23,8 +23,13 @@
     catch (e) { return fallback; }
   }
   function write(key, val) {
-    try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {}
+    try { localStorage.setItem(key, JSON.stringify(val)); return true; }
+    catch (e) { return false; }   // e.g. storage quota exceeded
   }
+  // Backend pages set window.SS_BACKEND = true. Only there do edits
+  // ("overrides") apply — so the PUBLIC site always shows the published
+  // files, never one device's unsaved preview.
+  function inBackend() { try { return !!window.SS_BACKEND; } catch (e) { return false; } }
   // Deep merge plain objects (arrays replaced, not merged).
   function deepMerge(base, over) {
     if (Array.isArray(over)) return over.slice();
@@ -39,18 +44,19 @@
   /* -------------------------------- override layers (backend edits) --
      Content, settings and region info can be edited live in the Backend
      and are stored as overrides here, merged over the config files.     */
-  function getContent() { return deepMerge(window.SS_CONTENT || {}, read("ss_content_override", {}) || {}); }
-  function saveContent(c) { write("ss_content_override", c); }
+  function getContent() { return inBackend() ? deepMerge(window.SS_CONTENT || {}, read("ss_content_override", {}) || {}) : (window.SS_CONTENT || {}); }
+  function saveContent(c) { return write("ss_content_override", c); }
   function resetContent() { try { localStorage.removeItem("ss_content_override"); } catch (e) {} }
 
-  function getSettings() { return deepMerge(window.SS_SETTINGS || {}, read("ss_settings_override", {}) || {}); }
-  function saveSettings(s) { write("ss_settings_override", s); }
+  function getSettings() { return inBackend() ? deepMerge(window.SS_SETTINGS || {}, read("ss_settings_override", {}) || {}) : (window.SS_SETTINGS || {}); }
+  function saveSettings(s) { return write("ss_settings_override", s); }
   function resetSettings() { try { localStorage.removeItem("ss_settings_override"); } catch (e) {} }
 
   // Merged region (locations, delivery, contact, announcement overrides).
   function regionById(rid) {
     const base = SS_REGIONS[rid];
     if (!base) return base;
+    if (!inBackend()) return base;
     const ov = (read("ss_region_overrides", {}) || {})[rid];
     return ov ? deepMerge(base, ov) : base;
   }
@@ -73,6 +79,7 @@
   }
   function region() {
     const base = regionById(getRegion());
+    if (!inBackend()) return base;
     const ann = (read("ss_announce_override", {}) || {})[getRegion()];
     if (ann) return Object.assign({}, base, { announcement: Object.assign({}, base.announcement, ann) });
     return base;
@@ -108,11 +115,12 @@
   // products.js file — so edits go live instantly. "Save/Export" in the
   // manager downloads a new products.js to make changes permanent.
   function effectiveCatalog() {
+    if (!inBackend()) return (window.SS_PRODUCTS || []);    // public site = published files only
     const ov = read("ss_catalog_override", null);
     return (ov && Array.isArray(ov) && ov.length) ? ov : (window.SS_PRODUCTS || []);
   }
   function getCatalog() { return effectiveCatalog(); }
-  function saveCatalog(arr) { write("ss_catalog_override", arr); }
+  function saveCatalog(arr) { return write("ss_catalog_override", arr); }   // returns false if storage full
   function resetCatalog() { try { localStorage.removeItem("ss_catalog_override"); } catch (e) {} }
   function hasOverride() { return !!read("ss_catalog_override", null); }
 
@@ -222,7 +230,7 @@
 
   /* ------------------------------------------------------ vault ---- */
   // Vault config override (edited in the Product Manager → live site).
-  function effectiveVault() { return read("ss_vault_override", null) || window.SS_VAULT; }
+  function effectiveVault() { return (inBackend() && read("ss_vault_override", null)) || window.SS_VAULT; }
   function getVault() { return effectiveVault(); }
   function saveVault(v) { write("ss_vault_override", v); }
   function resetVault() { try { localStorage.removeItem("ss_vault_override"); } catch (e) {} }

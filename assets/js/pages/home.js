@@ -58,6 +58,42 @@
   // --- countdown (next Thursday midnight) for limited drops ---
   startCountdown("drop-countdown");
 
+  // --- photo carousel ---
+  (function () {
+    const g = (C.gallery) || {};
+    const sec = document.getElementById("home-carousel-sec");
+    const wrap = document.getElementById("home-carousel");
+    if (!sec || !wrap || g.enabled === false) return;
+    const imgs = (g.images || []).filter(Boolean);
+    if (!imgs.length) return;                       // nothing to show → keep hidden
+    sec.style.display = "block";
+    if (g.eyebrow) document.getElementById("carousel-eyebrow").textContent = g.eyebrow;
+    if (g.title) document.getElementById("carousel-title").textContent = g.title;
+    wrap.innerHTML = `
+      <div class="ss-carousel">
+        <div class="ss-carousel-track">
+          ${imgs.map(src => `<div class="ss-carousel-slide"><img src="${SS.imgSrc(src)}" alt="" loading="lazy" onerror="this.parentNode.classList.add('ss-noimg');this.remove();this.parentNode.textContent='Second Scoop'"></div>`).join("")}
+        </div>
+        ${imgs.length > 1 ? `<button class="ss-carousel-arrow prev" aria-label="Previous">‹</button>
+        <button class="ss-carousel-arrow next" aria-label="Next">›</button>
+        <div class="ss-carousel-dots">${imgs.map((_, i) => `<span class="ss-carousel-dot${i === 0 ? " on" : ""}" data-i="${i}"></span>`).join("")}</div>` : ""}
+      </div>`;
+    const track = wrap.querySelector(".ss-carousel-track");
+    const dots = wrap.querySelectorAll(".ss-carousel-dot");
+    let idx = 0, timer = null;
+    function go(i) {
+      idx = (i + imgs.length) % imgs.length;
+      track.style.transform = `translateX(-${idx * 100}%)`;
+      dots.forEach((d, k) => d.classList.toggle("on", k === idx));
+    }
+    const prev = wrap.querySelector(".prev"), next = wrap.querySelector(".next");
+    if (prev) prev.onclick = () => { go(idx - 1); restart(); };
+    if (next) next.onclick = () => { go(idx + 1); restart(); };
+    dots.forEach(d => d.onclick = () => { go(+d.getAttribute("data-i")); restart(); });
+    function restart() { if (timer) clearInterval(timer); if (g.autoplay !== false && imgs.length > 1) timer = setInterval(() => go(idx + 1), 4500); }
+    restart();
+  })();
+
   // --- instagram tiles ---
   const ig = document.getElementById("ig-grid");
   if (ig && SS_SETTINGS.features.instagramFeed) {
@@ -67,6 +103,33 @@
         <img src="assets/img/ig-${i + 1}.jpg" alt="" onerror="this.remove()">${emojis[i]}
       </a>`).join("");
   }
+
+  // --- live customer reviews ---
+  (function () {
+    const list = document.getElementById("home-reviews-list");
+    const formWrap = document.getElementById("home-review-form");
+    const toggle = document.getElementById("home-review-toggle");
+    if (!list || !window.SSReviews) return;
+    const productNames = SS.productsForRegion(region).map(p => p.name);
+    if (toggle && formWrap) {
+      toggle.onclick = () => {
+        const open = formWrap.style.display === "none";
+        formWrap.style.display = open ? "block" : "none";
+        if (open && !formWrap.dataset.ready) {
+          SSReviews.renderForm(formWrap, { products: productNames, region: region, onDone: load });
+          formWrap.dataset.ready = "1";
+          formWrap.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      };
+    }
+    function load() {
+      if (!SSReviews.enabled()) return;            // keep static fallback if not configured
+      SSReviews.fetchPublic().then(reviews => {
+        if (reviews && reviews.length) SSReviews.renderList(list, reviews, { limit: 9 });
+      }).catch(() => {});
+    }
+    load();
+  })();
 
   // --- signup ---
   const f = document.getElementById("home-signup");
