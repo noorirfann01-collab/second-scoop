@@ -1,5 +1,5 @@
 /* Second Scoop — content.js
-   Exported from the Backend on 11/06/2026, 00:20:54.
+   Exported from the Backend on 11/06/2026, 00:30:43.
    Replace the matching file in assets/js/config/ to publish. */
 
 window.SS_CONTENT = {
