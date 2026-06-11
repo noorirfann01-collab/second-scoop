@@ -92,7 +92,7 @@ window.SS_PRODUCTS = [
     description: "A rotating limited-edition Chunkie. When it's gone, it's gone.",
     longDescription:
       "Our test kitchen's current obsession, released in tiny batches. The flavour rotates with the season and never sticks " +
-      "around long. Follow @secondscoop so you don't miss the next one.",
+      "around long. Follow @secondscoopco so you don't miss the next one.",
     images: ["chunkies.jpg"],
     badge: "limited",
     featured: false,

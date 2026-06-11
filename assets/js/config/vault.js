@@ -28,7 +28,7 @@ window.SS_VAULT = {
   teaser: {
     title: "THE VAULT",
     subtitle: "Secret scoops. Invite-only flavours. Enter the code.",
-    hint: "Codes drop to our list and on @secondscoop.",
+    hint: "Codes drop to our list and on @secondscoopco.",
   },
 
   /* Region-specific codes.

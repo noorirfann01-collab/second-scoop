@@ -33,6 +33,22 @@ window.SS_CONTENT = {
     swapTitles: true,     // scroll-and-swap animation on big section titles
   },
 
+  /* ---- HOMEPAGE SECTION HEADINGS & COPY (Backend → Pages & Text) ---
+     Every visible heading/intro on the homepage is editable here.        */
+  sections: {
+    featured:    { eyebrow: "The Signature", title: "Featured Scoops", link: "Shop all →" },
+    bestSellers: { eyebrow: "Crowd Favourites", title: "Best Sellers" },
+    limited:     { eyebrow: "Here & Gone", title: "Limited Drops" },
+    vaultTeaser: { eyebrow: "Invite-Only", title: "The Vault",
+                   text: "Secret scoops you won't find anywhere on this site. Salted caramel stuffed Scoopies, churro drops, collabs — unlocked only with a code.",
+                   button: "Enter The Vault →" },
+    howItWorks:  { eyebrow: "Easy as Dessert", title: "How It Works" },
+    reviews:     { eyebrow: "Real Scoopers", title: "People Are Obsessed", button: "✍️ Leave a review" },
+    instagram:   { eyebrow: "@secondscoopco", title: "From The Feed", link: "Follow us →" },
+    signup:      { eyebrow: "Don't Miss A Drop", title: "Unlock Future Scoops",
+                   text: "Secret Scoop alerts, new drops, restocks and launch codes — straight to your inbox & phone." },
+  },
+
   /* ---- TOP MENU LINKS (toggle on/off in Backend → Menu & Regions) -- */
   nav: {
     home: true, shop: true, vault: true, preorders: true,
@@ -81,8 +97,8 @@ window.SS_CONTENT = {
     name: "Second Scoop",
     tagline: "The First Scoop Is Never Enough.",
     email: "hello@secondscoop.co",
-    instagram: "secondscoop",
-    instagramUrl: "https://instagram.com/secondscoop",
+    instagram: "secondscoopco",
+    instagramUrl: "https://instagram.com/secondscoopco",
     footerNote: "Made with too much chocolate.",
   },
 

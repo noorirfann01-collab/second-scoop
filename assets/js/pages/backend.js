@@ -25,14 +25,21 @@
     { id: "orders", label: "Orders", icon: "🧾" },
     { id: "reviews", label: "Reviews", icon: "⭐" },
     { id: "products", label: "Products", icon: "🍪" },
+    { id: "vault", label: "The Vault", icon: "🔒" },
     { id: "homepage", label: "Homepage", icon: "🏠" },
     { id: "menu", label: "Menu & Regions", icon: "🧭" },
-    { id: "vault", label: "The Vault", icon: "🔒" },
-    { id: "content", label: "Content & Copy", icon: "✍️" },
+    { id: "content", label: "Pages & Text", icon: "✍️" },
     { id: "design", label: "Design & Logo", icon: "🎨" },
     { id: "announce", label: "Announcements", icon: "📣" },
     { id: "settings", label: "Settings", icon: "⚙️" },
-    { id: "export", label: "Save & Export", icon: "💾" },
+    { id: "export", label: "Publish & Backup", icon: "💾" },
+  ];
+  // Grouped like a real store admin (Shopify-style) for an organised sidebar.
+  const NAV_GROUPS = [
+    { label: "Store", items: ["dashboard", "orders", "reviews"] },
+    { label: "Catalog", items: ["products", "vault"] },
+    { label: "Online store", items: ["homepage", "menu", "content", "design", "announce"] },
+    { label: "Settings", items: ["settings", "export"] },
   ];
 
   // working copies (edited in memory, persisted on save)
@@ -240,12 +247,16 @@
     root.innerHTML = `
       <div class="ss-bk">
         <aside class="ss-bk-side">
-          <a class="ss-bk-brand" href="#dashboard">${SSApp.logoMarkSVG(30)}<span>Backend</span></a>
+          <a class="ss-bk-brand" href="#dashboard">${SSApp.logoMarkSVG(30)}<span>Second Scoop<small>Store admin</small></span></a>
           <nav class="ss-bk-nav">
-            ${NAV.map(n => `<button class="ss-bk-link${section === n.id ? " is-active" : ""}" data-sec="${n.id}"><span>${n.icon}</span>${n.label}</button>`).join("")}
+            ${NAV_GROUPS.map(g => `<div class="ss-bk-navgroup">
+              <span class="ss-bk-navlabel">${g.label}</span>
+              ${g.items.map(id => { const n = NAV.find(x => x.id === id); return n ? `<button class="ss-bk-link${section === n.id ? " is-active" : ""}" data-sec="${n.id}"><span class="ss-bk-ico">${n.icon}</span>${n.label}</button>` : ""; }).join("")}
+            </div>`).join("")}
           </nav>
           <div class="ss-bk-side-foot">
-            <a class="ss-bk-link" href="index.html" target="_blank">🌐 View site</a>
+            <a class="ss-bk-link" href="index.html?preview=1" target="_blank">👁️ Preview draft</a>
+            <a class="ss-bk-link" href="index.html" target="_blank">🌐 View live site</a>
             <button class="ss-bk-link" id="bk-logout">🚪 Log out</button>
           </div>
         </aside>
@@ -254,6 +265,7 @@
             <button class="ss-bk-burger" id="bk-burger">☰</button>
             <h2 id="bk-title">${(NAV.find(n => n.id === section) || NAV[0]).label}</h2>
             <span class="ss-bk-live" id="bk-live"></span>
+            <a class="ss-btn ss-btn--sm ss-btn--ghost ss-bk-preview" href="index.html?preview=1" target="_blank" rel="noopener">👁️ Preview</a>
             <button class="ss-btn ss-btn--sm ss-bk-publish" id="bk-publish">⤴ Publish to live site</button>
           </div>
           <div class="ss-bk-body" id="bk-body"></div>
@@ -792,9 +804,21 @@
   }
 
   /* ======================================================= CONTENT == */
+  // Every editable homepage heading/blurb. [key, nice name, [fields...]]
+  const SECTION_TEXT = [
+    ["featured", "Featured Scoops", [["eyebrow", "Eyebrow"], ["title", "Title"], ["link", "Link text"]]],
+    ["bestSellers", "Best Sellers", [["eyebrow", "Eyebrow"], ["title", "Title"]]],
+    ["limited", "Limited Drops", [["eyebrow", "Eyebrow"], ["title", "Title"]]],
+    ["vaultTeaser", "Vault teaser", [["eyebrow", "Eyebrow"], ["title", "Title"], ["text", "Paragraph"], ["button", "Button"]]],
+    ["howItWorks", "How It Works", [["eyebrow", "Eyebrow"], ["title", "Title"]]],
+    ["reviews", "Reviews", [["eyebrow", "Eyebrow"], ["title", "Title"], ["button", "Button"]]],
+    ["instagram", "Instagram", [["eyebrow", "Eyebrow"], ["title", "Title"], ["link", "Link text"]]],
+    ["signup", "Email signup", [["eyebrow", "Eyebrow"], ["title", "Title"], ["text", "Paragraph"]]],
+  ];
   function renderContent() {
     const C = content;
     C.hero = C.hero || {}; C.about = C.about || {}; C.howItWorks = C.howItWorks || []; C.faq = C.faq || [];
+    C.sections = C.sections || {}; C.brand = C.brand || {};
     body().innerHTML = `
       <div class="ss-panel" style="margin-bottom:14px"><h3>Homepage hero</h3>
         <label class="ss-label">Tagline (small, above headline)</label><input class="ss-field" id="c-h-tag" value="${esc(C.hero.tagline || "")}">
@@ -802,6 +826,28 @@
         <label class="ss-label" style="margin-top:10px">Sub-text (HTML ok)</label><textarea class="ss-field" id="c-h-sub" style="min-height:60px">${esc(C.hero.sub || "")}</textarea>
         <label class="ss-label" style="margin-top:10px">Trust badges (one per line)</label><textarea class="ss-field" id="c-h-trust" style="min-height:70px">${esc((C.hero.trust || []).join("\n"))}</textarea>
         <label class="ss-switch ss-switch--chip" style="margin-top:10px"><input type="checkbox" id="c-h-wm" ${C.hero.showWordmark !== false ? "checked" : ""}><span>Show logo wordmark in hero</span></label>
+      </div>
+      <div class="ss-panel" style="margin-bottom:14px"><h3>Brand &amp; social</h3>
+        <div class="ss-grid2">
+          <div><label class="ss-label">Business name</label><input class="ss-field" id="c-b-name" value="${esc(C.brand.name || "")}"></div>
+          <div><label class="ss-label">Tagline</label><input class="ss-field" id="c-b-tag" value="${esc(C.brand.tagline || "")}"></div>
+          <div><label class="ss-label">Contact email</label><input class="ss-field" id="c-b-email" value="${esc(C.brand.email || "")}"></div>
+          <div><label class="ss-label">Instagram handle (no @)</label><input class="ss-field" id="c-b-ig" value="${esc(C.brand.instagram || "")}"></div>
+          <div><label class="ss-label">Instagram URL</label><input class="ss-field" id="c-b-igurl" value="${esc(C.brand.instagramUrl || "")}"></div>
+          <div><label class="ss-label">Footer note</label><input class="ss-field" id="c-b-foot" value="${esc(C.brand.footerNote || "")}"></div>
+        </div>
+      </div>
+      <div class="ss-panel" style="margin-bottom:14px"><h3>Homepage section headings</h3>
+        <p style="color:var(--ink-60);font-size:.9rem">Edit every heading and blurb on the homepage. Leave a field blank to keep the built-in wording.</p>
+        ${SECTION_TEXT.map(([key, name, fields]) => `
+          <div class="ss-subpanel"><h4>${name}</h4><div class="ss-grid2">
+            ${fields.map(([f, label]) => {
+              const v = esc(((C.sections[key] || {})[f]) || "");
+              return f === "text"
+                ? `<div style="grid-column:1/-1"><label class="ss-label">${label}</label><textarea class="ss-field" id="c-sec-${key}-${f}" style="min-height:56px">${v}</textarea></div>`
+                : `<div><label class="ss-label">${label}</label><input class="ss-field" id="c-sec-${key}-${f}" value="${v}"></div>`;
+            }).join("")}
+          </div></div>`).join("")}
       </div>
       <div class="ss-panel" style="margin-bottom:14px"><h3>How It Works (4 steps)</h3><div id="c-how"></div></div>
       <div class="ss-panel" style="margin-bottom:14px"><h3>About page</h3>
@@ -833,6 +879,14 @@
       C.hero.trust = val("c-h-trust").split("\n").map(s => s.trim()).filter(Boolean); C.hero.showWordmark = chkd("c-h-wm");
       C.about.eyebrow = val("c-a-eye"); C.about.title = val("c-a-title"); C.about.lead = val("c-a-lead");
       C.about.paragraphs = val("c-a-paras").split(/\n\s*\n/).map(s => s.trim()).filter(Boolean);
+      // brand & social
+      C.brand.name = val("c-b-name"); C.brand.tagline = val("c-b-tag"); C.brand.email = val("c-b-email");
+      C.brand.instagram = val("c-b-ig").replace(/^@/, ""); C.brand.instagramUrl = val("c-b-igurl"); C.brand.footerNote = val("c-b-foot");
+      // homepage section headings
+      SECTION_TEXT.forEach(([key, , fields]) => {
+        C.sections[key] = C.sections[key] || {};
+        fields.forEach(([f]) => { const v = val("c-sec-" + key + "-" + f).trim(); if (v) C.sections[key][f] = v; });
+      });
       persistContent(); updateLiveBadge(); SSApp.toast("Content saved — live ✍️", "ok");
     };
   }

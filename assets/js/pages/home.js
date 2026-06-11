@@ -7,6 +7,18 @@
   // ---- apply editable copy from content config (Backend → Content) ----
   const C = SS.getContent();
 
+  // ---- apply all editable section headings/copy ([data-edit="group.field"]) ----
+  (function () {
+    const S = C.sections || {};
+    document.querySelectorAll("[data-edit]").forEach(el => {
+      const v = el.getAttribute("data-edit").split(".").reduce((o, k) => (o && o[k] != null ? o[k] : undefined), S);
+      if (typeof v === "string" && v.length) el.textContent = v;
+    });
+    // instagram links follow the brand handle
+    const ig = (C.brand && C.brand.instagramUrl) || (SS_SETTINGS.brand && SS_SETTINGS.brand.instagramUrl);
+    if (ig) { const a = document.getElementById("ig-follow"); if (a) a.href = ig; }
+  })();
+
   // ---- liquid morphing intro splash ----
   (function () {
     const intro = document.getElementById("ss-intro");
@@ -128,6 +140,12 @@
       // a couple of delayed retries cover slow-loading / low-power-mode phones
       setTimeout(() => attempt().catch(() => {}), 400);
       setTimeout(() => attempt().catch(() => {}), 1200);
+      // Safari on iOS pauses the video when you leave the tab / close the app.
+      // Re-start it whenever the page is shown again or the tab becomes visible.
+      function resume() { if (video.paused) { video.muted = true; attempt().catch(() => {}); } }
+      window.addEventListener("pageshow", resume);                // bfcache / app reopen
+      document.addEventListener("visibilitychange", () => { if (!document.hidden) resume(); });
+      window.addEventListener("focus", resume);
     })();
 
     const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;

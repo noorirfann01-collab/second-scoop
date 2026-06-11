@@ -76,8 +76,8 @@
 <section class="ss-sec ss-tint" data-sec="featured">
   <div class="wrap">
     <div class="ss-sec-head">
-      <div><span class="eyebrow">The Signature</span><h2>Featured Scoops</h2></div>
-      <a class="ss-sec-link" id="featured-shoplink" href="shop.html">Shop all →</a>
+      <div><span class="eyebrow" data-edit="featured.eyebrow">The Signature</span><h2 data-edit="featured.title">Featured Scoops</h2></div>
+      <a class="ss-sec-link" id="featured-shoplink" data-edit="featured.link" href="shop.html">Shop all →</a>
     </div>
     <div class="ss-grid" id="featured-grid"></div>
   </div>
@@ -87,7 +87,7 @@
 <section class="ss-sec" data-sec="bestSellers">
   <div class="wrap">
     <div class="ss-sec-head">
-      <div><span class="eyebrow">Crowd Favourites</span><h2>Best Sellers</h2></div>
+      <div><span class="eyebrow" data-edit="bestSellers.eyebrow">Crowd Favourites</span><h2 data-edit="bestSellers.title">Best Sellers</h2></div>
     </div>
     <div class="ss-grid" id="bestseller-grid"></div>
   </div>
@@ -97,7 +97,7 @@
 <section class="ss-sec ss-tint-blush" data-sec="limited">
   <div class="wrap">
     <div class="ss-sec-head">
-      <div><span class="eyebrow">Here &amp; Gone</span><h2>Limited Drops</h2></div>
+      <div><span class="eyebrow" data-edit="limited.eyebrow">Here &amp; Gone</span><h2 data-edit="limited.title">Limited Drops</h2></div>
       <div id="drop-countdown"></div>
     </div>
     <div class="ss-grid" id="limited-grid"></div>
@@ -110,10 +110,10 @@
     <div class="ss-vault-teaser">
       <div class="ss-vault-shimmer"></div>
       <div class="ss-vault-lock">🔒</div>
-      <span class="eyebrow" style="color:var(--gold-soft)">Invite-Only</span>
-      <h2>The Vault</h2>
-      <p>Secret scoops you won't find anywhere on this site. Salted caramel stuffed Scoopies, churro drops, collabs — unlocked only with a code.</p>
-      <a class="ss-btn ss-btn--lg" href="vault.html">Enter The Vault →</a>
+      <span class="eyebrow" style="color:var(--gold-soft)" data-edit="vaultTeaser.eyebrow">Invite-Only</span>
+      <h2 data-edit="vaultTeaser.title">The Vault</h2>
+      <p data-edit="vaultTeaser.text">Secret scoops you won't find anywhere on this site. Salted caramel stuffed Scoopies, churro drops, collabs — unlocked only with a code.</p>
+      <a class="ss-btn ss-btn--lg" data-edit="vaultTeaser.button" href="vault.html">Enter The Vault →</a>
     </div>
   </div>
 </section>
@@ -150,7 +150,7 @@
 <section class="ss-sec ss-tint" data-sec="howItWorks">
   <div class="wrap">
     <div class="ss-sec-head center" style="justify-content:center;text-align:center;flex-direction:column">
-      <span class="eyebrow">Easy as Dessert</span><h2>How It Works</h2>
+      <span class="eyebrow" data-edit="howItWorks.eyebrow">Easy as Dessert</span><h2 data-edit="howItWorks.title">How It Works</h2>
     </div>
     <div class="ss-steps">
       <div class="ss-step"><div class="ss-step-num">1</div><h3>Pick your region</h3><p>Pakistan or Toronto — each has its own menu, pricing and drops.</p></div>
@@ -164,8 +164,8 @@
 <!-- ========================= CUSTOMER REVIEWS ================= -->
 <section class="ss-sec" data-sec="reviews">
   <div class="wrap">
-    <div class="ss-sec-head"><div><span class="eyebrow">Real Scoopers</span><h2>People Are Obsessed</h2></div>
-      <button class="ss-btn ss-btn--ghost" id="home-review-toggle">✍️ Leave a review</button></div>
+    <div class="ss-sec-head"><div><span class="eyebrow" data-edit="reviews.eyebrow">Real Scoopers</span><h2 data-edit="reviews.title">People Are Obsessed</h2></div>
+      <button class="ss-btn ss-btn--ghost" id="home-review-toggle" data-edit="reviews.button">✍️ Leave a review</button></div>
     <div class="ss-reviews" id="home-reviews-list"></div>
     <div class="ss-review-form-wrap" id="home-review-form" style="display:none"></div>
   </div>
@@ -183,8 +183,8 @@
 <section class="ss-sec ss-tint" data-sec="instagram">
   <div class="wrap">
     <div class="ss-sec-head">
-      <div><span class="eyebrow">@secondscoop</span><h2>From The Feed</h2></div>
-      <a class="ss-sec-link" href="https://instagram.com/secondscoop" target="_blank" rel="noopener">Follow us →</a>
+      <div><span class="eyebrow" data-edit="instagram.eyebrow" id="ig-eyebrow">@secondscoopco</span><h2 data-edit="instagram.title">From The Feed</h2></div>
+      <a class="ss-sec-link" id="ig-follow" data-edit="instagram.link" href="https://instagram.com/secondscoopco" target="_blank" rel="noopener">Follow us →</a>
     </div>
     <div class="ss-ig-grid" id="ig-grid"></div>
   </div>
@@ -194,9 +194,9 @@
 <section class="ss-sec" data-sec="signup">
   <div class="wrap">
     <div class="ss-signup">
-      <span class="eyebrow" style="color:var(--gold-soft)">Don't Miss A Drop</span>
-      <h2>Unlock Future Scoops</h2>
-      <p>Secret Scoop alerts, new drops, restocks and launch codes — straight to your inbox &amp; phone.</p>
+      <span class="eyebrow" style="color:var(--gold-soft)" data-edit="signup.eyebrow">Don't Miss A Drop</span>
+      <h2 data-edit="signup.title">Unlock Future Scoops</h2>
+      <p data-edit="signup.text">Secret Scoop alerts, new drops, restocks and launch codes — straight to your inbox &amp; phone.</p>
       <form class="ss-signup-form" id="home-signup">
         <input class="ss-field" name="name" placeholder="First name" required>
         <input class="ss-field" type="email" name="email" placeholder="Email" required>
