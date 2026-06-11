@@ -26,6 +26,7 @@
     { id: "reviews", label: "Reviews", icon: "⭐" },
     { id: "products", label: "Products", icon: "🍪" },
     { id: "homepage", label: "Homepage", icon: "🏠" },
+    { id: "menu", label: "Menu & Regions", icon: "🧭" },
     { id: "vault", label: "The Vault", icon: "🔒" },
     { id: "content", label: "Content & Copy", icon: "✍️" },
     { id: "design", label: "Design & Logo", icon: "🎨" },
@@ -254,7 +255,7 @@
 
   function renderSection() {
     ({ dashboard: renderDashboard, orders: renderOrders, reviews: renderReviews, products: renderProducts,
-       homepage: renderHomepage, vault: renderVault, content: renderContent, design: renderDesign, announce: renderAnnounce,
+       homepage: renderHomepage, menu: renderMenu, vault: renderVault, content: renderContent, design: renderDesign, announce: renderAnnounce,
        settings: renderSettings, export: renderExport }[section] || renderDashboard)();
   }
 
@@ -889,6 +890,45 @@
     };
   }
 
+  /* ================================================ MENU & REGIONS == */
+  const NAV_ITEMS = [["home", "Home"], ["shop", "Shop"], ["vault", "The Vault"],
+    ["preorders", "Pre-Orders"], ["about", "About"], ["faq", "FAQ"], ["contact", "Contact"]];
+  function renderMenu() {
+    const C = content; C.nav = C.nav || {};
+    const regions = Object.keys(SS_REGIONS).map(id => SS.regionById(id));
+    body().innerHTML = `
+      <div class="ss-panel ss-pub-hero" style="margin-bottom:14px"><h3>👁️ Preview before you launch</h3>
+        <p style="color:var(--ink-60)">See every unpublished change exactly as a customer would — without going live. When it looks right, go to <b>Save &amp; Export → Publish</b>.</p>
+        <a class="ss-btn ss-btn--lg" href="index.html?preview=1" target="_blank" rel="noopener">Open live preview (draft)</a>
+        <p class="ss-seed" style="margin-top:8px">Tip: the preview shows the same edits you've made here, on this browser. Customers keep seeing the published site until you Publish.</p>
+      </div>
+      <div class="ss-panel" style="margin-bottom:14px"><h3>Top menu links</h3>
+        <p style="color:var(--ink-60);font-size:.9rem">Tick what appears in the top navigation bar. The country picker is the flag dropdown on the right — it's not a menu link.</p>
+        <div class="ss-home-toggles">
+          ${NAV_ITEMS.map(([k, label]) => `
+            <label class="ss-home-toggle"><input type="checkbox" id="nav-${k}" ${C.nav[k] !== false ? "checked" : ""}>
+              <span class="ss-home-toggle-box"></span><span class="ss-home-toggle-txt"><strong>${label}</strong></span></label>`).join("")}
+        </div>
+      </div>
+      <div class="ss-panel" style="margin-bottom:14px"><h3>Regions / countries</h3>
+        <p style="color:var(--ink-60);font-size:.9rem">Untick a store to hide it everywhere — the country picker, the opening choice and switching — until it's ready (e.g. keep <b>Toronto</b> hidden for now). If only one store is live, customers skip the country picker entirely. Leave at least one ticked.</p>
+        <div class="ss-home-toggles">
+          ${regions.map(r => `
+            <label class="ss-home-toggle"><input type="checkbox" id="rgn-${r.id}" ${!r.hidden ? "checked" : ""}>
+              <span class="ss-home-toggle-box"></span><span class="ss-home-toggle-txt"><strong>${r.flag} Shop ${r.name}</strong><small>${r.currency}</small></span></label>`).join("")}
+        </div>
+      </div>
+      <button class="ss-btn" id="menu-save">Save menu &amp; regions (go live)</button>`;
+
+    document.getElementById("menu-save").onclick = () => {
+      const liveCount = regions.filter(r => chkd("rgn-" + r.id)).length;
+      if (liveCount < 1) { SSApp.toast("Keep at least one region live, or the shop has nothing to show.", "err"); return; }
+      NAV_ITEMS.forEach(([k]) => { C.nav[k] = chkd("nav-" + k); });
+      regions.forEach(r => { SS.saveRegionPatch(r.id, { hidden: !chkd("rgn-" + r.id) }); });
+      persistContent(); updateLiveBadge(); SSApp.toast("Menu & regions saved — live 🧭", "ok");
+    };
+  }
+
   /* ===================================================== DESIGN ===== */
   const THEME_FIELDS = [
     ["choc", "Brand / text"], ["caramel", "Accent"], ["cookie", "Cookie tone"],
@@ -1171,7 +1211,10 @@
       <div class="ss-panel ss-pub-hero">
         <h3>🚀 Finalise &amp; publish</h3>
         <p style="color:var(--ink-60)">Push every change you've made live to your real website — automatically. No downloads.</p>
-        <button class="ss-btn ss-btn--lg" id="x-publish">⤴ Publish to live site</button>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <a class="ss-btn ss-btn--ghost ss-btn--lg" href="index.html?preview=1" target="_blank" rel="noopener">👁️ Preview draft first</a>
+          <button class="ss-btn ss-btn--lg" id="x-publish">⤴ Publish to live site</button>
+        </div>
         ${ready
           ? `<p class="ss-seed" style="margin-top:10px">Connected to GitHub. Your site updates ~1 min after publishing.</p>`
           : `<p class="ss-seed" style="margin-top:10px">⚙️ First time? Connect your site in <a href="#settings" id="x-gosettings">Settings → One-click publishing</a> (see <code>PUBLISH_GUIDE.md</code>).</p>`}

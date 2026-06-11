@@ -72,25 +72,43 @@
   }
 
   /* -------------------------------------------------------- header - */
+  // Region lives in the flag dropdown (right side), not as menu links — so it
+  // never has to be repeated in the bar. Toggle any link in Backend → Menu & Regions.
   const NAV = [
-    { label: "Home", href: "index.html" },
-    { label: "Shop PK", href: "shop.html?region=pakistan" },
-    { label: "Shop Toronto", href: "shop.html?region=toronto" },
-    { label: "The Vault", href: "vault.html", vault: true },
-    { label: "Pre-Orders", href: "preorders.html" },
-    { label: "About", href: "about.html" },
-    { label: "FAQ", href: "faq.html" },
-    { label: "Contact", href: "contact.html" },
+    { key: "home", label: "Home", href: "index.html" },
+    { key: "shop", label: "Shop", href: "shop.html" },
+    { key: "vault", label: "The Vault", href: "vault.html", vault: true },
+    { key: "preorders", label: "Pre-Orders", href: "preorders.html" },
+    { key: "about", label: "About", href: "about.html" },
+    { key: "faq", label: "FAQ", href: "faq.html" },
+    { key: "contact", label: "Contact", href: "contact.html" },
   ];
+  function navOpts() { try { return (SS.getContent().nav) || {}; } catch (e) { return {}; } }
 
   function headerHTML() {
     const r = SS.region();
+    const navCfg = navOpts();
     const here = location.pathname.split("/").pop() || "index.html";
-    const links = NAV.map(n => {
+    const links = NAV.filter(n => navCfg[n.key] !== false).map(n => {
       const active = here === n.href.split("?")[0] ? " is-active" : "";
       const vault = n.vault ? " ss-nav-vault" : "";
       return `<a class="ss-nav-link${active}${vault}" href="${n.href}">${n.label}</a>`;
     }).join("");
+
+    const regions = SS.availableRegions();
+    const multi = regions.length > 1;
+    const regionSwitch = `
+      <div class="ss-region-switch${multi ? "" : " ss-region-switch--single"}" title="${multi ? "Switch country" : r.name}">
+        <button class="ss-region-btn" id="ss-region-btn" aria-haspopup="true" aria-expanded="false"${multi ? "" : " disabled"}>
+          <span class="ss-region-flag">${r.flag}</span><span class="ss-region-name">${r.name}</span>
+          ${multi ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>` : ""}
+        </button>
+        ${multi ? `<div class="ss-region-menu" id="ss-region-menu" role="menu">
+          ${regions.map(rg => `
+            <button role="menuitem" data-region="${rg.id}" class="ss-region-item${rg.id === r.id ? ' is-active' : ''}">
+              <span>${rg.flag}</span> ${rg.name} <em>${rg.currency}</em></button>`).join("")}
+        </div>` : ""}
+      </div>`;
 
     const center = headerOpts().logoAlign === "center";
     return `
@@ -99,17 +117,7 @@
         ${logoHTML({})}
         <nav class="ss-nav" aria-label="Primary">${links}</nav>
         <div class="ss-header-actions">
-          <div class="ss-region-switch" title="Choose your region">
-            <button class="ss-region-btn" id="ss-region-btn" aria-haspopup="true" aria-expanded="false">
-              <span class="ss-region-flag">${r.flag}</span><span class="ss-region-name">${r.name}</span>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
-            </button>
-            <div class="ss-region-menu" id="ss-region-menu" role="menu">
-              ${Object.values(SS_REGIONS).map(rg => `
-                <button role="menuitem" data-region="${rg.id}" class="ss-region-item${rg.id===r.id?' is-active':''}">
-                  <span>${rg.flag}</span> ${rg.name} <em>${rg.currency}</em></button>`).join("")}
-            </div>
-          </div>
+          ${regionSwitch}
           <a class="ss-cart-btn" href="cart.html" aria-label="Cart">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M6 7h13l-1.2 9.2a2 2 0 0 1-2 1.8H9.2a2 2 0 0 1-2-1.8L6 7Zm0 0L5.2 4H3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="20.5" r="1.3" fill="currentColor"/><circle cx="16" cy="20.5" r="1.3" fill="currentColor"/></svg>
             <span class="ss-cart-count" id="ss-cart-count">0</span>
@@ -277,7 +285,7 @@
     // region menu
     const rbtn = document.getElementById("ss-region-btn");
     const rmenu = document.getElementById("ss-region-menu");
-    if (rbtn) {
+    if (rbtn && rmenu) {
       rbtn.addEventListener("click", e => {
         e.stopPropagation();
         const open = rmenu.classList.toggle("open");
@@ -363,7 +371,7 @@
     const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduce) return;
     if (fx.scrollReveal !== false && "IntersectionObserver" in window) {
-      const targets = document.querySelectorAll(".ss-sec, .ss-card, .ss-step, .ss-review, .ss-value, .ss-kpi, .ss-hero-copy, .ss-hero-media, .ss-vault-teaser, .ss-signup");
+      const targets = document.querySelectorAll(".ss-sec, .ss-card, .ss-step, .ss-review, .ss-value, .ss-kpi, .ss-hero-copy, .ss-hero-media, .ss-vault-teaser, .ss-signup, .ss-page-head, .ss-acc, .ss-shop-toolbar, .ss-about-value, .ss-pdp-trust");
       targets.forEach((el, i) => { el.classList.add("reveal"); el.style.transitionDelay = Math.min((i % 4) * 60, 180) + "ms"; });
       const io = new IntersectionObserver((entries) => {
         entries.forEach(e => {
@@ -401,7 +409,7 @@
     if (fx.swapTitles === false) return;
     const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduce) return;
-    const targets = document.querySelectorAll(".ss-sec-head h2, .ss-about-head h2, .ss-vault-teaser h2, .ss-vault-hero h2, .ss-shop-hero h2, [data-swap-title]");
+    const targets = document.querySelectorAll(".ss-sec-head h2, .ss-about-head h2, .ss-vault-teaser h2, .ss-vault-hero h2, .ss-shop-hero h2, .ss-page-head h1, [data-swap-title]");
     const items = [];
     targets.forEach(h => {
       if (h.dataset.swap) return;
@@ -447,6 +455,62 @@
     });
   }
 
+  /* --------------------------------------------- region choice gate */
+  function regionGateHTML() {
+    const regions = SS.availableRegions();
+    return `<div class="ss-gate" id="ss-gate">
+      <span class="ss-gate-blob ss-gate-blob--1"></span><span class="ss-gate-blob ss-gate-blob--2"></span>
+      <div class="ss-gate-inner">
+        ${logoHTML({ size: 42, forceWord: true, dark: true })}
+        <h2 class="ss-gate-title">Where are we scooping?</h2>
+        <p class="ss-gate-sub">Pick your store — the menu, pricing and drops are different in each. You can switch anytime from the top bar.</p>
+        <div class="ss-gate-cards">
+          ${regions.map(rg => `<button class="ss-gate-card" data-region="${rg.id}">
+            <span class="ss-gate-flag">${rg.flag}</span>
+            <strong>Shop ${rg.name}</strong>
+            <span class="ss-gate-meta">${rg.currency}${rg.delivery && rg.delivery.etaText ? " · " + rg.delivery.etaText : ""}</span>
+            <span class="ss-gate-go">Enter →</span>
+          </button>`).join("")}
+        </div>
+      </div>
+    </div>`;
+  }
+  function showRegionGate(force) {
+    if (SS.inBackend && SS.inBackend()) return;   // never gate the control panel
+    if (!force) {
+      if (SS.regionChosen()) return;
+      if (SS.availableRegions().length < 2) { try { localStorage.setItem("ss_region_chosen", "1"); } catch (e) {} return; }
+    }
+    // let the opening intro finish first
+    const intro = document.getElementById("ss-intro");
+    if (intro && intro.isConnected && !intro.classList.contains("is-done")) { setTimeout(() => showRegionGate(force), 300); return; }
+    if (document.getElementById("ss-gate")) return;
+    const holder = document.createElement("div"); holder.innerHTML = regionGateHTML();
+    const gate = holder.firstElementChild;
+    document.body.appendChild(gate);
+    document.body.style.overflow = "hidden";
+    requestAnimationFrame(() => gate.classList.add("is-in"));
+    function choose(id) {
+      SS.setRegion(id);
+      gate.classList.add("is-out");
+      document.body.style.overflow = "";
+      setTimeout(() => { gate.remove(); location.reload(); }, 480);
+    }
+    gate.querySelectorAll("[data-region]").forEach(b => b.addEventListener("click", () => choose(b.getAttribute("data-region"))));
+  }
+
+  /* ------------------------------------------------ preview banner */
+  function showPreviewBanner() {
+    if (!SS.previewMode() || SS.inBackend()) return;
+    if (document.getElementById("ss-preview-bar")) return;
+    const bar = document.createElement("div");
+    bar.id = "ss-preview-bar"; bar.className = "ss-preview-bar";
+    bar.innerHTML = `<span>👁️ Preview — showing your unpublished draft, not the live site.</span>
+      <a href="?preview=0">Exit preview</a>`;
+    document.body.appendChild(bar);
+    document.body.classList.add("ss-has-preview-bar");
+  }
+
   function mount(opts) {
     opts = opts || {};
     applyTheme();
@@ -458,9 +522,11 @@
     if (ftr) ftr.innerHTML = footerHTML();
     bindShell();
     refreshCartCount();
+    showPreviewBanner();
     if (opts.recentlySold !== false) startRecentlySold();
     setTimeout(() => { initScrollFX(); initTilt(); initSwapTitles(); }, 60);   // after page scripts inject content
+    if (opts.regionGate !== false) setTimeout(() => showRegionGate(), 150);     // first-visit country pick
   }
 
-  window.SSApp = { mount, productCard, toast, logoHTML, logoMarkSVG, wordmarkImg, refreshCartCount, statusBadge, topBadge, applyTheme, initScrollFX, initTilt, initSwapTitles };
+  window.SSApp = { mount, productCard, toast, logoHTML, logoMarkSVG, wordmarkImg, refreshCartCount, statusBadge, topBadge, applyTheme, initScrollFX, initTilt, initSwapTitles, showRegionGate };
 })();

@@ -30,6 +30,21 @@
   // ("overrides") apply — so the PUBLIC site always shows the published
   // files, never one device's unsaved preview.
   function inBackend() { try { return !!window.SS_BACKEND; } catch (e) { return false; } }
+  // Preview mode: open any page with ?preview=1 to see UNPUBLISHED draft edits
+  // (made in the backend on this same browser) before you launch them. ?preview=0
+  // turns it off. The flag sticks for the browser session so links keep showing
+  // the draft as you click around.
+  function previewMode() {
+    try {
+      const u = new URLSearchParams(location.search).get("preview");
+      if (u === "1") { sessionStorage.setItem("ss_preview", "1"); return true; }
+      if (u === "0") { sessionStorage.removeItem("ss_preview"); return false; }
+      return sessionStorage.getItem("ss_preview") === "1";
+    } catch (e) { return false; }
+  }
+  // Draft edits apply in the backend AND in preview mode (never on the plain
+  // public site, so customers always see the published files).
+  function useDraft() { return inBackend() || previewMode(); }
   // Deep merge plain objects (arrays replaced, not merged).
   function deepMerge(base, over) {
     if (Array.isArray(over)) return over.slice();
@@ -44,11 +59,11 @@
   /* -------------------------------- override layers (backend edits) --
      Content, settings and region info can be edited live in the Backend
      and are stored as overrides here, merged over the config files.     */
-  function getContent() { return inBackend() ? deepMerge(window.SS_CONTENT || {}, read("ss_content_override", {}) || {}) : (window.SS_CONTENT || {}); }
+  function getContent() { return useDraft() ? deepMerge(window.SS_CONTENT || {}, read("ss_content_override", {}) || {}) : (window.SS_CONTENT || {}); }
   function saveContent(c) { return write("ss_content_override", c); }
   function resetContent() { try { localStorage.removeItem("ss_content_override"); } catch (e) {} }
 
-  function getSettings() { return inBackend() ? deepMerge(window.SS_SETTINGS || {}, read("ss_settings_override", {}) || {}) : (window.SS_SETTINGS || {}); }
+  function getSettings() { return useDraft() ? deepMerge(window.SS_SETTINGS || {}, read("ss_settings_override", {}) || {}) : (window.SS_SETTINGS || {}); }
   function saveSettings(s) { return write("ss_settings_override", s); }
   function resetSettings() { try { localStorage.removeItem("ss_settings_override"); } catch (e) {} }
 
@@ -56,7 +71,7 @@
   function regionById(rid) {
     const base = SS_REGIONS[rid];
     if (!base) return base;
-    if (!inBackend()) return base;
+    if (!useDraft()) return base;
     const ov = (read("ss_region_overrides", {}) || {})[rid];
     return ov ? deepMerge(base, ov) : base;
   }
@@ -67,19 +82,29 @@
   function resetRegions() { try { localStorage.removeItem("ss_region_overrides"); localStorage.removeItem("ss_announce_override"); } catch (e) {} }
 
   /* ----------------------------------------------------- region ---- */
+  // Regions the owner has marked live (hide a region by setting hidden:true
+  // in Backend → Menu & Regions; e.g. keep Toronto hidden until it's ready).
+  function availableRegions() {
+    return Object.keys(SS_REGIONS).map(id => regionById(id)).filter(r => r && !r.hidden);
+  }
+  function regionAvailable(id) { const r = SS_REGIONS[id] && regionById(id); return !!(r && !r.hidden); }
   function getRegion() {
+    const ids = availableRegions().map(r => r.id);
+    const ok = id => id && SS_REGIONS[id] && ids.indexOf(id) !== -1;
     const url = new URLSearchParams(location.search).get("region");
-    if (url && SS_REGIONS[url]) { write(LS.region, url); return url; }
+    if (ok(url)) { write(LS.region, url); return url; }
     const saved = read(LS.region, null);
-    if (saved && SS_REGIONS[saved]) return saved;
-    return SS_DEFAULT_REGION;
+    if (ok(saved)) return saved;
+    if (ok(SS_DEFAULT_REGION)) return SS_DEFAULT_REGION;
+    return ids[0] || SS_DEFAULT_REGION;
   }
   function setRegion(id) {
-    if (SS_REGIONS[id]) { write(LS.region, id); document.dispatchEvent(new CustomEvent("ss:region", { detail: id })); }
+    if (SS_REGIONS[id]) { write(LS.region, id); try { localStorage.setItem("ss_region_chosen", "1"); } catch (e) {} document.dispatchEvent(new CustomEvent("ss:region", { detail: id })); }
   }
+  function regionChosen() { try { return localStorage.getItem("ss_region_chosen") === "1"; } catch (e) { return false; } }
   function region() {
     const base = regionById(getRegion());
-    if (!inBackend()) return base;
+    if (!useDraft()) return base;
     const ann = (read("ss_announce_override", {}) || {})[getRegion()];
     if (ann) return Object.assign({}, base, { announcement: Object.assign({}, base.announcement, ann) });
     return base;
@@ -115,7 +140,7 @@
   // products.js file — so edits go live instantly. "Save/Export" in the
   // manager downloads a new products.js to make changes permanent.
   function effectiveCatalog() {
-    if (!inBackend()) return (window.SS_PRODUCTS || []);    // public site = published files only
+    if (!useDraft()) return (window.SS_PRODUCTS || []);    // public site = published files only
     const ov = read("ss_catalog_override", null);
     return (ov && Array.isArray(ov) && ov.length) ? ov : (window.SS_PRODUCTS || []);
   }
@@ -232,7 +257,7 @@
 
   /* ------------------------------------------------------ vault ---- */
   // Vault config override (edited in the Product Manager → live site).
-  function effectiveVault() { return (inBackend() && read("ss_vault_override", null)) || window.SS_VAULT; }
+  function effectiveVault() { return (useDraft() && read("ss_vault_override", null)) || window.SS_VAULT; }
   function getVault() { return effectiveVault(); }
   function saveVault(v) { write("ss_vault_override", v); }
   function resetVault() { try { localStorage.removeItem("ss_vault_override"); } catch (e) {} }
@@ -431,6 +456,7 @@
   window.SS = {
     LS, read, write,
     getRegion, setRegion, region, money,
+    availableRegions, regionAvailable, regionChosen, previewMode, useDraft, inBackend,
     productsForRegion, getProduct, productView, categoryName,
     getCatalog, saveCatalog, resetCatalog, hasOverride, imgSrc,
     getVault, saveVault, resetVault, saveAnnounce, getAnnounce, resetAnnounce,

@@ -17,12 +17,26 @@
     function kill() { document.body.style.overflow = ""; intro.remove(); }
     if (cfg.enabled === false || !t1 || !t2) { kill(); return; }
     if (cfg.oncePerSession !== false) { try { if (sessionStorage.getItem("ss_intro_seen")) { kill(); return; } sessionStorage.setItem("ss_intro_seen", "1"); } catch (e) {} }
-    const words = (cfg.words && cfg.words.length) ? cfg.words.slice() : ["Warm.", "Gooey.", "Scoopable.", "Second Scoop."];
+    const words = (cfg.words && cfg.words.length) ? cfg.words.slice() : ["Warm.", "Gooey.", "Scoopable."];
     if (words.length < 2) words.push(words[0]);
+    const logoEnding = cfg.logoEnding !== false;
+    const logoWrap = document.getElementById("ss-intro-logo");
+    const morphEl = document.getElementById("ss-intro-morph");
+    if (logoWrap && cfg.logo) { const src = SS.imgSrc(cfg.logo); logoWrap.querySelectorAll("img").forEach(im => im.src = src); }
     const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     document.body.style.overflow = "hidden";
     intro.addEventListener("click", () => { cancelAnimationFrame(raf); finish(); });
     if (reduce) { t1.textContent = words[words.length - 1]; t1.style.opacity = "100%"; setTimeout(finish, 1000); return; }
+
+    // SS logo plays as the final beat, then splits open to reveal the site
+    function playLogoEnding() {
+      t1.textContent = words[words.length - 1]; t1.style.opacity = "100%"; t1.style.filter = "none"; t2.style.opacity = "0%";
+      setTimeout(() => {
+        if (morphEl) morphEl.classList.add("is-hidden");
+        if (logoWrap) logoWrap.classList.add("is-shown");
+        setTimeout(() => { if (logoWrap) logoWrap.classList.add("is-split"); finish(); }, 820);
+      }, 480);
+    }
 
     const morphTime = 1.0, cooldownTime = 0.42;
     let idx = 0, morph = 0, cool = 0, transitions = 0, last = performance.now(), raf;
@@ -39,6 +53,7 @@
       const dt = (now - last) / 1000; last = now; cool -= dt;
       if (transitions >= words.length - 1) {
         cancelAnimationFrame(raf);
+        if (logoEnding) { playLogoEnding(); return; }
         t1.textContent = words[words.length - 1]; t1.style.opacity = "100%"; t1.style.filter = "none"; t2.style.opacity = "0%";
         setTimeout(finish, 650); return;
       }

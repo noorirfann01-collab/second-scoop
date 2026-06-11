@@ -33,18 +33,26 @@ window.SS_CONTENT = {
     swapTitles: true,     // scroll-and-swap animation on big section titles
   },
 
+  /* ---- TOP MENU LINKS (toggle on/off in Backend → Menu & Regions) -- */
+  nav: {
+    home: true, shop: true, vault: true, preorders: true,
+    about: true, faq: true, contact: true,
+  },
+
   /* ---- OPENING INTRO (liquid morphing words, Backend → Homepage) --- */
   intro: {
     enabled: true,                 // show the animated splash when the homepage opens
     oncePerSession: true,          // only the first homepage view per browser session
-    words: ["Warm.", "Gooey.", "Scoopable.", "Second Scoop."],
+    words: ["Warm.", "Gooey.", "Scoopable."],  // the SS logo plays as the final beat
+    logoEnding: true,              // end on the SS logo that splits open to reveal the site
+    logo: "assets/img/logo-mark-cream.png",  // cream mark reads on the dark intro background
   },
 
   /* ---- HOMEPAGE SECTIONS (toggle on/off in Backend → Homepage) ----
      Set any of these to false to hide that block from the home page.    */
   home: {
     sections: {
-      regions:     true,   // region picker cards
+      regions:     false,  // region picker cards (off by default — the opening country gate handles this)
       featured:    true,   // Featured Scoops
       bestSellers: true,   // Best Sellers
       limited:     true,   // Limited Drops
