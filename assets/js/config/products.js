@@ -1,5 +1,5 @@
 /* Second Scoop — products.js
-   Exported from the Backend on 12/06/2026, 04:25:02.
+   Exported from the Backend on 12/06/2026, 04:31:55.
    Replace the matching file in assets/js/config/ to publish. */
 
 window.SS_CATEGORIES = [
@@ -30,7 +30,7 @@ window.SS_PRODUCTS = [
     "description": "A super soft, gooey, scoopable cookie baked in a tin and built to be eaten warm with a spoon.",
     "longDescription": "This is the one. A molten-centred cookie baked low and slow in its own tin so the middle stays impossibly gooey. Microwave it for 15 seconds, grab a spoon, and go straight in. Crisp edges, a warm pull-apart middle, and pools of melting chocolate in every scoop. There's a reason the first scoop is never enough.",
     "images": [
-      ""
+      "552a571d-95d8-44ec-821d-e0ec4a47c7e9-mqa4qdfx.png"
     ],
     "badge": "best-seller",
     "featured": true,
@@ -38,8 +38,8 @@ window.SS_PRODUCTS = [
     "secret": false,
     "hidden": false,
     "reviews": {
-      "rating": 4.9,
-      "count": 318
+      "rating": 0,
+      "count": 0
     },
     "regions": {
       "pakistan": {
@@ -57,7 +57,9 @@ window.SS_PRODUCTS = [
     "tagline": "Thick. Soft-centred. Loaded.",
     "description": "Our bakery-style flagship cookie: thick, soft in the middle, and packed wall-to-wall with chocolate.",
     "longDescription": "A proper bakery-style Chunkie — thick-cut, soft-centred and stacked with melting chocolate in every bite. Crisp at the edge, dense and chewy through the middle.",
-    "images": [],
+    "images": [
+      "f93f77a6-358b-49b9-89b6-daf8bdd5fb33-mqa4s3c2.png"
+    ],
     "badge": "best-seller",
     "featured": true,
     "hero": false,
@@ -117,27 +119,22 @@ window.SS_PRODUCTS = [
     "description": "Our signature edible cookie dough tub. Egg-free, heat-treated flour, ready to eat by the spoon.",
     "longDescription": "The original tub that started the dough obsession. Made egg-free with heat-treated flour so it's completely safe to eat raw — rich, fudgy and loaded with chocolate chips. Eat it straight from the tub, chilled.",
     "images": [
-      "doughiginal.jpg"
+      "5e01e517-9a0f-4b02-a645-500bdd0fa61f-mqa4rjbw.png"
     ],
     "badge": "best-seller",
     "featured": true,
+    "hero": false,
     "secret": false,
     "hidden": false,
     "reviews": {
-      "rating": 4.9,
-      "count": 261
+      "rating": 0,
+      "count": 0
     },
     "regions": {
       "pakistan": {
-        "status": "available",
-        "price": 1100,
+        "status": "preorder",
+        "price": 2400,
         "inventory": 70,
-        "deliveryNotes": "Keep refrigerated."
-      },
-      "toronto": {
-        "status": "available",
-        "price": 13,
-        "inventory": 50,
         "deliveryNotes": "Keep refrigerated."
       }
     }
@@ -216,27 +213,22 @@ window.SS_PRODUCTS = [
     "description": "The OG Scoopie, stuffed with a molten salted-caramel core. Vault members only.",
     "longDescription": "Our gooey signature Scoopie, hiding a molten salted-caramel centre that erupts the moment you break in. Finished with flaky sea salt. Only ever sold through The Vault, in tiny numbers.",
     "images": [
-      "og-scoopie.jpg"
+      "af5dc175-bc11-4198-a75f-c33d31f8d6a6-mqa4sww9.png"
     ],
     "badge": "limited",
     "featured": false,
+    "hero": false,
     "secret": true,
     "hidden": false,
     "reviews": {
-      "rating": 5,
-      "count": 41
+      "rating": 0,
+      "count": 0
     },
     "regions": {
       "pakistan": {
         "status": "available",
-        "price": 1500,
+        "price": 1050,
         "inventory": 25,
-        "deliveryNotes": "Vault exclusive — limited batch."
-      },
-      "toronto": {
-        "status": "available",
-        "price": 17,
-        "inventory": 18,
         "deliveryNotes": "Vault exclusive — limited batch."
       }
     }
