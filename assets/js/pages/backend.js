@@ -192,12 +192,34 @@
     document.getElementById("b-pass").onkeydown = e => { if (e.key === "Enter") go(); };
   }
 
+  // Strip any stale embedded images (data: URLs) — these used to bloat
+  // localStorage and break saving. Everything now lives on GitHub as a
+  // filename, so any data: URL is leftover junk safe to drop. Returns count.
+  function stripDataUrls(obj) {
+    let n = 0;
+    (function walk(o) {
+      if (!o || typeof o !== "object") return;
+      Object.keys(o).forEach(k => {
+        const v = o[k];
+        if (typeof v === "string" && v.slice(0, 5) === "data:" && v.length > 512) { o[k] = ""; n++; }
+        else if (v && typeof v === "object") walk(v);
+      });
+    })(obj);
+    return n;
+  }
+
   /* ----------------------------------------------------------- boot - */
   function boot() {
     cat = clone(SS.getCatalog());
     vault = clone(SS.getVault());
     content = clone(SS.getContent());
     settings = clone(SS.getSettings());
+    // auto-heal: clear any old embedded-image bloat so saving always works
+    const cleaned = stripDataUrls(content) + stripDataUrls(cat);
+    if (cleaned) {
+      SS.saveContent(content); SS.saveCatalog(cat);
+      setTimeout(() => { if (window.SSApp && SSApp.toast) SSApp.toast("Cleared " + cleaned + " old embedded image(s) that were blocking saves. Re-upload any photo that's now missing.", "ok"); }, 800);
+    }
     announce = {}; regionView = {};
     REGION_IDS.forEach(rid => {
       announce[rid] = clone(SS.getAnnounce(rid) || { enabled: false, style: "available", text: "" });
@@ -207,10 +229,10 @@
     renderShell();
   }
 
-  function persistCatalog() { return SS.saveCatalog(cat); }
+  function persistCatalog() { stripDataUrls(cat); return SS.saveCatalog(cat); }
   function persistVault() { SS.saveVault(vault); }
   function persistAnnounce() { REGION_IDS.forEach(rid => SS.saveAnnounce(rid, announce[rid])); }
-  function persistContent() { SS.saveContent(content); }
+  function persistContent() { stripDataUrls(content); return SS.saveContent(content); }
   function persistSettings() { SS.saveSettings(settings); }
 
   /* ---------------------------------------------------------- shell - */
