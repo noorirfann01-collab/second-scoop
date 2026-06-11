@@ -17,7 +17,60 @@
     if (sub && C.hero.sub) sub.innerHTML = C.hero.sub;
     const trust = document.querySelector(".ss-hero-trust");
     if (trust && Array.isArray(C.hero.trust)) trust.innerHTML = C.hero.trust.map(t => `<span>${t}</span>`).join("");
+    if (C.hero.image) {
+      const hm = document.getElementById("hero-media"), himg = hm && hm.querySelector("img");
+      if (himg) { himg.src = SS.imgSrc(C.hero.image); himg.style.display = ""; hm.classList.remove("ss-noimg"); }
+    }
   }
+  // ---- scroll-expand video hero ----
+  (function () {
+    const sec = document.getElementById("ss-xhero");
+    if (!sec) return;
+    const media = document.getElementById("xhero-media");
+    const video = document.getElementById("xhero-video");
+    const bg = document.getElementById("xhero-bg");
+    const titles = document.getElementById("xhero-titles");
+    const w1 = document.getElementById("xhero-w1"), w2 = document.getElementById("xhero-w2");
+    const hint = document.getElementById("xhero-hint");
+    const cta = document.getElementById("xhero-cta");
+    // allow a custom hero video via content (Backend can set hero.video / hero.videoPoster)
+    if (C.hero && C.hero.video && video) { video.querySelector("source").src = SS.imgSrc(C.hero.video); video.load(); }
+    if (C.hero && C.hero.videoPoster && video) video.poster = SS.imgSrc(C.hero.videoPoster);
+    if (video) { const play = () => video.play().catch(() => {}); play(); video.addEventListener("canplay", play, { once: true }); }
+    if (C.hero && C.hero.tagline) { const t = document.getElementById("hero-tagline"); if (t) t.textContent = C.hero.tagline; }
+
+    const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) return;   // CSS shows a clean static stacked version
+
+    let ticking = false;
+    function frame() {
+      ticking = false;
+      const rect = sec.getBoundingClientRect();
+      const total = sec.offsetHeight - window.innerHeight;
+      const p = total > 0 ? Math.min(Math.max(-rect.top / total, 0), 1) : 0;
+      const e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2; // easeInOutQuad
+      const mob = window.innerWidth < 768;
+      const w = (mob ? 66 : 40) + e * (mob ? 30 : 56);   // vw
+      const h = (mob ? 40 : 48) + e * (mob ? 48 : 40);   // vh
+      media.style.width = w + "vw";
+      media.style.height = h + "vh";
+      media.style.borderRadius = (28 - e * 22) + "px";
+      bg.style.opacity = (1 - e).toFixed(3);
+      const tx = e * (mob ? 44 : 46);
+      w1.style.transform = "translateX(-" + tx + "vw)";
+      w2.style.transform = "translateX(" + tx + "vw)";
+      titles.style.opacity = p < 0.7 ? "1" : Math.max(0, 1 - (p - 0.7) / 0.25).toFixed(3);
+      hint.style.opacity = Math.max(0, 1 - p * 2.2).toFixed(3);
+      const cp = p > 0.78 ? (p - 0.78) / 0.22 : 0;
+      cta.style.opacity = Math.min(1, cp).toFixed(3);
+      cta.style.pointerEvents = p > 0.92 ? "auto" : "none";
+    }
+    function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(frame); } }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    frame();
+  })();
+
   if (Array.isArray(C.howItWorks)) {
     const steps = document.querySelector(".ss-steps");
     if (steps) steps.innerHTML = C.howItWorks.map((s, i) =>
@@ -123,9 +176,13 @@
       };
     }
     function load() {
-      if (!SSReviews.enabled()) return;            // keep static fallback if not configured
+      if (!SSReviews.enabled()) return;            // keep static placeholders only if not configured
       SSReviews.fetchPublic().then(reviews => {
-        if (reviews && reviews.length) SSReviews.renderList(list, reviews, { limit: 9 });
+        // real reviews only — show what's been submitted, else an invite
+        SSReviews.renderList(list, reviews || [], {
+          limit: 9,
+          emptyHtml: `<p class="ss-empty" style="grid-column:1/-1">No reviews yet — be the first to leave one. 🍪</p>`,
+        });
       }).catch(() => {});
     }
     load();

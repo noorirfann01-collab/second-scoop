@@ -128,8 +128,10 @@
   // but full URLs and uploaded data: URLs are used as-is.
   function imgSrc(image) {
     if (!image) return "";
-    if (/^(https?:|data:|\/|\.\.?\/)/.test(image)) return image;
-    return "assets/img/" + image;
+    // full URLs, data URLs, absolute/relative paths, or anything with a folder
+    // (e.g. "assets/video/hero.mp4") pass through untouched.
+    if (/^(https?:|data:|\/|\.\.?\/)/.test(image) || image.indexOf("/") > -1) return image;
+    return "assets/img/" + image;   // bare filename → lives in assets/img/
   }
 
   // Returns products visible in a region: not hidden, region entry exists,

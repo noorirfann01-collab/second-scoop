@@ -15,29 +15,31 @@
 <div id="ss-announcement"></div>
 <div id="ss-header-slot"></div>
 
-<!-- ============================ HERO ============================ -->
-<section class="ss-hero">
-  <div class="ss-hero-inner">
-    <div class="ss-hero-copy">
-      <img class="ss-hero-wordmark" src="assets/img/logo-wordmark.png" alt="Second Scoop" onerror="this.style.display='none'">
-      <p class="ss-hero-tagline" id="hero-tagline">The First Scoop Is Never Enough.</p>
-      <h1>The cookie you<br>were never<br>supposed to <span class="accent">stop</span> eating.</h1>
-      <p class="ss-hero-sub">Warm. Gooey. Scoopable. Baked in a tin and built for a spoon. Meet <strong>The OG Scoopie</strong> — and try not to finish it standing up.</p>
+<!-- =================== SCROLL-EXPAND VIDEO HERO ================ -->
+<section class="ss-xhero" id="ss-xhero">
+  <div class="ss-xhero-sticky">
+    <div class="ss-xhero-bg" id="xhero-bg"></div>
+    <div class="ss-xhero-media" id="xhero-media">
+      <video id="xhero-video" autoplay muted loop playsinline preload="auto" poster="assets/video/hero-poster.jpg">
+        <source src="assets/video/hero.mp4" type="video/mp4">
+      </video>
+      <div class="ss-xhero-tint"></div>
+    </div>
+    <div class="ss-xhero-titles" id="xhero-titles">
+      <span class="ss-xhero-word" id="xhero-w1">SECOND</span>
+      <span class="ss-xhero-word" id="xhero-w2">SCOOP<span class="ss-xhero-dot">.</span></span>
+    </div>
+    <div class="ss-xhero-hint" id="xhero-hint"><span id="hero-tagline">The First Scoop Is Never Enough.</span><br><em>scroll to dig in ↓</em></div>
+    <div class="ss-xhero-cta" id="xhero-cta">
       <div class="ss-hero-cta">
         <a class="ss-btn ss-btn--lg" href="shop.html?region=pakistan">Shop Pakistan 🇵🇰</a>
         <a class="ss-btn ss-btn--lg ss-btn--ghost" href="shop.html?region=toronto">Shop Toronto 🇨🇦</a>
       </div>
-      <div class="ss-hero-trust">
+      <div class="ss-hero-trust" style="justify-content:center">
         <span>★ 4.9 from 800+ scoopers</span>
         <span>🍪 Egg-free dough options</span>
         <span>⚡ Same-day in Lahore</span>
       </div>
-    </div>
-    <div class="ss-hero-media ss-noimg" id="hero-media">
-      <img src="assets/img/og-scoopie.jpg" alt="The OG Scoopie — warm gooey scoopable cookie in a tin"
-           onerror="this.style.display='none';this.parentNode.classList.add('ss-noimg')">
-      <div class="ss-hero-float ss-hero-float--tl">🥄 Eat warm</div>
-      <div class="ss-hero-float ss-hero-float--br">★ Best Seller</div>
     </div>
   </div>
 </section>
@@ -115,11 +117,7 @@
   <div class="wrap">
     <div class="ss-sec-head"><div><span class="eyebrow">Real Scoopers</span><h2>People Are Obsessed</h2></div>
       <button class="ss-btn ss-btn--ghost" id="home-review-toggle">✍️ Leave a review</button></div>
-    <div class="ss-reviews" id="home-reviews-list">
-      <div class="ss-review"><div class="ss-review-stars">★★★★★</div><p>"Microwaved it for 15 seconds and genuinely could not stop. The middle is pure molten chaos. Ordering again tonight."</p><div class="ss-review-who">Ayesha K. <span>· Lahore</span></div></div>
-      <div class="ss-review"><div class="ss-review-stars">★★★★★</div><p>"The Doughiginal tub didn't survive the car ride home. Egg-free so I let my kids dig in too. Dangerous stuff."</p><div class="ss-review-who">Maya R. <span>· Toronto</span></div></div>
-      <div class="ss-review"><div class="ss-review-stars">★★★★★</div><p>"Got a Vault code off Instagram and the salted caramel Scoopie changed me. Feels like a secret club."</p><div class="ss-review-who">Bilal A. <span>· Karachi</span></div></div>
-    </div>
+    <div class="ss-reviews" id="home-reviews-list"></div>
     <div class="ss-review-form-wrap" id="home-review-form" style="display:none"></div>
   </div>
 </section>

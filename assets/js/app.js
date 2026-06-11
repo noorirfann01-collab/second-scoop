@@ -384,6 +384,24 @@
     }
   }
 
+  // Subtle 3D hover-tilt on cards & images (hover-capable devices only).
+  function initTilt(root) {
+    const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const hover = !window.matchMedia || window.matchMedia("(hover: hover)").matches;
+    if (reduce || !hover) return;
+    (root || document).querySelectorAll(".ss-card, .ss-tilt, .ss-carousel-slide").forEach(el => {
+      if (el.dataset.tilt) return; el.dataset.tilt = "1";
+      el.style.transformStyle = "preserve-3d";
+      el.addEventListener("mousemove", e => {
+        const r = el.getBoundingClientRect();
+        const px = (e.clientX - r.left) / r.width - 0.5;
+        const py = (e.clientY - r.top) / r.height - 0.5;
+        el.style.transform = `perspective(900px) rotateX(${(-py * 5).toFixed(2)}deg) rotateY(${(px * 6).toFixed(2)}deg) translateY(-5px)`;
+      });
+      el.addEventListener("mouseleave", () => { el.style.transform = ""; });
+    });
+  }
+
   function mount(opts) {
     opts = opts || {};
     applyTheme();
@@ -396,8 +414,8 @@
     bindShell();
     refreshCartCount();
     if (opts.recentlySold !== false) startRecentlySold();
-    setTimeout(initScrollFX, 50);   // after page scripts inject their content
+    setTimeout(() => { initScrollFX(); initTilt(); }, 60);   // after page scripts inject content
   }
 
-  window.SSApp = { mount, productCard, toast, logoHTML, logoMarkSVG, wordmarkImg, refreshCartCount, statusBadge, topBadge, applyTheme, initScrollFX };
+  window.SSApp = { mount, productCard, toast, logoHTML, logoMarkSVG, wordmarkImg, refreshCartCount, statusBadge, topBadge, applyTheme, initScrollFX, initTilt };
 })();

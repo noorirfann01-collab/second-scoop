@@ -681,7 +681,25 @@
     }
     drawImages();
     document.getElementById("f-upload-btn").onclick = () => document.getElementById("f-upload").click();
-    document.getElementById("f-upload").onchange = e => [...e.target.files].forEach(file => { const rd = new FileReader(); rd.onload = () => { images.push(rd.result); drawImages(); }; rd.readAsDataURL(file); });
+    document.getElementById("f-upload").onchange = async e => {
+      const files = [...e.target.files]; e.target.value = "";
+      const btn = document.getElementById("f-upload-btn");
+      for (const file of files) {
+        btn.disabled = true; btn.textContent = "Uploading…";
+        try {
+          const name = await uploadImageToGitHub(file);   // → assets/img, returns filename
+          images.push(name); drawImages();
+          SSApp.toast("Uploaded " + name + " — live after next deploy ✓", "ok");
+        } catch (err) {
+          // fall back to a temporary in-browser preview if GitHub isn't connected
+          if (String(err).indexOf("Connect GitHub") === 0) {
+            const rd = new FileReader(); rd.onload = () => { images.push(rd.result); drawImages(); }; rd.readAsDataURL(file);
+            SSApp.toast("Connect GitHub publishing to upload real photos. Added a temporary preview for now.", "err");
+          } else SSApp.toast(String(err), "err");
+        }
+        btn.disabled = false; btn.textContent = "⬆ Upload image";
+      }
+    };
     document.getElementById("f-url-btn").onclick = () => { const v = prompt("Image filename (in assets/img/) or full URL:"); if (v && v.trim()) { images.push(v.trim()); drawImages(); } };
     REGION_IDS.forEach(rid => { const t = document.getElementById("rg-on-" + rid), fields = document.getElementById("rg-fields-" + rid); const sync = () => fields.style.display = t.checked ? "block" : "none"; t.onchange = sync; sync(); });
     document.getElementById("m-close").onclick = closeDrawer;
@@ -831,6 +849,32 @@
         <button class="ss-chip" id="th-reset" style="margin-top:10px">↺ Reset to original colours</button>
       </div>
 
+      <div class="ss-panel" style="margin-bottom:14px"><h3>Homepage hero image</h3>
+        <p style="color:var(--ink-60);font-size:.9rem">${publishConfigured() ? "Upload a high-quality photo — it publishes to your site automatically." : "⚠️ Connect GitHub publishing in Settings to upload photos here."}</p>
+        <div class="ss-img-up">
+          <div class="ss-img-up-prev" id="hero-prev">${C.hero && C.hero.image ? `<img src="${SS.imgSrc(C.hero.image)}" alt="">` : "No image"}</div>
+          <div>
+            <button class="ss-chip" id="hero-up-btn">⬆ Upload hero photo</button>
+            <input type="file" id="hero-up" accept="image/*" hidden>
+            <label class="ss-label" style="margin-top:8px">…or filename / URL</label>
+            <input class="ss-field ss-field--sm" id="hero-img" value="${esc((C.hero && C.hero.image) || "")}" placeholder="e.g. hero.jpg">
+          </div>
+        </div>
+      </div>
+
+      <div class="ss-panel" style="margin-bottom:14px"><h3>Homepage hero video</h3>
+        <p style="color:var(--ink-60);font-size:.9rem">${publishConfigured() ? "Upload the looping video that opens your homepage (it expands as visitors scroll). A 5–10 sec clip under ~8MB works best." : "⚠️ Connect GitHub publishing in Settings to upload a video here."}</p>
+        <div class="ss-img-up">
+          <div class="ss-img-up-prev" id="hvid-prev" style="width:90px;height:130px">${(C.hero && C.hero.video) ? `<video src="${SS.imgSrc(C.hero.video)}" muted autoplay loop playsinline style="width:100%;height:100%;object-fit:cover"></video>` : "No video"}</div>
+          <div>
+            <button class="ss-chip" id="hvid-up-btn">⬆ Upload hero video</button>
+            <input type="file" id="hvid-up" accept="video/mp4,video/*" hidden>
+            <label class="ss-label" style="margin-top:8px">…or path / URL</label>
+            <input class="ss-field ss-field--sm" id="hvid-src" value="${esc((C.hero && C.hero.video) || "")}" placeholder="assets/video/hero.mp4" style="width:240px">
+          </div>
+        </div>
+      </div>
+
       <div class="ss-panel" style="margin-bottom:14px"><h3>Logo &amp; header</h3>
         <div class="ss-grid2">
           <div><label class="ss-label">Logo placement</label>
@@ -854,7 +898,8 @@
         <label class="ss-switch ss-switch--chip" style="margin-top:8px"><input type="checkbox" id="g-auto" ${g.autoplay !== false ? "checked" : ""}><span>Auto-advance slides</span></label>
         <label class="ss-label" style="margin-top:12px">Photos (filename in assets/img/ or a full URL — one per line)</label>
         <textarea class="ss-field" id="g-imgs" style="min-height:110px">${esc((g.images || []).join("\n"))}</textarea>
-        <small class="ss-seed">Tip: add image files to <code>assets/img/</code> (via GitHub Desktop) and list their filenames here — that's the reliable way.</small>
+        <div style="margin-top:8px"><button class="ss-chip" id="g-up-btn">⬆ Upload photos to carousel</button><input type="file" id="g-up" accept="image/*" multiple hidden></div>
+        <small class="ss-seed">Upload publishes the photos to your site (via GitHub) and adds their filenames above automatically.</small>
       </div>
 
       <button class="ss-btn" id="d-save">Save design (go live preview)</button>`;
@@ -870,13 +915,59 @@
       THEME_FIELDS.forEach(([k]) => { C.theme[k] = defaultTheme(k); document.documentElement.style.setProperty("--" + k, defaultTheme(k)); });
       SSApp.applyTheme(); renderDesign(); SSApp.toast("Colours reset", "ok");
     };
+    // hero image upload
+    C.hero = C.hero || {};
+    const heroBtn = document.getElementById("hero-up-btn"), heroIn = document.getElementById("hero-up");
+    heroBtn.onclick = () => heroIn.click();
+    heroIn.onchange = async e => {
+      const file = e.target.files[0]; e.target.value = ""; if (!file) return;
+      heroBtn.disabled = true; heroBtn.textContent = "Uploading…";
+      try {
+        const name = await uploadImageToGitHub(file);
+        document.getElementById("hero-img").value = name;
+        document.getElementById("hero-prev").innerHTML = `<img src="${URL.createObjectURL(file)}" alt="">`;
+        SSApp.toast("Hero photo uploaded — live after Publish ✓", "ok");
+      } catch (err) { SSApp.toast(String(err), "err"); }
+      heroBtn.disabled = false; heroBtn.textContent = "⬆ Upload hero photo";
+    };
+    // hero video upload
+    const hvBtn = document.getElementById("hvid-up-btn"), hvIn = document.getElementById("hvid-up");
+    hvBtn.onclick = () => hvIn.click();
+    hvIn.onchange = async e => {
+      const file = e.target.files[0]; e.target.value = ""; if (!file) return;
+      hvBtn.disabled = true; hvBtn.textContent = "Uploading…";
+      try {
+        const path = await uploadVideoToGitHub(file);
+        document.getElementById("hvid-src").value = path;
+        document.getElementById("hvid-prev").innerHTML = `<video src="${URL.createObjectURL(file)}" muted autoplay loop playsinline style="width:100%;height:100%;object-fit:cover"></video>`;
+        SSApp.toast("Hero video uploaded — live after Publish ✓", "ok");
+      } catch (err) { SSApp.toast(String(err), "err"); }
+      hvBtn.disabled = false; hvBtn.textContent = "⬆ Upload hero video";
+    };
+
+    // carousel photo upload (appends filenames to the textarea)
+    const gBtn = document.getElementById("g-up-btn"), gIn = document.getElementById("g-up");
+    gBtn.onclick = () => gIn.click();
+    gIn.onchange = async e => {
+      const files = [...e.target.files]; e.target.value = "";
+      const ta = document.getElementById("g-imgs");
+      for (const file of files) {
+        gBtn.disabled = true; gBtn.textContent = "Uploading…";
+        try { const name = await uploadImageToGitHub(file); ta.value = (ta.value.trim() ? ta.value.trim() + "\n" : "") + name; SSApp.toast("Added " + name, "ok"); }
+        catch (err) { SSApp.toast(String(err), "err"); }
+      }
+      gBtn.disabled = false; gBtn.textContent = "⬆ Upload photos to carousel";
+    };
+
     document.getElementById("d-save").onclick = () => {
       C.header.logoAlign = val("h-align"); C.header.logoSize = Math.max(20, Math.min(60, parseInt(val("h-size"), 10) || 34)); C.header.showWordmark = chkd("h-word");
       C.effects.scrollReveal = chkd("e-reveal"); C.effects.heroParallax = chkd("e-parallax");
+      C.hero.image = val("hero-img").trim();
+      C.hero.video = val("hvid-src").trim();
       g.enabled = chkd("g-on"); g.eyebrow = val("g-eye"); g.title = val("g-title"); g.autoplay = chkd("g-auto");
       g.images = val("g-imgs").split("\n").map(s => s.trim()).filter(Boolean);
       const ok = persistContent();
-      if (!ok) { SSApp.toast("Couldn't save — too much data (avoid uploading huge images here).", "err"); return; }
+      if (!ok) { SSApp.toast("Couldn't save — too much data (avoid embedding huge images; upload them instead).", "err"); return; }
       updateLiveBadge(); SSApp.applyTheme(); SSApp.toast("Design saved — preview live. Press Publish to go live 🎨", "ok");
     };
   }
@@ -1093,6 +1184,52 @@
       let msg = ""; try { msg = (await putRes.json()).message || ""; } catch (e) {}
       throw `Couldn't write ${path} (${putRes.status}). ${msg}`;
     }
+  }
+
+  /* ---- HIGH-QUALITY IMAGE UPLOAD (commits real photo to GitHub) ----- */
+  async function commitImage(cfg, path, base64, message) {
+    const api = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${path}`;
+    const headers = { "Authorization": "Bearer " + cfg.token, "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" };
+    const branch = cfg.branch || "main";
+    let sha;
+    const getRes = await fetch(api + "?ref=" + encodeURIComponent(branch), { headers });
+    if (getRes.status === 200) sha = (await getRes.json()).sha;
+    else if (getRes.status === 401) throw "Bad GitHub token (401).";
+    const body = { message, content: base64, branch };
+    if (sha) body.sha = sha;
+    const putRes = await fetch(api, { method: "PUT", headers, body: JSON.stringify(body) });
+    if (putRes.status !== 200 && putRes.status !== 201) { let m = ""; try { m = (await putRes.json()).message || ""; } catch (e) {} throw `Upload failed (${putRes.status}). ${m}`; }
+  }
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => { const s = String(r.result); const i = s.indexOf(","); resolve(i >= 0 ? s.slice(i + 1) : s); };
+      r.onerror = reject; r.readAsDataURL(file);
+    });
+  }
+  // Upload a file → assets/img/<unique-name>; returns the filename to reference.
+  async function uploadImageToGitHub(file) {
+    if (!publishConfigured()) throw "Connect GitHub publishing in Settings → One-click publishing first (then you can upload photos here).";
+    if (file.size > 8 * 1024 * 1024) throw "Image is over 8MB — please use one under 8MB.";
+    const cfg = getPublishCfg();
+    const b64 = await fileToBase64(file);
+    const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+    const base = (file.name.replace(/\.[^.]+$/, "") || "image").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "image";
+    const name = base + "-" + Date.now().toString(36) + "." + ext;
+    await commitImage(cfg, "assets/img/" + name, b64, "Add image " + name);
+    return name;
+  }
+  // Upload a hero video → assets/video/<name>; returns the path to reference.
+  async function uploadVideoToGitHub(file) {
+    if (!publishConfigured()) throw "Connect GitHub publishing in Settings → One-click publishing first (then you can upload a video).";
+    if (file.size > 25 * 1024 * 1024) throw "Video is over 25MB — please use a shorter/smaller clip (a 5–10 second clip works best).";
+    const cfg = getPublishCfg();
+    const b64 = await fileToBase64(file);
+    const ext = (file.name.split(".").pop() || "mp4").toLowerCase().replace(/[^a-z0-9]/g, "") || "mp4";
+    const base = (file.name.replace(/\.[^.]+$/, "") || "hero").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "hero";
+    const path = "assets/video/" + base + "-" + Date.now().toString(36) + "." + ext;
+    await commitImage(cfg, path, b64, "Add hero video " + path);
+    return path;
   }
 
   async function doPublish() {

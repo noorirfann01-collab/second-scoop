@@ -55,6 +55,9 @@ window.SS_CONTENT = {
   hero: {
     showWordmark: true,
     tagline: "The First Scoop Is Never Enough.",
+    // Scroll-expand hero video (in assets/video/ or a full URL). Poster shows before it loads.
+    video: "assets/video/hero.mp4",
+    videoPoster: "assets/video/hero-poster.jpg",
     headline: "The cookie you were never supposed to <span class=\"accent\">stop</span> eating.",
     sub: "Warm. Gooey. Scoopable. Baked in a tin and built for a spoon. Meet <strong>The OG Scoopie</strong> — and try not to finish it standing up.",
     trust: [

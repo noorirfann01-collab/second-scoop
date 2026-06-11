@@ -52,6 +52,7 @@
     const empty = document.getElementById("shop-empty");
     grid.innerHTML = list.map(p => SSApp.productCard(p)).join("");
     empty.style.display = list.length ? "none" : "block";
+    if (SSApp.initTilt) SSApp.initTilt(grid);
   }
   render();
 })();
