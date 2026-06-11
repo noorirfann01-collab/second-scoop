@@ -558,9 +558,15 @@ section{position:relative}
 .ss-recent strong{color:var(--choc)}
 
 /* ---- page header (inner pages) ------------------------------------- */
-.ss-page-head{background:var(--cream-2);padding:48px 0 40px;text-align:center;border-bottom:1px solid var(--line)}
+.ss-page-head{position:relative;overflow:hidden;padding:60px 0 48px;text-align:center;border-bottom:1px solid var(--line);background:linear-gradient(120deg,var(--cream-2),var(--cream),var(--blush) 180%);background-size:200% 200%;animation:ssHeadShift 14s ease infinite}
+.ss-page-head::before,.ss-page-head::after{content:"";position:absolute;border-radius:50%;filter:blur(46px);opacity:.45;pointer-events:none;z-index:0}
+.ss-page-head::before{width:240px;height:240px;background:var(--blush);top:-80px;left:-40px;animation:ssFloat 10s ease-in-out infinite}
+.ss-page-head::after{width:220px;height:220px;background:var(--cookie);bottom:-90px;right:-30px;opacity:.3;animation:ssFloat 12s ease-in-out infinite reverse}
+.ss-page-head .wrap{position:relative;z-index:1}
 .ss-page-head .eyebrow{display:block;margin-bottom:.6em}
-.ss-page-head p{color:var(--ink-60);max-width:52ch;margin:0 auto}
+.ss-page-head h1,.ss-page-head h2{position:relative;z-index:1}
+.ss-page-head p{color:var(--ink-60);max-width:52ch;margin:0 auto;position:relative;z-index:1}
+@keyframes ssHeadShift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
 .ss-breadcrumb{font-size:.82rem;color:var(--ink-40);margin-bottom:1em}
 .ss-breadcrumb a{color:var(--caramel);font-weight:600}
 
@@ -709,6 +715,9 @@ textarea.ss-field{min-height:90px;border-radius:var(--r-md);resize:vertical}
 .ss-bk-preview{text-decoration:none}
 .ss-subpanel{border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px;margin-bottom:10px;background:var(--cream)}
 .ss-subpanel h4{margin:0 0 8px;font-family:'Fredoka',sans-serif;font-size:.98rem;color:var(--choc)}
+details.ss-subpanel summary{cursor:pointer;font-family:'Fredoka',sans-serif;color:var(--choc);padding:4px 2px;list-style:revert;user-select:none}
+details.ss-subpanel summary:hover{color:var(--caramel)}
+details.ss-subpanel[open] summary{margin-bottom:4px}
 .ss-bk-main{display:flex;flex-direction:column;min-width:0}
 .ss-bk-topbar{display:flex;align-items:center;gap:14px;padding:16px 26px;background:var(--cream);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
 .ss-bk-topbar h2{margin:0;font-size:1.5rem}

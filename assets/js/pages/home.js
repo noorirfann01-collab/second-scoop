@@ -7,14 +7,8 @@
   // ---- apply editable copy from content config (Backend → Content) ----
   const C = SS.getContent();
 
-  // ---- apply all editable section headings/copy ([data-edit="group.field"]) ----
+  // (Editable text is applied globally by SSApp. Just point the IG link.)
   (function () {
-    const S = C.sections || {};
-    document.querySelectorAll("[data-edit]").forEach(el => {
-      const v = el.getAttribute("data-edit").split(".").reduce((o, k) => (o && o[k] != null ? o[k] : undefined), S);
-      if (typeof v === "string" && v.length) el.textContent = v;
-    });
-    // instagram links follow the brand handle
     const ig = (C.brand && C.brand.instagramUrl) || (SS_SETTINGS.brand && SS_SETTINGS.brand.instagramUrl);
     if (ig) { const a = document.getElementById("ig-follow"); if (a) a.href = ig; }
   })();

@@ -455,6 +455,48 @@
     });
   }
 
+  /* ------------------------------------------- editable text engine -
+     Any element with data-edit="path.to.field" gets its text (or an
+     attribute via data-edit-attr) filled from the content config. Works on
+     every page, and on content injected later (cart, checkout, etc.) via a
+     MutationObserver. This is what makes ALL site copy editable in the
+     Backend → Pages & Text tab.                                          */
+  function editResolve(C, path) {
+    const roots = [C, C && C.sections, C && C.pages];
+    for (let i = 0; i < roots.length; i++) {
+      let v = roots[i]; if (!v) continue;
+      const parts = path.split("."); let ok = true;
+      for (let j = 0; j < parts.length; j++) {
+        if (v && typeof v === "object" && parts[j] in v) v = v[parts[j]];
+        else { ok = false; break; }
+      }
+      if (ok && typeof v === "string") return v;
+    }
+    return undefined;
+  }
+  function applyText(root) {
+    let C; try { C = SS.getContent() || {}; } catch (e) { return; }
+    const list = [];
+    if (root && root.nodeType === 1 && root.matches && root.matches("[data-edit]")) list.push(root);
+    const scope = (root && root.querySelectorAll) ? root : document;
+    scope.querySelectorAll("[data-edit]").forEach(e => list.push(e));
+    list.forEach(el => {
+      const v = editResolve(C, el.getAttribute("data-edit"));
+      if (typeof v !== "string" || !v.length) return;
+      const attr = el.getAttribute("data-edit-attr");
+      if (attr) el.setAttribute(attr, v); else el.textContent = v;
+    });
+  }
+  function startTextObserver() {
+    if (window.__ssTextObs || !("MutationObserver" in window)) return;
+    window.__ssTextObs = new MutationObserver(muts => {
+      for (const m of muts) for (const n of m.addedNodes) {
+        if (n.nodeType === 1 && (n.matches("[data-edit]") || (n.querySelector && n.querySelector("[data-edit]")))) applyText(n);
+      }
+    });
+    window.__ssTextObs.observe(document.documentElement, { childList: true, subtree: true });
+  }
+
   /* --------------------------------------------- region choice gate */
   function regionGateHTML() {
     const regions = SS.availableRegions();
@@ -522,11 +564,13 @@
     if (ftr) ftr.innerHTML = footerHTML();
     bindShell();
     refreshCartCount();
+    applyText(document);          // fill all editable text on this page
+    startTextObserver();          // and any text injected later (cart, checkout…)
     showPreviewBanner();
     if (opts.recentlySold !== false) startRecentlySold();
     setTimeout(() => { initScrollFX(); initTilt(); initSwapTitles(); }, 60);   // after page scripts inject content
     if (opts.regionGate !== false) setTimeout(() => showRegionGate(), 150);     // first-visit country pick
   }
 
-  window.SSApp = { mount, productCard, toast, logoHTML, logoMarkSVG, wordmarkImg, refreshCartCount, statusBadge, topBadge, applyTheme, initScrollFX, initTilt, initSwapTitles, showRegionGate };
+  window.SSApp = { mount, productCard, toast, logoHTML, logoMarkSVG, wordmarkImg, refreshCartCount, statusBadge, topBadge, applyTheme, initScrollFX, initTilt, initSwapTitles, showRegionGate, applyText };
 })();

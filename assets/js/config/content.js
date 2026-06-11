@@ -49,6 +49,36 @@ window.SS_CONTENT = {
                    text: "Secret Scoop alerts, new drops, restocks and launch codes — straight to your inbox & phone." },
   },
 
+  /* ---- OTHER PAGES' TEXT (all editable in Backend → Pages & Text) -- */
+  pages: {
+    shop:    { eyebrow: "Storefront", title: "Shop", searchPlaceholder: "Search scoops…" },
+    faq:     { eyebrow: "Good Questions", title: "FAQ", intro: "Everything you need to know before your first scoop." },
+    contact: {
+      eyebrow: "Say Hello", title: "Contact",
+      intro: "Orders, collabs, wholesale or just to tell us the OG Scoopie changed your life.",
+      formTitle: "Send a message", nameLabel: "Name", emailLabel: "Email", messageLabel: "Message", sendButton: "Send",
+      followTitle: "Follow the drops", followText: "New flavours, restocks and Vault codes land on Instagram first.",
+    },
+    preorders: {
+      eyebrow: "Drops & Batches", title: "How Pre-Orders Work",
+      intro: "We bake in small batches and drop in limited windows. Here's how to never miss one.",
+      step1Title: "A drop opens", step1Text: "We announce a batch. The bar at the top of the site shows the live status and deadline.",
+      step2Title: "You pre-order", step2Text: "Add pre-order items to your cart and check out as normal. You'll get an order number instantly.",
+      step3Title: "The window closes", step3Text: "Once the deadline hits, we lock the batch and start baking. No late orders — that's what keeps it fresh.",
+      step4Title: "Pickup or delivery", step4Text: "We fulfil on the drop date you chose, by pickup or delivery, and confirm timing with you directly.",
+      statusesTitle: "Product statuses, explained",
+      statusesIntro: "Every product shows one of these statuses so you always know where things stand:",
+    },
+    vault: {
+      unlockButton: "Unlock", codePlaceholder: "ENTER CODE",
+      welcomeEyebrow: "🔓 Unlocked", welcomeTitle: "Welcome to The Vault",
+      welcomeText: "These never appear in the normal shop. Grab them before they vanish.",
+      addMore: "Enter another code",
+    },
+    cart:     { eyebrow: "Almost There", title: "Your Cart" },
+    checkout: { eyebrow: "Final Step", title: "Checkout" },
+  },
+
   /* ---- TOP MENU LINKS (toggle on/off in Backend → Menu & Regions) -- */
   nav: {
     home: true, shop: true, vault: true, preorders: true,

@@ -815,10 +815,26 @@
     ["instagram", "Instagram", [["eyebrow", "Eyebrow"], ["title", "Title"], ["link", "Link text"]]],
     ["signup", "Email signup", [["eyebrow", "Eyebrow"], ["title", "Title"], ["text", "Paragraph"]]],
   ];
+  // Editable text on every OTHER page. [pageKey, nice name, [[field,label,multiline?]]]
+  const PAGE_TEXT = [
+    ["faq", "FAQ page", [["eyebrow", "Eyebrow"], ["title", "Title"], ["intro", "Intro", 1]]],
+    ["contact", "Contact page", [["eyebrow", "Eyebrow"], ["title", "Title"], ["intro", "Intro", 1],
+      ["formTitle", "Form heading"], ["nameLabel", "Name label"], ["emailLabel", "Email label"], ["messageLabel", "Message label"], ["sendButton", "Send button"],
+      ["followTitle", "Follow heading"], ["followText", "Follow text", 1]]],
+    ["preorders", "Pre-orders page", [["eyebrow", "Eyebrow"], ["title", "Title"], ["intro", "Intro", 1],
+      ["step1Title", "Step 1 title"], ["step1Text", "Step 1 text", 1], ["step2Title", "Step 2 title"], ["step2Text", "Step 2 text", 1],
+      ["step3Title", "Step 3 title"], ["step3Text", "Step 3 text", 1], ["step4Title", "Step 4 title"], ["step4Text", "Step 4 text", 1],
+      ["statusesTitle", "Statuses heading"], ["statusesIntro", "Statuses intro", 1]]],
+    ["vault", "Vault page", [["codePlaceholder", "Code box placeholder"], ["unlockButton", "Unlock button"],
+      ["welcomeEyebrow", "Unlocked eyebrow"], ["welcomeTitle", "Unlocked title"], ["welcomeText", "Unlocked text", 1], ["addMore", "Add-another button"]]],
+    ["shop", "Shop page", [["searchPlaceholder", "Search box placeholder"]]],
+    ["cart", "Cart page", [["eyebrow", "Eyebrow"], ["title", "Title"]]],
+    ["checkout", "Checkout page", [["eyebrow", "Eyebrow"], ["title", "Title"]]],
+  ];
   function renderContent() {
     const C = content;
     C.hero = C.hero || {}; C.about = C.about || {}; C.howItWorks = C.howItWorks || []; C.faq = C.faq || [];
-    C.sections = C.sections || {}; C.brand = C.brand || {};
+    C.sections = C.sections || {}; C.brand = C.brand || {}; C.pages = C.pages || {};
     body().innerHTML = `
       <div class="ss-panel" style="margin-bottom:14px"><h3>Homepage hero</h3>
         <label class="ss-label">Tagline (small, above headline)</label><input class="ss-field" id="c-h-tag" value="${esc(C.hero.tagline || "")}">
@@ -857,7 +873,19 @@
         <label class="ss-label" style="margin-top:10px">Paragraphs (blank line between each)</label><textarea class="ss-field" id="c-a-paras" style="min-height:130px">${esc((C.about.paragraphs || []).join("\n\n"))}</textarea>
         <label class="ss-label" style="margin-top:10px">Value cards</label><div id="c-vals"></div>
       </div>
-      <div class="ss-panel" style="margin-bottom:14px"><h3>FAQ</h3><div id="c-faq"></div></div>
+      <div class="ss-panel" style="margin-bottom:14px"><h3>FAQ questions</h3><div id="c-faq"></div></div>
+      <div class="ss-panel" style="margin-bottom:14px"><h3>Other pages — every heading &amp; label</h3>
+        <p style="color:var(--ink-60);font-size:.9rem">Text on the Shop, FAQ, Contact, Pre-orders, Vault, Cart and Checkout pages. Blank = keep the built-in wording.</p>
+        ${PAGE_TEXT.map(([page, name, fields]) => `
+          <details class="ss-subpanel"><summary><strong>${name}</strong></summary><div class="ss-grid2" style="margin-top:10px">
+            ${fields.map(([f, label, ml]) => {
+              const v = esc(((C.pages[page] || {})[f]) || "");
+              return ml
+                ? `<div style="grid-column:1/-1"><label class="ss-label">${label}</label><textarea class="ss-field" id="c-pg-${page}-${f}" style="min-height:54px">${v}</textarea></div>`
+                : `<div><label class="ss-label">${label}</label><input class="ss-field" id="c-pg-${page}-${f}" value="${v}"></div>`;
+            }).join("")}
+          </div></details>`).join("")}
+      </div>
       <button class="ss-btn" id="c-save">Save content (go live)</button>`;
 
     // how it works editor
@@ -886,6 +914,11 @@
       SECTION_TEXT.forEach(([key, , fields]) => {
         C.sections[key] = C.sections[key] || {};
         fields.forEach(([f]) => { const v = val("c-sec-" + key + "-" + f).trim(); if (v) C.sections[key][f] = v; });
+      });
+      // other pages' text
+      PAGE_TEXT.forEach(([page, , fields]) => {
+        C.pages[page] = C.pages[page] || {};
+        fields.forEach(([f]) => { const v = val("c-pg-" + page + "-" + f).trim(); if (v) C.pages[page][f] = v; });
       });
       persistContent(); updateLiveBadge(); SSApp.toast("Content saved — live ✍️", "ok");
     };

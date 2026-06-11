@@ -22,8 +22,8 @@
     <h1 id="vault-title">THE VAULT</h1>
     <p id="vault-subtitle">Secret scoops. Invite-only flavours. Enter the code.</p>
     <form class="ss-vault-form" id="vault-form">
-      <input id="vault-code" placeholder="ENTER CODE" autocomplete="off" aria-label="Vault code">
-      <button class="ss-btn" type="submit">Unlock</button>
+      <input id="vault-code" placeholder="ENTER CODE" data-edit="pages.vault.codePlaceholder" data-edit-attr="placeholder" autocomplete="off" aria-label="Vault code">
+      <button class="ss-btn" type="submit" data-edit="pages.vault.unlockButton">Unlock</button>
     </form>
     <div class="ss-vault-msg" id="vault-msg"></div>
     <p class="ss-vault-hint" id="vault-hint">Codes drop to our list and on @secondscoop.</p>
@@ -35,14 +35,14 @@
   <div class="wrap">
     <div class="ss-sec-head">
       <div style="text-align:center;width:100%">
-        <span class="eyebrow">🔓 Unlocked</span>
-        <h2>Welcome to The Vault</h2>
-        <p style="color:var(--ink-60);max-width:46ch;margin:.4em auto 0">These never appear in the normal shop. Grab them before they vanish.</p>
+        <span class="eyebrow" data-edit="pages.vault.welcomeEyebrow">🔓 Unlocked</span>
+        <h2 data-edit="pages.vault.welcomeTitle">Welcome to The Vault</h2>
+        <p style="color:var(--ink-60);max-width:46ch;margin:.4em auto 0" data-edit="pages.vault.welcomeText">These never appear in the normal shop. Grab them before they vanish.</p>
       </div>
     </div>
     <div class="ss-grid" id="vault-grid"></div>
     <div class="center" style="margin-top:30px">
-      <button class="ss-btn ss-btn--ghost" id="vault-add-more">Enter another code</button>
+      <button class="ss-btn ss-btn--ghost" id="vault-add-more" data-edit="pages.vault.addMore">Enter another code</button>
     </div>
   </div>
 </section>

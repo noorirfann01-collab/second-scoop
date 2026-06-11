@@ -13,28 +13,28 @@
 <div id="ss-header-slot"></div>
 
 <div class="ss-page-head">
-  <div class="wrap"><span class="eyebrow">Say Hello</span><h2>Contact</h2>
-  <p>Orders, collabs, wholesale or just to tell us the OG Scoopie changed your life.</p></div>
+  <div class="wrap"><span class="eyebrow" data-edit="pages.contact.eyebrow">Say Hello</span><h2 data-edit="pages.contact.title">Contact</h2>
+  <p data-edit="pages.contact.intro">Orders, collabs, wholesale or just to tell us the OG Scoopie changed your life.</p></div>
 </div>
 
 <section class="ss-sec">
   <div class="wrap" style="display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:start" id="contact-cols">
     <div class="ss-form-card">
-      <h3>Send a message</h3>
+      <h3 data-edit="pages.contact.formTitle">Send a message</h3>
       <form id="contact-form">
-        <div style="margin-bottom:14px"><label class="ss-label">Name</label><input class="ss-field" name="name" required></div>
-        <div style="margin-bottom:14px"><label class="ss-label">Email</label><input class="ss-field" type="email" name="email" required></div>
-        <div style="margin-bottom:14px"><label class="ss-label">Message</label><textarea class="ss-field" name="message" required></textarea></div>
-        <button class="ss-btn ss-btn--block" type="submit">Send</button>
+        <div style="margin-bottom:14px"><label class="ss-label" data-edit="pages.contact.nameLabel">Name</label><input class="ss-field" name="name" required></div>
+        <div style="margin-bottom:14px"><label class="ss-label" data-edit="pages.contact.emailLabel">Email</label><input class="ss-field" type="email" name="email" required></div>
+        <div style="margin-bottom:14px"><label class="ss-label" data-edit="pages.contact.messageLabel">Message</label><textarea class="ss-field" name="message" required></textarea></div>
+        <button class="ss-btn ss-btn--block" type="submit" data-edit="pages.contact.sendButton">Send</button>
         <p id="contact-msg" style="color:var(--ok);font-weight:700;margin-top:.8em;min-height:1.2em"></p>
       </form>
     </div>
     <div>
       <div class="ss-form-card" id="contact-info"></div>
       <div class="ss-form-card">
-        <h3>Follow the drops</h3>
-        <p style="color:var(--ink-60)">New flavours, restocks and Vault codes land on Instagram first.</p>
-        <a class="ss-btn ss-btn--blush" href="https://instagram.com/secondscoop" target="_blank" rel="noopener">@secondscoop</a>
+        <h3 data-edit="pages.contact.followTitle">Follow the drops</h3>
+        <p style="color:var(--ink-60)" data-edit="pages.contact.followText">New flavours, restocks and Vault codes land on Instagram first.</p>
+        <a class="ss-btn ss-btn--blush" id="contact-ig" href="https://instagram.com/secondscoopco" target="_blank" rel="noopener">@secondscoopco</a>
       </div>
     </div>
   </div>
