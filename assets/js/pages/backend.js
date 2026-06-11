@@ -845,8 +845,8 @@
   function renderHomepage() {
     const C = content;
     C.home = C.home || {}; C.home.sections = C.home.sections || {};
-    C.hero = C.hero || {};
-    const sec = C.home.sections, mob = C.hero.mobileMode || "tap";
+    C.hero = C.hero || {}; C.intro = C.intro || {};
+    const sec = C.home.sections, mob = C.hero.mobileMode || "auto", intro = C.intro;
     body().innerHTML = `
       <div class="ss-panel" style="margin-bottom:14px"><h3>Homepage sections</h3>
         <p style="color:var(--ink-60);font-size:.9rem">Tick the blocks you want on your home page. Untick anything you don't — it disappears for customers (your products are still in the shop). Order top-to-bottom matches the page.</p>
@@ -869,12 +869,22 @@
           <a class="ss-chip" href="index.html" target="_blank" rel="noopener" onclick="try{window.open('index.html','_blank','width=400,height=820')}catch(e){};return false;">📱 Preview as phone</a>
         </div>
       </div>
+      <div class="ss-panel" style="margin-bottom:14px"><h3>Opening intro animation</h3>
+        <p style="color:var(--ink-60);font-size:.9rem">A full-screen splash that morphs through words when the homepage opens, then melts away to reveal the site.</p>
+        <label class="ss-switch ss-switch--chip"><input type="checkbox" id="in-on" ${intro.enabled !== false ? "checked" : ""}><span>Show the opening intro</span></label>
+        <label class="ss-switch ss-switch--chip" style="margin-top:8px"><input type="checkbox" id="in-once" ${intro.oncePerSession !== false ? "checked" : ""}><span>Only the first visit each session (less repetitive)</span></label>
+        <label class="ss-label" style="margin-top:10px">Words to morph through (one per line — last one shows longest)</label>
+        <textarea class="ss-field" id="in-words" style="min-height:96px">${esc((intro.words || ["Warm.", "Gooey.", "Scoopable.", "Second Scoop."]).join("\n"))}</textarea>
+      </div>
       <button class="ss-btn" id="hp-save">Save homepage (go live)</button>`;
 
     document.getElementById("hp-save").onclick = () => {
       HOME_SECTIONS.forEach(([k]) => { C.home.sections[k] = chkd("hs-" + k); });
       const r = document.querySelector('input[name="hmob"]:checked');
-      C.hero.mobileMode = r ? r.value : "tap";
+      C.hero.mobileMode = r ? r.value : "auto";
+      C.intro.enabled = chkd("in-on");
+      C.intro.oncePerSession = chkd("in-once");
+      C.intro.words = val("in-words").split("\n").map(s => s.trim()).filter(Boolean);
       persistContent(); updateLiveBadge(); SSApp.toast("Homepage layout saved — live 🏠", "ok");
     };
   }
@@ -915,7 +925,7 @@
       </div>
 
       <div class="ss-panel" style="margin-bottom:14px"><h3>Homepage hero video</h3>
-        <p style="color:var(--ink-60);font-size:.9rem">${publishConfigured() ? "Upload the looping video that opens your homepage (it expands as visitors scroll). A 5–10 sec clip under ~8MB works best." : "⚠️ Connect GitHub publishing in Settings to upload a video here."}</p>
+        <p style="color:var(--ink-60);font-size:.9rem">${publishConfigured() ? "Upload the looping video that opens your homepage (it expands as visitors scroll). A 5–15 sec clip works best — up to 80MB. Tip: for autoplay it must be muted; phones load faster with a smaller file." : "⚠️ Connect GitHub publishing in Settings to upload a video here."}</p>
         <div class="ss-img-up">
           <div class="ss-img-up-prev" id="hvid-prev" style="width:90px;height:130px">${(C.hero && C.hero.video) ? `<video src="${SS.imgSrc(C.hero.video)}" muted autoplay loop playsinline style="width:100%;height:100%;object-fit:cover"></video>` : "No video"}</div>
           <div>
@@ -1262,7 +1272,7 @@
   // Upload a file → assets/img/<unique-name>; returns the filename to reference.
   async function uploadImageToGitHub(file) {
     if (!publishConfigured()) throw "Connect GitHub publishing in Settings → One-click publishing first (then you can upload photos here).";
-    if (file.size > 8 * 1024 * 1024) throw "Image is over 8MB — please use one under 8MB.";
+    if (file.size > 40 * 1024 * 1024) throw "Image is over 40MB — please use one under 40MB.";
     const cfg = getPublishCfg();
     const b64 = await fileToBase64(file);
     const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
@@ -1274,7 +1284,7 @@
   // Upload a hero video → assets/video/<name>; returns the path to reference.
   async function uploadVideoToGitHub(file) {
     if (!publishConfigured()) throw "Connect GitHub publishing in Settings → One-click publishing first (then you can upload a video).";
-    if (file.size > 25 * 1024 * 1024) throw "Video is over 25MB — please use a shorter/smaller clip (a 5–10 second clip works best).";
+    if (file.size > 80 * 1024 * 1024) throw "Video is over 80MB — please use a shorter clip or compress it a little first.";
     const cfg = getPublishCfg();
     const b64 = await fileToBase64(file);
     const ext = (file.name.split(".").pop() || "mp4").toLowerCase().replace(/[^a-z0-9]/g, "") || "mp4";

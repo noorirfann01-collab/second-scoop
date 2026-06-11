@@ -366,7 +366,13 @@
       const targets = document.querySelectorAll(".ss-sec, .ss-card, .ss-step, .ss-review, .ss-value, .ss-kpi, .ss-hero-copy, .ss-hero-media, .ss-vault-teaser, .ss-signup");
       targets.forEach((el, i) => { el.classList.add("reveal"); el.style.transitionDelay = Math.min((i % 4) * 60, 180) + "ms"; });
       const io = new IntersectionObserver((entries) => {
-        entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } });
+        entries.forEach(e => {
+          if (!e.isIntersecting) return;
+          const t = e.target; t.classList.add("in"); io.unobserve(t);
+          // once the entrance finishes, drop the classes so the 3D hover-tilt
+          // (inline transform) isn't overridden by the finished CSS animation
+          setTimeout(() => t.classList.remove("reveal", "in"), 820);
+        });
       }, { threshold: 0.12, rootMargin: "0px 0px -40px 0px" });
       targets.forEach(el => io.observe(el));
     }

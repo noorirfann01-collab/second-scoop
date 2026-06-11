@@ -12,6 +12,19 @@
 <link rel="stylesheet" href="assets/css/styles.css">
 </head>
 <body>
+<!-- =================== LIQUID MORPHING INTRO =================== -->
+<div id="ss-intro" class="ss-intro">
+  <div class="ss-intro-morph" id="ss-intro-morph">
+    <span id="ss-intro-t1"></span>
+    <span id="ss-intro-t2"></span>
+  </div>
+  <span class="ss-intro-skip">tap to skip</span>
+  <svg class="ss-intro-filters" aria-hidden="true"><defs>
+    <filter id="ss-threshold"><feColorMatrix in="SourceGraphic" type="matrix"
+      values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 255 -140"/></filter>
+  </defs></svg>
+</div>
+
 <div id="ss-announcement"></div>
 <div id="ss-header-slot"></div>
 

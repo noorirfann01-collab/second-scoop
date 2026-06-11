@@ -306,6 +306,15 @@ section{position:relative}
 .ss-xhero-play-label{position:relative;margin-top:64px;font-weight:600;letter-spacing:.04em;font-size:.92rem;text-shadow:0 2px 8px rgba(0,0,0,.5)}
 @keyframes ssPulse{0%,100%{transform:scale(1);opacity:.85}50%{transform:scale(1.12);opacity:1}}
 
+/* ===================== LIQUID MORPHING INTRO ==================== */
+.ss-intro{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;background:radial-gradient(circle at 50% 38%,#3a2212,#1c0f06 70%);transition:opacity .7s ease,visibility .7s ease}
+.ss-intro.is-done{opacity:0;visibility:hidden;pointer-events:none}
+.ss-intro-morph{position:relative;width:100%;max-width:900px;height:clamp(90px,18vw,170px);text-align:center;filter:url(#ss-threshold) blur(.6px);font-family:'Fredoka',sans-serif;font-weight:800;color:var(--gold-soft,#e8c878)}
+.ss-intro-morph span{position:absolute;inset-inline:0;top:0;margin:0 auto;display:inline-block;width:100%;font-size:clamp(2.4rem,11vw,6.2rem);line-height:1.15;white-space:nowrap}
+.ss-intro-skip{position:absolute;bottom:34px;left:0;right:0;text-align:center;color:rgba(255,255,255,.5);font-size:.82rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;animation:ssPulse 2.4s ease-in-out infinite}
+.ss-intro-filters{position:absolute;width:0;height:0;pointer-events:none}
+@media(prefers-reduced-motion:reduce){.ss-intro-morph{filter:none}.ss-intro-skip{animation:none}}
+
 /* ===================== SCROLL-AND-SWAP TITLE ===================== */
 .ss-swap{display:inline-block;position:relative;overflow:hidden;vertical-align:top;line-height:1.05}
 .ss-swap-layer{display:block;will-change:transform}
@@ -415,6 +424,19 @@ section{position:relative}
 .reveal.in{opacity:1;transform:none}
 .ss-hero-media{transition:transform .1s linear}
 @media (prefers-reduced-motion:reduce){.reveal{opacity:1!important;transform:none!important}}
+
+/* ============ PRODUCT-GRID 3D SLIDE-IN + PDP ENTRANCE =========== */
+.ss-grid{perspective:1300px}
+.ss-card.reveal{opacity:0;transform:translateY(46px) rotateX(12deg) scale(.95);transform-origin:50% 100%}
+.ss-card.reveal.in{animation:ssCardIn .68s var(--ease) both}
+@keyframes ssCardIn{0%{opacity:0;transform:translateY(46px) rotateX(12deg) scale(.95)}60%{opacity:1}100%{opacity:1;transform:none}}
+/* product detail page: image slides in from the left, info from the right */
+.ss-pdp{perspective:1500px}
+.ss-pdp-media{animation:ssSlideL .75s var(--ease) both}
+.ss-pdp-info{animation:ssSlideR .75s var(--ease) .1s both}
+@keyframes ssSlideL{from{opacity:0;transform:translateX(-46px) rotateY(10deg)}to{opacity:1;transform:none}}
+@keyframes ssSlideR{from{opacity:0;transform:translateX(46px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.ss-card.reveal.in,.ss-pdp-media,.ss-pdp-info{animation:none!important;transform:none!important;opacity:1!important}}
 
 /* ---- centered logo header option ----------------------------------- */
 .ss-header--center .ss-logo{position:absolute;left:50%;transform:translateX(-50%);margin:0}

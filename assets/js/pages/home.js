@@ -6,6 +6,47 @@
 
   // ---- apply editable copy from content config (Backend → Content) ----
   const C = SS.getContent();
+
+  // ---- liquid morphing intro splash ----
+  (function () {
+    const intro = document.getElementById("ss-intro");
+    if (!intro) return;
+    const cfg = C.intro || {};
+    const t1 = document.getElementById("ss-intro-t1"), t2 = document.getElementById("ss-intro-t2");
+    function finish() { intro.classList.add("is-done"); document.body.style.overflow = ""; setTimeout(() => { if (intro.parentNode) intro.remove(); }, 800); }
+    function kill() { document.body.style.overflow = ""; intro.remove(); }
+    if (cfg.enabled === false || !t1 || !t2) { kill(); return; }
+    if (cfg.oncePerSession !== false) { try { if (sessionStorage.getItem("ss_intro_seen")) { kill(); return; } sessionStorage.setItem("ss_intro_seen", "1"); } catch (e) {} }
+    const words = (cfg.words && cfg.words.length) ? cfg.words.slice() : ["Warm.", "Gooey.", "Scoopable.", "Second Scoop."];
+    if (words.length < 2) words.push(words[0]);
+    const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document.body.style.overflow = "hidden";
+    intro.addEventListener("click", () => { cancelAnimationFrame(raf); finish(); });
+    if (reduce) { t1.textContent = words[words.length - 1]; t1.style.opacity = "100%"; setTimeout(finish, 1000); return; }
+
+    const morphTime = 1.0, cooldownTime = 0.42;
+    let idx = 0, morph = 0, cool = 0, transitions = 0, last = performance.now(), raf;
+    function setStyles(frac) {
+      t2.style.filter = `blur(${Math.min(8 / frac - 8, 100)}px)`; t2.style.opacity = `${Math.pow(frac, 0.4) * 100}%`;
+      const inv = 1 - frac;
+      t1.style.filter = `blur(${Math.min(8 / inv - 8, 100)}px)`; t1.style.opacity = `${Math.pow(inv, 0.4) * 100}%`;
+      t1.textContent = words[idx % words.length]; t2.textContent = words[(idx + 1) % words.length];
+    }
+    function doMorph() { morph -= cool; cool = 0; let f = morph / morphTime; if (f > 1) { cool = cooldownTime; f = 1; } setStyles(f); if (f === 1) { idx++; transitions++; } }
+    function doCool() { morph = 0; t2.style.filter = "none"; t2.style.opacity = "100%"; t1.style.filter = "none"; t1.style.opacity = "0%"; }
+    function loop(now) {
+      raf = requestAnimationFrame(loop);
+      const dt = (now - last) / 1000; last = now; cool -= dt;
+      if (transitions >= words.length - 1) {
+        cancelAnimationFrame(raf);
+        t1.textContent = words[words.length - 1]; t1.style.opacity = "100%"; t1.style.filter = "none"; t2.style.opacity = "0%";
+        setTimeout(finish, 650); return;
+      }
+      if (cool <= 0) doMorph(); else doCool();
+    }
+    raf = requestAnimationFrame(loop);
+    setTimeout(() => { if (intro.isConnected && !intro.classList.contains("is-done")) { cancelAnimationFrame(raf); finish(); } }, 6500); // safety cap
+  })();
   if (C.hero) {
     const wm = document.querySelector(".ss-hero-wordmark");
     if (wm && C.hero.showWordmark === false) wm.style.display = "none";
@@ -38,31 +79,40 @@
     if (C.hero && C.hero.videoPoster && video) video.poster = SS.imgSrc(C.hero.videoPoster);
     if (C.hero && C.hero.tagline) { const t = document.getElementById("hero-tagline"); if (t) t.textContent = C.hero.tagline; }
 
-    // ---- video playback: desktop autoplays; phones often block it ----
+    // ---- video playback: autoplay everywhere (muted), phones included ----
     (function () {
       if (!video) return;
       const playBtn = document.getElementById("xhero-play");
       const isMobile = window.matchMedia && window.matchMedia("(max-width: 767px)").matches;
-      const mobileMode = (C.hero && C.hero.mobileMode) || "tap";
+      const mobileMode = (C.hero && C.hero.mobileMode) || "auto";
       function showPlay(on) { if (playBtn) playBtn.style.display = on ? "flex" : "none"; }
-      function attempt() {
-        const pr = video.play();
-        if (pr && pr.then) pr.then(() => showPlay(false)).catch(() => { if (isMobile) showPlay(true); });
-      }
-      // On mobile with "tap" mode, don't even try — show the poster + play button.
-      if (isMobile && mobileMode === "tap") {
+      // muted + playsinline is required for silent autoplay on iOS/Android.
+      video.muted = true; video.defaultMuted = true;
+      video.setAttribute("muted", ""); video.setAttribute("playsinline", "");
+      function attempt() { const pr = video.play(); return pr && pr.then ? pr : Promise.resolve(); }
+
+      if (isMobile && mobileMode === "tap") {        // optional: owner chose a play button
         showPlay(true);
-      } else {
-        attempt();
-        video.addEventListener("canplay", attempt, { once: true });
-        // if it still hasn't started shortly after load (mobile block), offer tap-to-play
-        if (isMobile) setTimeout(() => { if (video.paused) showPlay(true); }, 1200);
+        if (playBtn) playBtn.addEventListener("click", () => { attempt().then(() => showPlay(false)).catch(() => {}); });
+        video.addEventListener("click", () => { if (video.paused) attempt().then(() => showPlay(false)).catch(() => {}); });
+        return;
       }
-      if (playBtn) playBtn.addEventListener("click", () => {
-        video.muted = true; video.play().then(() => showPlay(false)).catch(() => {});
-      });
-      // tapping the video itself also plays it
-      if (video) video.addEventListener("click", () => { if (video.paused) { video.play().then(() => showPlay(false)).catch(() => {}); } });
+
+      // "auto" (default): keep trying to autoplay; if a phone blocks it, the very first
+      // user gesture (scroll/tap/touch) kicks it off silently — no visible button.
+      showPlay(false);
+      attempt().catch(() => {});
+      video.addEventListener("canplay", () => { attempt().catch(() => {}); }, { once: true });
+      function kick() { if (video.paused) attempt().catch(() => {}); else cleanup(); }
+      function cleanup() {
+        ["touchstart", "scroll", "click", "pointerdown", "keydown"].forEach(ev =>
+          window.removeEventListener(ev, kick, { passive: true }));
+      }
+      ["touchstart", "scroll", "click", "pointerdown", "keydown"].forEach(ev =>
+        window.addEventListener(ev, kick, { passive: true }));
+      // a couple of delayed retries cover slow-loading / low-power-mode phones
+      setTimeout(() => attempt().catch(() => {}), 400);
+      setTimeout(() => attempt().catch(() => {}), 1200);
     })();
 
     const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;

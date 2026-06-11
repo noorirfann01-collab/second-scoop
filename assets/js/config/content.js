@@ -33,6 +33,13 @@ window.SS_CONTENT = {
     swapTitles: true,     // scroll-and-swap animation on big section titles
   },
 
+  /* ---- OPENING INTRO (liquid morphing words, Backend → Homepage) --- */
+  intro: {
+    enabled: true,                 // show the animated splash when the homepage opens
+    oncePerSession: true,          // only the first homepage view per browser session
+    words: ["Warm.", "Gooey.", "Scoopable.", "Second Scoop."],
+  },
+
   /* ---- HOMEPAGE SECTIONS (toggle on/off in Backend → Homepage) ----
      Set any of these to false to hide that block from the home page.    */
   home: {
@@ -77,9 +84,10 @@ window.SS_CONTENT = {
     // Scroll-expand hero video (in assets/video/ or a full URL). Poster shows before it loads.
     video: "assets/video/hero.mp4",
     videoPoster: "assets/video/hero-poster.jpg",
-    // Phones often block video autoplay. "tap" = show poster + a play button on mobile
-    // (most reliable). "auto" = still try to autoplay on mobile. Desktop always autoplays.
-    mobileMode: "tap",
+    // Phones: "auto" = autoplay silently (muted) just like desktop, retrying on the
+    // first touch/scroll if the browser blocks it — no visible button. "tap" = show a
+    // play button on mobile instead. Default "auto".
+    mobileMode: "auto",
     headline: "The cookie you were never supposed to <span class=\"accent\">stop</span> eating.",
     sub: "Warm. Gooey. Scoopable. Baked in a tin and built for a spoon. Meet <strong>The OG Scoopie</strong> — and try not to finish it standing up.",
     trust: [
