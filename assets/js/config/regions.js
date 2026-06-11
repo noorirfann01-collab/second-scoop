@@ -1,5 +1,5 @@
 /* Second Scoop — regions.js
-   Exported from the Backend on 12/06/2026, 03:31:09.
+   Exported from the Backend on 12/06/2026, 03:33:02.
    Replace the matching file in assets/js/config/ to publish. */
 
 window.SS_REGIONS = {
@@ -13,7 +13,7 @@ window.SS_REGIONS = {
     "locale": "en-PK",
     "announcement": {
       "enabled": true,
-      "text": "Nationwide pre-orders are OPEN — pre-orders close Thursday at midnight.",
+      "text": "Lahore pre-orders are OPEN — pre-orders close Thursday at midnight.",
       "style": "preorder"
     },
     "delivery": {
@@ -47,7 +47,7 @@ window.SS_REGIONS = {
     "currencyPosition": "before",
     "locale": "en-CA",
     "announcement": {
-      "enabled": true,
+      "enabled": false,
       "text": "GTA weekend drop is LIVE — order by Friday 6pm for Saturday delivery.",
       "style": "available"
     },
