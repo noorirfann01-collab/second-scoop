@@ -1,5 +1,5 @@
 /* Second Scoop — content.js
-   Exported from the Backend on 12/06/2026, 04:31:55.
+   Exported from the Backend on 12/06/2026, 04:36:22.
    Replace the matching file in assets/js/config/ to publish. */
 
 window.SS_CONTENT = {
@@ -170,22 +170,22 @@ window.SS_CONTENT = {
     "name": "Second Scoop",
     "tagline": "The First Scoop Is Never Enough.",
     "email": "hello@secondscoop.co",
-    "instagram": "secondscoop",
+    "instagram": "secondscoopco",
     "instagramUrl": "https://instagram.com/secondscoop",
-    "footerNote": "Made with too much chocolate."
+    "footerNote": "You will NOT want to share this."
   },
   "hero": {
     "showWordmark": true,
-    "tagline": "The First Scoop Is Never Enough.",
+    "tagline": "Because one is never enough.",
     "video": "assets/video/hero.mp4",
     "videoPoster": "assets/video/hero-poster.jpg",
     "mobileMode": "auto",
     "headline": "The cookie you were never supposed to <span class=\"accent\">stop</span> eating.",
     "sub": "Warm. Gooey. Scoopable. Baked in a tin and built for a spoon. Meet <strong>The OG Scoopie</strong> — and try not to finish it standing up.",
     "trust": [
-      "★ 4.9 from 800+ scoopers",
+      "★ 4.9 from 100+ scoopers",
       "🍪 Egg-free dough options",
-      "⚡ Same-day in Lahore"
+      "⚡ Delivery all over Lahore"
     ],
     "image": "dsc-4505-1-mqa0okiu.png"
   },
@@ -269,11 +269,11 @@ window.SS_CONTENT = {
   "faq": [
     {
       "q": "What is a Scoopie?",
-      "a": "The OG Scoopie is a super soft, gooey cookie baked in its own tin and designed to be eaten with a spoon. Crisp edges, a warm molten middle, and pools of melting chocolate. Heat it for ~15 seconds and scoop straight in."
+      "a": "The OG Scoopie is a super soft, gooey cookie baked in its own tin and designed to be eaten with a spoon. Crisp edges, a warm molten middle, and pools of melting chocolate. Heat it for ~15-30 seconds and scoop straight in."
     },
     {
       "q": "What is edible cookie dough?",
-      "a": "Our Doughiginals are tubs of cookie dough made to be eaten raw, by the spoon. They're egg-free and made with heat-treated flour, so there's no raw-egg or raw-flour risk. Rich, fudgy and loaded with chocolate."
+      "a": "Our Doughiginals are tubs of cookie dough made to be eaten raw, by the spoon. They're egg-free and made with heat-treated flour, so there's no raw-egg or raw-flour risk. Rich, fudgy and loaded with Callebaut chocolate."
     },
     {
       "q": "Can I bake The Doughiginals?",
