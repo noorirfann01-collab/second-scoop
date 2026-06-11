@@ -179,16 +179,21 @@
     const rid = regionId || getRegion();
     const r = p.regions[rid];
     if (!r) return null;
+    // A region marked "Coming Soon" shows every product as coming-soon and not
+    // orderable — a pre-launch holding state until the owner flips it live.
+    const reg = regionById(rid);
+    const comingSoon = !!(reg && reg.comingSoon);
+    const status = comingSoon ? "coming-soon" : r.status;
     return {
       id: p.id, name: p.name, category: p.category, tagline: p.tagline,
       description: p.description, longDescription: p.longDescription,
       images: p.images, image: (p.images && p.images[0]) || null,
       imageSrc: imgSrc((p.images && p.images[0]) || null),
-      badge: p.badge, featured: !!p.featured, hero: !!p.hero, secret: !!p.secret,
+      badge: comingSoon ? "" : p.badge, featured: !!p.featured, hero: !!p.hero, secret: !!p.secret,
       reviews: p.reviews || { rating: 0, count: 0 },
-      status: r.status, price: r.price, inventory: r.inventory,
+      status: status, price: r.price, inventory: r.inventory,
       deliveryNotes: r.deliveryNotes || "",
-      buyable: r.status === "available" || r.status === "preorder" || r.status === "closing",
+      buyable: !comingSoon && (status === "available" || status === "preorder" || status === "closing"),
     };
   }
   function categoryName(id) {

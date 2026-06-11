@@ -1,299 +1,206 @@
-/* Second Scoop — content.js
-   Exported from the Backend on 12/06/2026, 03:33:02.
-   Replace the matching file in assets/js/config/ to publish. */
+/* =====================================================================
+   SECOND SCOOP — SITE COPY / CONTENT
+   ---------------------------------------------------------------------
+   All editable wording lives here (and is also editable visually in the
+   Backend → Content & Copy tab). Region-specific info like pickup
+   address, delivery cities and fees lives in regions.js (editable in
+   Backend → Settings → Locations).
+   ===================================================================== */
 
 window.SS_CONTENT = {
-  "theme": {
-    "choc": "#2e1a0e",
-    "caramel": "#b0763c",
-    "cookie": "#c68a4e",
-    "cream": "#fbf4e6",
-    "blush": "#f3c9c7",
-    "gold": "#c9a24b"
+
+  /* ---- THEME: site colours (editable in Backend → Design) ---------- */
+  theme: {
+    choc:    "#2e1a0e",   // main brand / text
+    caramel: "#b0763c",   // accent (links, highlights)
+    cookie:  "#c68a4e",   // warm cookie tone
+    cream:   "#fbf4e6",   // page background
+    blush:   "#f3c9c7",   // soft pink accent
+    gold:    "#c9a24b",   // gold accent
   },
-  "header": {
-    "logoAlign": "left",
-    "logoSize": 34,
-    "showWordmark": false
+
+  /* ---- HEADER / LOGO (editable in Backend → Design) ---------------- */
+  header: {
+    logoAlign: "left",    // "left" | "center"
+    logoSize: 34,         // pixel height of the logo mark
+    showWordmark: true,   // show the "Second Scoop." text beside the mark
   },
-  "effects": {
-    "scrollReveal": true,
-    "heroParallax": true,
-    "swapTitles": true
+
+  /* ---- MOTION / EFFECTS -------------------------------------------- */
+  effects: {
+    scrollReveal: true,   // fade/slide sections in as you scroll
+    heroParallax: true,   // gentle parallax on the hero
+    swapTitles: true,     // scroll-and-swap animation on big section titles
   },
-  "sections": {
-    "featured": {
-      "eyebrow": "The Signature",
-      "title": "Featured Scoops",
-      "link": "Shop all →"
-    },
-    "bestSellers": {
-      "eyebrow": "Crowd Favourites",
-      "title": "Best Sellers"
-    },
-    "limited": {
-      "eyebrow": "Here & Gone",
-      "title": "Limited Drops"
-    },
-    "vaultTeaser": {
-      "eyebrow": "Invite-Only",
-      "title": "The Vault",
-      "text": "Secret scoops you won't find anywhere on this site. Salted caramel stuffed Scoopies, churro drops, collabs — unlocked only with a code.",
-      "button": "Enter The Vault →"
-    },
-    "howItWorks": {
-      "eyebrow": "Easy as Dessert",
-      "title": "How It Works"
-    },
-    "reviews": {
-      "eyebrow": "Real Scoopers",
-      "title": "People Are Obsessed",
-      "button": "✍️ Leave a review"
-    },
-    "instagram": {
-      "eyebrow": "@secondscoopco",
-      "title": "From The Feed",
-      "link": "Follow us →"
-    },
-    "signup": {
-      "eyebrow": "Don't Miss A Drop",
-      "title": "Unlock Future Scoops",
-      "text": "Secret Scoop alerts, new drops, restocks and launch codes — straight to your inbox & phone."
-    }
+
+  /* ---- HOMEPAGE SECTION HEADINGS & COPY (Backend → Pages & Text) ---
+     Every visible heading/intro on the homepage is editable here.        */
+  sections: {
+    featured:    { eyebrow: "The Signature", title: "Featured Scoops", link: "Shop all →" },
+    bestSellers: { eyebrow: "Crowd Favourites", title: "Best Sellers" },
+    limited:     { eyebrow: "Here & Gone", title: "Limited Drops" },
+    vaultTeaser: { eyebrow: "Invite-Only", title: "The Vault",
+                   text: "Secret scoops you won't find anywhere on this site. Salted caramel stuffed Scoopies, churro drops, collabs — unlocked only with a code.",
+                   button: "Enter The Vault →" },
+    howItWorks:  { eyebrow: "Easy as Dessert", title: "How It Works" },
+    reviews:     { eyebrow: "Real Scoopers", title: "People Are Obsessed", button: "✍️ Leave a review" },
+    instagram:   { eyebrow: "@secondscoopco", title: "From The Feed", link: "Follow us →" },
+    signup:      { eyebrow: "Don't Miss A Drop", title: "Unlock Future Scoops",
+                   text: "Secret Scoop alerts, new drops, restocks and launch codes — straight to your inbox & phone." },
   },
-  "pages": {
-    "shop": {
-      "eyebrow": "Storefront",
-      "title": "Shop",
-      "searchPlaceholder": "Search scoops…"
+
+  /* ---- OTHER PAGES' TEXT (all editable in Backend → Pages & Text) -- */
+  pages: {
+    shop:    { eyebrow: "Storefront", title: "Shop", searchPlaceholder: "Search scoops…" },
+    faq:     { eyebrow: "Good Questions", title: "FAQ", intro: "Everything you need to know before your first scoop." },
+    contact: {
+      eyebrow: "Say Hello", title: "Contact",
+      intro: "Orders, collabs, wholesale or just to tell us the OG Scoopie changed your life.",
+      formTitle: "Send a message", nameLabel: "Name", emailLabel: "Email", messageLabel: "Message", sendButton: "Send",
+      followTitle: "Follow the drops", followText: "New flavours, restocks and Vault codes land on Instagram first.",
     },
-    "faq": {
-      "eyebrow": "Good Questions",
-      "title": "FAQ",
-      "intro": "Everything you need to know before your first scoop."
+    preorders: {
+      eyebrow: "Drops & Batches", title: "How Pre-Orders Work",
+      intro: "We bake in small batches and drop in limited windows. Here's how to never miss one.",
+      step1Title: "A drop opens", step1Text: "We announce a batch. The bar at the top of the site shows the live status and deadline.",
+      step2Title: "You pre-order", step2Text: "Add pre-order items to your cart and check out as normal. You'll get an order number instantly.",
+      step3Title: "The window closes", step3Text: "Once the deadline hits, we lock the batch and start baking. No late orders — that's what keeps it fresh.",
+      step4Title: "Pickup or delivery", step4Text: "We fulfil on the drop date you chose, by pickup or delivery, and confirm timing with you directly.",
+      statusesTitle: "Product statuses, explained",
+      statusesIntro: "Every product shows one of these statuses so you always know where things stand:",
     },
-    "contact": {
-      "eyebrow": "Say Hello",
-      "title": "Contact",
-      "intro": "Orders, collabs, wholesale or just to tell us the OG Scoopie changed your life.",
-      "formTitle": "Send a message",
-      "nameLabel": "Name",
-      "emailLabel": "Email",
-      "messageLabel": "Message",
-      "sendButton": "Send",
-      "followTitle": "Follow the drops",
-      "followText": "New flavours, restocks and Vault codes land on Instagram first."
+    vault: {
+      unlockButton: "Unlock", codePlaceholder: "ENTER CODE",
+      welcomeEyebrow: "🔓 Unlocked", welcomeTitle: "Welcome to The Vault",
+      welcomeText: "These never appear in the normal shop. Grab them before they vanish.",
+      addMore: "Enter another code",
     },
-    "preorders": {
-      "eyebrow": "Drops & Batches",
-      "title": "How Pre-Orders Work",
-      "intro": "We bake in small batches and drop in limited windows. Here's how to never miss one.",
-      "step1Title": "A drop opens",
-      "step1Text": "We announce a batch. The bar at the top of the site shows the live status and deadline.",
-      "step2Title": "You pre-order",
-      "step2Text": "Add pre-order items to your cart and check out as normal. You'll get an order number instantly.",
-      "step3Title": "The window closes",
-      "step3Text": "Once the deadline hits, we lock the batch and start baking. No late orders — that's what keeps it fresh.",
-      "step4Title": "Pickup or delivery",
-      "step4Text": "We fulfil on the drop date you chose, by pickup or delivery, and confirm timing with you directly.",
-      "statusesTitle": "Product statuses, explained",
-      "statusesIntro": "Every product shows one of these statuses so you always know where things stand:"
+    cart:     { eyebrow: "Almost There", title: "Your Cart" },
+    checkout: { eyebrow: "Final Step", title: "Checkout" },
+  },
+
+  /* ---- TOP MENU LINKS (toggle on/off in Backend → Menu & Regions) -- */
+  nav: {
+    home: true, shop: true, vault: true, preorders: true,
+    about: true, faq: true, contact: true,
+  },
+
+  /* ---- OPENING INTRO (liquid morphing words, Backend → Homepage) --- */
+  intro: {
+    enabled: true,                 // show the animated splash when the homepage opens
+    oncePerSession: true,          // only the first homepage view per browser session
+    words: ["Warm.", "Gooey.", "Scoopable."],  // the SS logo plays as the final beat
+    logoEnding: true,              // end on the SS logo that splits open to reveal the site
+    logo: "assets/img/logo-mark-cream.png",  // cream mark reads on the dark intro background
+  },
+
+  /* ---- HOMEPAGE SECTIONS (toggle on/off in Backend → Homepage) ----
+     Set any of these to false to hide that block from the home page.    */
+  home: {
+    sections: {
+      regions:     false,  // region picker cards (off by default — the opening country gate handles this)
+      featured:    true,   // Featured Scoops
+      bestSellers: true,   // Best Sellers
+      limited:     true,   // Limited Drops
+      vault:       true,   // The Vault teaser
+      about:       true,   // About Second Scoop
+      howItWorks:  true,   // How It Works steps
+      reviews:     true,   // Customer reviews
+      carousel:    true,   // Photo carousel
+      instagram:   true,   // Instagram feed
+      signup:      true,   // Email / SMS signup
     },
-    "vault": {
-      "unlockButton": "Unlock",
-      "codePlaceholder": "ENTER CODE",
-      "welcomeEyebrow": "🔓 Unlocked",
-      "welcomeTitle": "Welcome to The Vault",
-      "welcomeText": "These never appear in the normal shop. Grab them before they vanish.",
-      "addMore": "Enter another code"
-    },
-    "cart": {
-      "eyebrow": "Almost There",
-      "title": "Your Cart"
-    },
-    "checkout": {
-      "eyebrow": "Final Step",
-      "title": "Checkout"
-    }
   },
-  "nav": {
-    "home": true,
-    "shop": true,
-    "vault": true,
-    "preorders": true,
-    "about": true,
-    "faq": true,
-    "contact": true
+
+  /* ---- INSTAGRAM FEED (homepage "From The Feed") ------------------
+     Two ways to connect, set in Backend → Design → Instagram feed:
+     • "embed"  — paste a free widget embed (LightWidget / Behold / SnapWidget)
+                  that shows your LIVE @secondscoopco feed, auto-updating.
+     • "tiles"  — upload your favourite photos; each links to your profile.    */
+  instagramFeed: {
+    mode: "tiles",        // "tiles" | "embed"
+    embedHtml: "",        // paste the widget's embed code/iframe here
+    tiles: [],            // image filenames in assets/img/ or full URLs
   },
-  "intro": {
-    "enabled": true,
-    "oncePerSession": true,
-    "words": [
-      "Warm.",
-      "Gooey.",
-      "Loaded.",
-      "Scoopable.",
-      "Addictive."
-    ],
-    "logoEnding": true,
-    "logo": "assets/img/logo-mark-cream.png"
+
+  /* ---- PHOTO CAROUSEL (homepage) ----------------------------------- */
+  gallery: {
+    enabled: true,
+    title: "Straight Off The Spoon",
+    eyebrow: "The Gallery",
+    autoplay: true,
+    // Each item: an image filename in assets/img/ OR a full URL.
+    // Add/remove these in Backend → Design → Photo carousel.
+    images: [],
   },
-  "home": {
-    "sections": {
-      "regions": true,
-      "featured": false,
-      "bestSellers": true,
-      "limited": false,
-      "vault": true,
-      "about": false,
-      "howItWorks": true,
-      "reviews": true,
-      "carousel": true,
-      "instagram": true,
-      "signup": true
-    }
+
+  brand: {
+    name: "Second Scoop",
+    tagline: "The First Scoop Is Never Enough.",
+    email: "hello@secondscoop.co",
+    instagram: "secondscoopco",
+    instagramUrl: "https://instagram.com/secondscoopco",
+    footerNote: "Made with too much chocolate.",
   },
-  "gallery": {
-    "enabled": true,
-    "title": "Straight Off The Spoon",
-    "eyebrow": "The Gallery",
-    "autoplay": true,
-    "images": [
-      "dsc-4505-mqa0pbr4.png",
-      "dsc-4507-mqa0pihc.png",
-      "dsc-4534-1-mqa0pqmr.png",
-      "dsc-4549-mqa0pz5g.png",
-      "dsc-4496-mqa0q6il.png"
-    ]
-  },
-  "brand": {
-    "name": "Second Scoop",
-    "tagline": "The First Scoop Is Never Enough.",
-    "email": "hello@secondscoop.co",
-    "instagram": "secondscoop",
-    "instagramUrl": "https://instagram.com/secondscoop",
-    "footerNote": "Made with too much chocolate."
-  },
-  "hero": {
-    "showWordmark": true,
-    "tagline": "The First Scoop Is Never Enough.",
-    "video": "assets/video/hero.mp4",
-    "videoPoster": "assets/video/hero-poster.jpg",
-    "mobileMode": "auto",
-    "headline": "The cookie you were never supposed to <span class=\"accent\">stop</span> eating.",
-    "sub": "Warm. Gooey. Scoopable. Baked in a tin and built for a spoon. Meet <strong>The OG Scoopie</strong> — and try not to finish it standing up.",
-    "trust": [
+
+  hero: {
+    showWordmark: true,
+    tagline: "The First Scoop Is Never Enough.",
+    // Scroll-expand hero video (in assets/video/ or a full URL). Poster shows before it loads.
+    video: "assets/video/hero.mp4",
+    videoPoster: "assets/video/hero-poster.jpg",
+    // Phones: "auto" = autoplay silently (muted) just like desktop, retrying on the
+    // first touch/scroll if the browser blocks it — no visible button. "tap" = show a
+    // play button on mobile instead. Default "auto".
+    mobileMode: "auto",
+    headline: "The cookie you were never supposed to <span class=\"accent\">stop</span> eating.",
+    sub: "Warm. Gooey. Scoopable. Baked in a tin and built for a spoon. Meet <strong>The OG Scoopie</strong> — and try not to finish it standing up.",
+    trust: [
       "★ 4.9 from 800+ scoopers",
       "🍪 Egg-free dough options",
-      "⚡ Same-day in Lahore"
+      "⚡ Same-day in Lahore",
     ],
-    "image": "dsc-4505-1-mqa0okiu.png"
   },
-  "howItWorks": [
-    {
-      "title": "Pick your region",
-      "text": "Pakistan or Toronto — each has its own menu, pricing and drops."
-    },
-    {
-      "title": "Choose your scoops",
-      "text": "Add Scoopies, Chunkies & dough tubs to your cart. Pre-order the next drop."
-    },
-    {
-      "title": "Pickup or delivery",
-      "text": "Pick a date, add notes, and choose how you want it delivered."
-    },
-    {
-      "title": "Scoop in",
-      "text": "Reheat for 15s, grab a spoon, and remember — the first scoop is never enough."
-    }
+
+  howItWorks: [
+    { title: "Pick your region", text: "Pakistan or Toronto — each has its own menu, pricing and drops." },
+    { title: "Choose your scoops", text: "Add Scoopies, Chunkies & dough tubs to your cart. Pre-order the next drop." },
+    { title: "Pickup or delivery", text: "Pick a date, add notes, and choose how you want it delivered." },
+    { title: "Scoop in", text: "Reheat for 15s, grab a spoon, and remember — the first scoop is never enough." },
   ],
-  "about": {
-    "eyebrow": "Our Story",
-    "title": "The First Scoop Is Never Enough.",
-    "lead": "We make the dessert you think about after you've already had dessert.",
-    "paragraphs": [
+
+  about: {
+    eyebrow: "Our Story",
+    title: "The First Scoop Is Never Enough.",
+    lead: "We make the dessert you think about after you've already had dessert.",
+    paragraphs: [
       "Second Scoop started with one stubborn idea: a cookie so soft and gooey it had to be eaten with a spoon. Not a biscuit. Not a cake. Something in between — warm, molten, and impossible to put down. We baked it in a tin, called it The OG Scoopie, and watched people finish it standing over the counter.",
       "From there it grew. Thick, soft-centred Chunkies loaded with chocolate. Egg-free, safe-to-eat-raw Doughiginals you can dig into straight from the tub. And a hidden corner — The Vault — where our experiments, collabs and stuffed secret scoops live, unlocked only with a code.",
-      "We're a small operation that takes craving seriously. Everything is made in tight batches, dropped in limited runs, and built around one feeling: that pull to go back for just one more scoop."
+      "We're a small operation that takes craving seriously. Everything is made in tight batches, dropped in limited runs, and built around one feeling: that pull to go back for just one more scoop.",
     ],
-    "values": [
-      {
-        "emoji": "🥄",
-        "title": "Scoopable by design",
-        "text": "Soft centres, gooey middles, textures built for a spoon — not a snap."
-      },
-      {
-        "emoji": "✨",
-        "title": "Limited by nature",
-        "text": "Small batches and timed drops. When it's gone, it's gone."
-      },
-      {
-        "emoji": "🔒",
-        "title": "Secret by intention",
-        "text": "The best flavours hide in The Vault for the people in the know."
-      },
-      {
-        "emoji": "🌍",
-        "title": "Two cities, one craving",
-        "text": "Independent storefronts in Pakistan and Toronto, each with its own menu."
-      }
+    values: [
+      { emoji: "🥄", title: "Scoopable by design", text: "Soft centres, gooey middles, textures built for a spoon — not a snap." },
+      { emoji: "✨", title: "Limited by nature", text: "Small batches and timed drops. When it's gone, it's gone." },
+      { emoji: "🔒", title: "Secret by intention", text: "The best flavours hide in The Vault for the people in the know." },
+      { emoji: "🌍", title: "Two cities, one craving", text: "Independent storefronts in Pakistan and Toronto, each with its own menu." },
     ],
-    "stats": [
-      {
-        "value": 800,
-        "suffix": "+",
-        "label": "Happy scoopers"
-      },
-      {
-        "value": 12,
-        "suffix": "",
-        "label": "Signature flavours"
-      },
-      {
-        "value": 4.9,
-        "suffix": "★",
-        "label": "Average rating",
-        "decimals": 1
-      },
-      {
-        "value": 100,
-        "suffix": "%",
-        "label": "Made in small batches"
-      }
+    // Animated counters that count up when the section scrolls into view.
+    stats: [
+      { value: 800, suffix: "+", label: "Happy scoopers" },
+      { value: 12, suffix: "", label: "Signature flavours" },
+      { value: 4.9, suffix: "★", label: "Average rating", decimals: 1 },
+      { value: 100, suffix: "%", label: "Made in small batches" },
     ],
-    "cta": {
-      "title": "Hungry yet?",
-      "text": "Pick your region and start scooping."
-    }
+    cta: { title: "Hungry yet?", text: "Pick your region and start scooping." },
   },
-  "faq": [
-    {
-      "q": "What is a Scoopie?",
-      "a": "The OG Scoopie is a super soft, gooey cookie baked in its own tin and designed to be eaten with a spoon. Crisp edges, a warm molten middle, and pools of melting chocolate. Heat it for ~15 seconds and scoop straight in."
-    },
-    {
-      "q": "What is edible cookie dough?",
-      "a": "Our Doughiginals are tubs of cookie dough made to be eaten raw, by the spoon. They're egg-free and made with heat-treated flour, so there's no raw-egg or raw-flour risk. Rich, fudgy and loaded with chocolate."
-    },
-    {
-      "q": "Can I bake The Doughiginals?",
-      "a": "No — the Doughiginals are formulated to be eaten raw, not baked. They won't behave like regular cookie dough in the oven. If you want a warm baked experience, that's exactly what The OG Scoopie is for."
-    },
-    {
-      "q": "How do Secret Scoops work?",
-      "a": "Secret Scoops live in The Vault. They're hidden until you enter a valid code, which we share with our email/SMS list and on Instagram. Enter the code, the secret product is revealed, and you can add it to your cart. Codes can differ by region."
-    },
-    {
-      "q": "How do pre-orders work?",
-      "a": "Some items are made to order in batches. When something is on pre-order, you can buy it now and we fulfil it on the next drop date. Pre-order windows close on a deadline shown in the announcement bar at the top of the site."
-    },
-    {
-      "q": "How long do products last?",
-      "a": "For the best experience, eat your Scoopies and Chunkies within 3–4 days and keep dough tubs refrigerated and enjoy within about a week of delivery. Scoopies are best warmed for ~30 seconds before eating."
-    },
-    {
-      "q": "Do you deliver?",
-      "a": "Yes — delivery and pickup are both available. Delivery areas, fees and timing depend on your region. Switch your region using the selector at the top of the page to see exact details."
-    }
-  ]
+
+  faq: [
+    { q: "What is a Scoopie?", a: "The OG Scoopie is a super soft, gooey cookie baked in its own tin and designed to be eaten with a spoon. Crisp edges, a warm molten middle, and pools of melting chocolate. Heat it for ~15 seconds and scoop straight in." },
+    { q: "What is edible cookie dough?", a: "Our Doughiginals are tubs of cookie dough made to be eaten raw, by the spoon. They're egg-free and made with heat-treated flour, so there's no raw-egg or raw-flour risk. Rich, fudgy and loaded with chocolate." },
+    { q: "Can I bake The Doughiginals?", a: "No — the Doughiginals are formulated to be eaten raw, not baked. They won't behave like regular cookie dough in the oven. If you want a warm baked experience, that's exactly what The OG Scoopie is for." },
+    { q: "How do Secret Scoops work?", a: "Secret Scoops live in The Vault. They're hidden until you enter a valid code, which we share with our email/SMS list and on Instagram. Enter the code, the secret product is revealed, and you can add it to your cart. Codes can differ by region." },
+    { q: "How do pre-orders work?", a: "Some items are made to order in batches. When something is on pre-order, you can buy it now and we fulfil it on the next drop date. Pre-order windows close on a deadline shown in the announcement bar at the top of the site." },
+    { q: "How long do products last?", a: "For the best experience, eat your Scoopies and Chunkies within 3–4 days and keep dough tubs refrigerated and enjoy within about a week of delivery. Scoopies are best warmed for ~15 seconds before eating." },
+    { q: "Do you deliver?", a: "Yes — delivery and pickup are both available. Delivery areas, fees and timing depend on your region. Switch your region using the selector at the top of the page to see exact details." },
+  ],
 };

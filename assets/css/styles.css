@@ -345,6 +345,13 @@ section{position:relative}
 .ss-gate-card strong{font-family:'Fredoka',sans-serif;font-size:1.25rem}
 .ss-gate-meta{font-size:.85rem;color:rgba(255,255,255,.6)}
 .ss-gate-go{margin-top:.5rem;font-weight:700;color:var(--gold-soft,#e8c878);font-size:.92rem}
+.ss-gate-card.is-soon{opacity:.82}
+.ss-gate-card.is-soon:hover{opacity:1}
+.ss-gate-badge{position:absolute;top:12px;right:12px;background:var(--gold,#c9a24b);color:#231307;font-size:.66rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:3px 9px;border-radius:999px}
+.ss-gate-card{position:relative}
+.ss-region-item.is-soon em{color:var(--gold,#c9a24b);font-style:normal;font-weight:700}
+.ss-region-state{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--cream)}
+.ss-region-state strong{font-family:'Fredoka',sans-serif;color:var(--choc)}
 @media(max-width:520px){.ss-gate-cards{grid-template-columns:1fr}}
 
 /* ===================== PREVIEW MODE BANNER ===================== */
@@ -520,6 +527,8 @@ section{position:relative}
 .ss-ig-tile:nth-child(4n){background:linear-gradient(135deg,var(--blush),var(--blush-soft))}
 .ss-ig-tile img{width:100%;height:100%;object-fit:cover}
 .ss-ig-tile:hover{transform:scale(1.03)}
+.ss-ig-embed{display:block}
+.ss-ig-embed iframe{width:100%!important;min-height:540px;border:0;border-radius:var(--r-lg);background:var(--cream-2)}
 
 /* ---- signup band ---------------------------------------------------- */
 .ss-signup{background:linear-gradient(135deg,var(--choc),var(--cocoa));color:var(--cream);border-radius:var(--r-xl);padding:48px 32px;text-align:center}

@@ -940,7 +940,6 @@
 
   /* ==================================================== HOMEPAGE ==== */
   const HOME_SECTIONS = [
-    ["regions", "Region picker", "The two “Shop Pakistan / Toronto” cards"],
     ["featured", "Featured Scoops", "Your signature / featured products"],
     ["bestSellers", "Best Sellers", "Crowd-favourite products"],
     ["limited", "Limited Drops", "Limited / closing-soon items + countdown"],
@@ -1020,20 +1019,31 @@
         </div>
       </div>
       <div class="ss-panel" style="margin-bottom:14px"><h3>Regions / countries</h3>
-        <p style="color:var(--ink-60);font-size:.9rem">Untick a store to hide it everywhere — the country picker, the opening choice and switching — until it's ready (e.g. keep <b>Toronto</b> hidden for now). If only one store is live, customers skip the country picker entirely. Leave at least one ticked.</p>
-        <div class="ss-home-toggles">
-          ${regions.map(r => `
-            <label class="ss-home-toggle"><input type="checkbox" id="rgn-${r.id}" ${!r.hidden ? "checked" : ""}>
-              <span class="ss-home-toggle-box"></span><span class="ss-home-toggle-txt"><strong>${r.flag} Shop ${r.name}</strong><small>${r.currency}</small></span></label>`).join("")}
+        <p style="color:var(--ink-60);font-size:.9rem">Set each store's status. <b>Live</b> = fully orderable. <b>Coming soon</b> = shown everywhere (gate + flag dropdown) but products display as “Coming Soon” and can't be ordered yet. <b>Hidden</b> = removed completely. Leave at least one Live.</p>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
+          ${regions.map(r => {
+            const state = r.hidden ? "hidden" : (r.comingSoon ? "soon" : "live");
+            return `<div class="ss-region-state">
+              <strong>${r.flag} ${r.name} <small style="color:var(--ink-40);font-weight:600">${r.currency}</small></strong>
+              <select class="ss-field ss-field--sm" id="rgn-${r.id}" style="max-width:200px">
+                <option value="live" ${state === "live" ? "selected" : ""}>🟢 Live — orderable</option>
+                <option value="soon" ${state === "soon" ? "selected" : ""}>🟡 Coming soon</option>
+                <option value="hidden" ${state === "hidden" ? "selected" : ""}>⚪️ Hidden</option>
+              </select></div>`;
+          }).join("")}
         </div>
       </div>
       <button class="ss-btn" id="menu-save">Save menu &amp; regions (go live)</button>`;
 
     document.getElementById("menu-save").onclick = () => {
-      const liveCount = regions.filter(r => chkd("rgn-" + r.id)).length;
-      if (liveCount < 1) { SSApp.toast("Keep at least one region live, or the shop has nothing to show.", "err"); return; }
+      const states = {}; regions.forEach(r => { states[r.id] = val("rgn-" + r.id); });
+      const notHidden = regions.filter(r => states[r.id] !== "hidden").length;
+      if (notHidden < 1) { SSApp.toast("Keep at least one region visible, or the shop has nothing to show.", "err"); return; }
       NAV_ITEMS.forEach(([k]) => { C.nav[k] = chkd("nav-" + k); });
-      regions.forEach(r => { SS.saveRegionPatch(r.id, { hidden: !chkd("rgn-" + r.id) }); });
+      regions.forEach(r => {
+        const s = states[r.id];
+        SS.saveRegionPatch(r.id, { hidden: s === "hidden", comingSoon: s === "soon" });
+      });
       persistContent(); updateLiveBadge(); SSApp.toast("Menu & regions saved — live 🧭", "ok");
     };
   }
@@ -1046,6 +1056,8 @@
   function renderDesign() {
     const C = content;
     C.theme = C.theme || {}; C.header = C.header || {}; C.effects = C.effects || {}; C.gallery = C.gallery || { images: [] };
+    C.instagramFeed = C.instagramFeed || { mode: "tiles", embedHtml: "", tiles: [] };
+    const igf = C.instagramFeed;
     const g = C.gallery;
     body().innerHTML = `
       <div class="ss-panel" style="margin-bottom:14px"><h3>Colour scheme</h3>
@@ -1110,7 +1122,22 @@
         <label class="ss-label" style="margin-top:12px">Photos (filename in assets/img/ or a full URL — one per line)</label>
         <textarea class="ss-field" id="g-imgs" style="min-height:110px">${esc((g.images || []).join("\n"))}</textarea>
         <div style="margin-top:8px"><button class="ss-chip" id="g-up-btn">⬆ Upload photos to carousel</button><input type="file" id="g-up" accept="image/*" multiple hidden></div>
-        <small class="ss-seed">Upload publishes the photos to your site (via GitHub) and adds their filenames above automatically.</small>
+        <small class="ss-seed">Upload publishes the photos to your site (via GitHub) and adds their filenames above automatically. Tip: a full image URL (https://…) also works.</small>
+      </div>
+
+      <div class="ss-panel" style="margin-bottom:14px"><h3>Instagram feed (“From The Feed”)</h3>
+        <p style="color:var(--ink-60);font-size:.9rem">Two ways to connect <strong>@${esc((C.brand && C.brand.instagram) || "secondscoopco")}</strong>:</p>
+        <label class="ss-switch ss-switch--chip" style="margin-bottom:8px"><input type="radio" name="igmode" value="tiles" ${igf.mode !== "embed" ? "checked" : ""}><span><strong>Photo tiles</strong> — upload your favourite posts; each links to your profile (most reliable)</span></label>
+        <label class="ss-switch ss-switch--chip"><input type="radio" name="igmode" value="embed" ${igf.mode === "embed" ? "checked" : ""}><span><strong>Live widget</strong> — paste an embed that auto-shows your real feed</span></label>
+
+        <div style="margin-top:12px"><label class="ss-label">Photo tiles (filename in assets/img/ or a full URL — one per line)</label>
+          <textarea class="ss-field" id="ig-tiles" style="min-height:90px">${esc((igf.tiles || []).join("\n"))}</textarea>
+          <div style="margin-top:8px"><button class="ss-chip" id="ig-up-btn">⬆ Upload Instagram photos</button><input type="file" id="ig-up" accept="image/*" multiple hidden></div>
+        </div>
+
+        <label class="ss-label" style="margin-top:14px">Live widget embed code (optional)</label>
+        <textarea class="ss-field" id="ig-embed" style="min-height:80px;font-family:monospace;font-size:.82rem" placeholder="<iframe src='https://lightwidget.com/widgets/...'></iframe>">${esc(igf.embedHtml || "")}</textarea>
+        <small class="ss-seed">Get a free embed at <b>lightwidget.com</b>, <b>behold.so</b> or <b>snapwidget.com</b> — connect your Instagram there, copy the embed code, paste it here, and choose “Live widget” above.</small>
       </div>
 
       <button class="ss-btn" id="d-save">Save design (go live preview)</button>`;
@@ -1170,6 +1197,20 @@
       gBtn.disabled = false; gBtn.textContent = "⬆ Upload photos to carousel";
     };
 
+    // instagram photo upload
+    const igBtn = document.getElementById("ig-up-btn"), igIn = document.getElementById("ig-up");
+    igBtn.onclick = () => igIn.click();
+    igIn.onchange = async e => {
+      const files = [...e.target.files]; e.target.value = "";
+      const ta = document.getElementById("ig-tiles");
+      for (const file of files) {
+        igBtn.disabled = true; igBtn.textContent = "Uploading…";
+        try { const name = await uploadImageToGitHub(file); ta.value = (ta.value.trim() ? ta.value.trim() + "\n" : "") + name; SSApp.toast("Added " + name, "ok"); }
+        catch (err) { SSApp.toast(String(err), "err"); }
+      }
+      igBtn.disabled = false; igBtn.textContent = "⬆ Upload Instagram photos";
+    };
+
     document.getElementById("d-save").onclick = () => {
       C.header.logoAlign = val("h-align"); C.header.logoSize = Math.max(20, Math.min(60, parseInt(val("h-size"), 10) || 34)); C.header.showWordmark = chkd("h-word");
       C.effects.scrollReveal = chkd("e-reveal"); C.effects.heroParallax = chkd("e-parallax");
@@ -1177,6 +1218,10 @@
       C.hero.video = val("hvid-src").trim();
       g.enabled = chkd("g-on"); g.eyebrow = val("g-eye"); g.title = val("g-title"); g.autoplay = chkd("g-auto");
       g.images = val("g-imgs").split("\n").map(s => s.trim()).filter(Boolean);
+      const igm = document.querySelector('input[name="igmode"]:checked');
+      igf.mode = igm ? igm.value : "tiles";
+      igf.tiles = val("ig-tiles").split("\n").map(s => s.trim()).filter(Boolean);
+      igf.embedHtml = val("ig-embed").trim();
       const ok = persistContent();
       if (!ok) { SSApp.toast("Couldn't save — too much data (avoid embedding huge images; upload them instead).", "err"); return; }
       updateLiveBadge(); SSApp.applyTheme(); SSApp.toast("Design saved — preview live. Press Publish to go live 🎨", "ok");

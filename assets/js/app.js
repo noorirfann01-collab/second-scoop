@@ -105,8 +105,8 @@
         </button>
         ${multi ? `<div class="ss-region-menu" id="ss-region-menu" role="menu">
           ${regions.map(rg => `
-            <button role="menuitem" data-region="${rg.id}" class="ss-region-item${rg.id === r.id ? ' is-active' : ''}">
-              <span>${rg.flag}</span> ${rg.name} <em>${rg.currency}</em></button>`).join("")}
+            <button role="menuitem" data-region="${rg.id}" class="ss-region-item${rg.id === r.id ? ' is-active' : ''}${rg.comingSoon ? ' is-soon' : ''}">
+              <span>${rg.flag}</span> ${rg.name} <em>${rg.comingSoon ? 'Coming soon' : rg.currency}</em></button>`).join("")}
         </div>` : ""}
       </div>`;
 
@@ -507,12 +507,16 @@
         <h2 class="ss-gate-title">Where are we scooping?</h2>
         <p class="ss-gate-sub">Pick your store — the menu, pricing and drops are different in each. You can switch anytime from the top bar.</p>
         <div class="ss-gate-cards">
-          ${regions.map(rg => `<button class="ss-gate-card" data-region="${rg.id}">
-            <span class="ss-gate-flag">${rg.flag}</span>
-            <strong>Shop ${rg.name}</strong>
-            <span class="ss-gate-meta">${rg.currency}${rg.delivery && rg.delivery.etaText ? " · " + rg.delivery.etaText : ""}</span>
-            <span class="ss-gate-go">Enter →</span>
-          </button>`).join("")}
+          ${regions.map(rg => {
+            const cs = !!rg.comingSoon;
+            return `<button class="ss-gate-card${cs ? " is-soon" : ""}" data-region="${rg.id}">
+              ${cs ? `<span class="ss-gate-badge">Coming soon</span>` : ""}
+              <span class="ss-gate-flag">${rg.flag}</span>
+              <strong>${cs ? rg.name : "Shop " + rg.name}</strong>
+              <span class="ss-gate-meta">${cs ? "Launching soon — take a peek" : rg.currency + (rg.delivery && rg.delivery.etaText ? " · " + rg.delivery.etaText : "")}</span>
+              <span class="ss-gate-go">${cs ? "Have a look →" : "Enter →"}</span>
+            </button>`;
+          }).join("")}
         </div>
       </div>
     </div>`;

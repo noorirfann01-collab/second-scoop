@@ -302,15 +302,32 @@
     restart();
   })();
 
-  // --- instagram tiles ---
-  const ig = document.getElementById("ig-grid");
-  if (ig && SS_SETTINGS.features.instagramFeed) {
-    const emojis = ["🍪", "🥄", "🍫", "🧁", "✨", "🔥"];
-    ig.innerHTML = Array.from({ length: 6 }).map((_, i) =>
-      `<a class="ss-ig-tile" href="${SS_SETTINGS.brand.instagramUrl}" target="_blank" rel="noopener">
-        <img src="assets/img/ig-${i + 1}.jpg" alt="" onerror="this.remove()">${emojis[i]}
-      </a>`).join("");
-  }
+  // --- instagram feed (embed widget OR uploaded tiles) ---
+  (function () {
+    const ig = document.getElementById("ig-grid");
+    if (!ig) return;
+    const igUrl = (C.brand && C.brand.instagramUrl) || (SS_SETTINGS.brand && SS_SETTINGS.brand.instagramUrl) || "#";
+    const follow = document.getElementById("ig-follow"); if (follow) follow.href = igUrl;
+    const f = C.instagramFeed || {};
+    const tiles = (f.tiles || []).filter(Boolean);
+    if (f.mode === "embed" && f.embedHtml && f.embedHtml.trim()) {
+      ig.classList.add("ss-ig-embed");                 // full-width embed, not a tile grid
+      ig.innerHTML = f.embedHtml;
+      return;
+    }
+    if (tiles.length) {                                 // uploaded photo tiles
+      ig.innerHTML = tiles.map(src =>
+        `<a class="ss-ig-tile" href="${igUrl}" target="_blank" rel="noopener">
+          <img src="${SS.imgSrc(src)}" alt="" loading="lazy" onerror="this.parentNode.classList.add('ss-noimg');this.remove()">
+        </a>`).join("");
+      return;
+    }
+    if (SS_SETTINGS.features.instagramFeed !== false) { // branded placeholder until connected
+      const emojis = ["🍪", "🥄", "🍫", "🧁", "✨", "🔥"];
+      ig.innerHTML = emojis.map(e =>
+        `<a class="ss-ig-tile ss-noimg" href="${igUrl}" target="_blank" rel="noopener">${e}</a>`).join("");
+    }
+  })();
 
   // --- live customer reviews ---
   (function () {
