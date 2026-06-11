@@ -25,6 +25,7 @@
     { id: "orders", label: "Orders", icon: "🧾" },
     { id: "reviews", label: "Reviews", icon: "⭐" },
     { id: "products", label: "Products", icon: "🍪" },
+    { id: "homepage", label: "Homepage", icon: "🏠" },
     { id: "vault", label: "The Vault", icon: "🔒" },
     { id: "content", label: "Content & Copy", icon: "✍️" },
     { id: "design", label: "Design & Logo", icon: "🎨" },
@@ -253,7 +254,7 @@
 
   function renderSection() {
     ({ dashboard: renderDashboard, orders: renderOrders, reviews: renderReviews, products: renderProducts,
-       vault: renderVault, content: renderContent, design: renderDesign, announce: renderAnnounce,
+       homepage: renderHomepage, vault: renderVault, content: renderContent, design: renderDesign, announce: renderAnnounce,
        settings: renderSettings, export: renderExport }[section] || renderDashboard)();
   }
 
@@ -825,6 +826,57 @@
       wrap.querySelector("[data-add]").onclick = () => { arr.push(blank()); render(); };
     }
     render();
+  }
+
+  /* ==================================================== HOMEPAGE ==== */
+  const HOME_SECTIONS = [
+    ["regions", "Region picker", "The two “Shop Pakistan / Toronto” cards"],
+    ["featured", "Featured Scoops", "Your signature / featured products"],
+    ["bestSellers", "Best Sellers", "Crowd-favourite products"],
+    ["limited", "Limited Drops", "Limited / closing-soon items + countdown"],
+    ["vault", "The Vault teaser", "Invite-only secret-code block"],
+    ["about", "About Second Scoop", "Story, values & animated stats"],
+    ["howItWorks", "How It Works", "The 4-step explainer"],
+    ["reviews", "Customer Reviews", "Live reviews + “leave a review”"],
+    ["carousel", "Photo Carousel", "Your photo gallery slider"],
+    ["instagram", "Instagram Feed", "The @handle tile grid"],
+    ["signup", "Email / SMS Signup", "“Unlock future scoops” form"],
+  ];
+  function renderHomepage() {
+    const C = content;
+    C.home = C.home || {}; C.home.sections = C.home.sections || {};
+    C.hero = C.hero || {};
+    const sec = C.home.sections, mob = C.hero.mobileMode || "tap";
+    body().innerHTML = `
+      <div class="ss-panel" style="margin-bottom:14px"><h3>Homepage sections</h3>
+        <p style="color:var(--ink-60);font-size:.9rem">Tick the blocks you want on your home page. Untick anything you don't — it disappears for customers (your products are still in the shop). Order top-to-bottom matches the page.</p>
+        <div class="ss-home-toggles">
+          ${HOME_SECTIONS.map(([k, label, desc]) => `
+            <label class="ss-home-toggle">
+              <input type="checkbox" id="hs-${k}" ${sec[k] !== false ? "checked" : ""}>
+              <span class="ss-home-toggle-box"></span>
+              <span class="ss-home-toggle-txt"><strong>${label}</strong><small>${desc}</small></span>
+            </label>`).join("")}
+        </div>
+      </div>
+
+      <div class="ss-panel" style="margin-bottom:14px"><h3>Hero video — mobile &amp; desktop</h3>
+        <p style="color:var(--ink-60);font-size:.9rem">Desktop always autoplays the video. Phones usually <em>block</em> autoplay, so choose what happens there:</p>
+        <label class="ss-switch ss-switch--chip" style="margin-bottom:8px"><input type="radio" name="hmob" value="tap" ${mob === "tap" ? "checked" : ""}><span><strong>Tap to play</strong> (recommended) — phones show the poster + a play button</span></label>
+        <label class="ss-switch ss-switch--chip"><input type="radio" name="hmob" value="auto" ${mob === "auto" ? "checked" : ""}><span><strong>Try autoplay</strong> — attempts to autoplay, falls back to a play button if blocked</span></label>
+        <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+          <a class="ss-chip" href="index.html" target="_blank" rel="noopener">🖥️ Preview homepage (new tab)</a>
+          <a class="ss-chip" href="index.html" target="_blank" rel="noopener" onclick="try{window.open('index.html','_blank','width=400,height=820')}catch(e){};return false;">📱 Preview as phone</a>
+        </div>
+      </div>
+      <button class="ss-btn" id="hp-save">Save homepage (go live)</button>`;
+
+    document.getElementById("hp-save").onclick = () => {
+      HOME_SECTIONS.forEach(([k]) => { C.home.sections[k] = chkd("hs-" + k); });
+      const r = document.querySelector('input[name="hmob"]:checked');
+      C.hero.mobileMode = r ? r.value : "tap";
+      persistContent(); updateLiveBadge(); SSApp.toast("Homepage layout saved — live 🏠", "ok");
+    };
   }
 
   /* ===================================================== DESIGN ===== */

@@ -127,43 +127,47 @@
   function footerHTML() {
     const s = (SS.getContent && SS.getContent().brand) || SS_SETTINGS.brand;
     const r = SS.region();
+    const igUrl = s.instagramUrl || ("https://instagram.com/" + (s.instagram || "secondscoop"));
+    const email = s.email || "hello@secondscoop.co";
     return `
-    <footer class="ss-footer">
-      <div class="ss-footer-grid">
-        <div class="ss-footer-brand">
-          ${logoHTML({ size: 30, dark: true })}
-          <p class="ss-footer-tag">${s.tagline}</p>
-          <a class="ss-ig" href="${s.instagramUrl}" target="_blank" rel="noopener">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor"/></svg>
-            @${s.instagram}
-          </a>
+    <footer class="ss-foot2">
+      <div class="wrap">
+        <div class="ss-foot2-top">
+          <div class="ss-foot2-news">
+            ${logoHTML({ size: 30, dark: true })}
+            <h3 style="margin-top:.7rem">Join the scoop list</h3>
+            <p>${s.tagline || "Secret drops, restocks & launches — straight to you."}</p>
+            <form id="ss-footer-signup" class="ss-foot2-form">
+              <input type="email" name="email" placeholder="you@email.com" required>
+              <button type="submit" aria-label="Subscribe">→</button>
+            </form>
+            <small id="ss-footer-signup-msg" class="ss-foot2-msg"></small>
+            <div class="ss-foot2-social">
+              <a href="${igUrl}" target="_blank" rel="noopener" aria-label="Instagram">📸</a>
+              <a href="mailto:${email}" aria-label="Email">✉️</a>
+              <a href="vault.html" aria-label="The Vault">🔒</a>
+            </div>
+          </div>
+          <div class="ss-foot2-col">
+            <h4>Shop</h4>
+            <a href="shop.html?region=pakistan">Shop Pakistan 🇵🇰</a>
+            <a href="shop.html?region=toronto">Shop Toronto 🇨🇦</a>
+            <a href="vault.html">The Vault</a>
+            <a href="preorders.html">How Pre-Orders Work</a>
+          </div>
+          <div class="ss-foot2-col">
+            <h4>Company</h4>
+            <a href="about.html">About</a>
+            <a href="faq.html">FAQ</a>
+            <a href="contact.html">Contact</a>
+            <p style="margin-top:.8rem;opacity:.7">${r.flag} ${r.name} · ${r.currency}</p>
+            <a href="mailto:${email}">${email}</a>
+          </div>
         </div>
-        <div class="ss-footer-col">
-          <h4>Shop</h4>
-          <a href="shop.html?region=pakistan">Shop Pakistan</a>
-          <a href="shop.html?region=toronto">Shop Toronto</a>
-          <a href="vault.html">The Vault</a>
-          <a href="preorders.html">How Pre-Orders Work</a>
+        <div class="ss-foot2-bot">
+          <span>© ${new Date().getFullYear()} Second Scoop. All rights reserved.</span>
+          <span>${s.footerNote || "Made with too much chocolate."}</span>
         </div>
-        <div class="ss-footer-col">
-          <h4>Company</h4>
-          <a href="about.html">About</a>
-          <a href="faq.html">FAQ</a>
-          <a href="contact.html">Contact</a>
-        </div>
-        <div class="ss-footer-col ss-footer-signup">
-          <h4>Unlock Future Scoops</h4>
-          <p>Secret drops, restocks &amp; launches — straight to you.</p>
-          <form id="ss-footer-signup" class="ss-foot-form">
-            <input type="email" name="email" placeholder="Your email" required>
-            <button type="submit">Join</button>
-          </form>
-          <small id="ss-footer-signup-msg"></small>
-        </div>
-      </div>
-      <div class="ss-footer-bottom">
-        <span>© ${new Date().getFullYear()} Second Scoop. ${r.flag} ${r.name} · ${r.currency}</span>
-        <span>${s.footerNote || "Made with too much chocolate."}</span>
       </div>
     </footer>`;
   }
@@ -384,6 +388,41 @@
     }
   }
 
+  // Scroll-and-swap big titles: as a heading scrolls into view its text rolls
+  // up and a duplicate rolls in from below — a playful vertical swap.
+  function initSwapTitles() {
+    const fx = content().effects || {};
+    if (fx.swapTitles === false) return;
+    const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) return;
+    const targets = document.querySelectorAll(".ss-sec-head h2, .ss-about-head h2, .ss-vault-teaser h2, .ss-vault-hero h2, .ss-shop-hero h2, [data-swap-title]");
+    const items = [];
+    targets.forEach(h => {
+      if (h.dataset.swap) return;
+      h.dataset.swap = "1";
+      const txt = h.textContent;
+      h.innerHTML = `<span class="ss-swap"><span class="ss-swap-layer ss-swap-a">${txt}</span><span class="ss-swap-layer ss-swap-b">${txt}</span></span>`;
+      items.push({ h, a: h.querySelector(".ss-swap-a"), b: h.querySelector(".ss-swap-b") });
+    });
+    if (!items.length) return;
+    let ticking = false;
+    function frame() {
+      ticking = false;
+      const vh = window.innerHeight;
+      items.forEach(it => {
+        const rect = it.h.getBoundingClientRect();
+        let p = (vh * 0.85 - rect.top) / (vh * 0.40);
+        p = p < 0 ? 0 : p > 1 ? 1 : p;
+        it.a.style.transform = `translateY(${(-100 * p).toFixed(2)}%)`;
+        it.b.style.transform = `translateY(${(100 * (1 - p)).toFixed(2)}%)`;
+      });
+    }
+    function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(frame); } }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    frame();
+  }
+
   // Subtle 3D hover-tilt on cards & images (hover-capable devices only).
   function initTilt(root) {
     const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -414,8 +453,8 @@
     bindShell();
     refreshCartCount();
     if (opts.recentlySold !== false) startRecentlySold();
-    setTimeout(() => { initScrollFX(); initTilt(); }, 60);   // after page scripts inject content
+    setTimeout(() => { initScrollFX(); initTilt(); initSwapTitles(); }, 60);   // after page scripts inject content
   }
 
-  window.SSApp = { mount, productCard, toast, logoHTML, logoMarkSVG, wordmarkImg, refreshCartCount, statusBadge, topBadge, applyTheme, initScrollFX, initTilt };
+  window.SSApp = { mount, productCard, toast, logoHTML, logoMarkSVG, wordmarkImg, refreshCartCount, statusBadge, topBadge, applyTheme, initScrollFX, initTilt, initSwapTitles };
 })();

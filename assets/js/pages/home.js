@@ -36,8 +36,34 @@
     // allow a custom hero video via content (Backend can set hero.video / hero.videoPoster)
     if (C.hero && C.hero.video && video) { video.querySelector("source").src = SS.imgSrc(C.hero.video); video.load(); }
     if (C.hero && C.hero.videoPoster && video) video.poster = SS.imgSrc(C.hero.videoPoster);
-    if (video) { const play = () => video.play().catch(() => {}); play(); video.addEventListener("canplay", play, { once: true }); }
     if (C.hero && C.hero.tagline) { const t = document.getElementById("hero-tagline"); if (t) t.textContent = C.hero.tagline; }
+
+    // ---- video playback: desktop autoplays; phones often block it ----
+    (function () {
+      if (!video) return;
+      const playBtn = document.getElementById("xhero-play");
+      const isMobile = window.matchMedia && window.matchMedia("(max-width: 767px)").matches;
+      const mobileMode = (C.hero && C.hero.mobileMode) || "tap";
+      function showPlay(on) { if (playBtn) playBtn.style.display = on ? "flex" : "none"; }
+      function attempt() {
+        const pr = video.play();
+        if (pr && pr.then) pr.then(() => showPlay(false)).catch(() => { if (isMobile) showPlay(true); });
+      }
+      // On mobile with "tap" mode, don't even try — show the poster + play button.
+      if (isMobile && mobileMode === "tap") {
+        showPlay(true);
+      } else {
+        attempt();
+        video.addEventListener("canplay", attempt, { once: true });
+        // if it still hasn't started shortly after load (mobile block), offer tap-to-play
+        if (isMobile) setTimeout(() => { if (video.paused) showPlay(true); }, 1200);
+      }
+      if (playBtn) playBtn.addEventListener("click", () => {
+        video.muted = true; video.play().then(() => showPlay(false)).catch(() => {});
+      });
+      // tapping the video itself also plays it
+      if (video) video.addEventListener("click", () => { if (video.paused) { video.play().then(() => showPlay(false)).catch(() => {}); } });
+    })();
 
     const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduce) return;   // CSS shows a clean static stacked version
@@ -69,6 +95,58 @@
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
     frame();
+  })();
+
+  // ---- homepage section visibility (Backend → Homepage) ----
+  (function () {
+    const cfg = (C.home && C.home.sections) || {};
+    document.querySelectorAll("[data-sec]").forEach(el => {
+      const key = el.getAttribute("data-sec");
+      if (cfg[key] === false) el.remove();   // remove disabled sections entirely
+    });
+  })();
+
+  // ---- About Second Scoop ----
+  (function () {
+    const sec = document.getElementById("about-sec");
+    const a = C.about;
+    if (!sec || !a) return;
+    const set = (id, v, html) => { const el = document.getElementById(id); if (el && v != null) { html ? el.innerHTML = v : el.textContent = v; } };
+    set("about-eyebrow", a.eyebrow);
+    set("about-title", a.title);
+    set("about-lead", a.lead);
+    if (a.cta) { set("about-cta-title", a.cta.title); set("about-cta-text", a.cta.text); }
+    const vWrap = document.getElementById("about-values");
+    if (vWrap && Array.isArray(a.values)) {
+      vWrap.innerHTML = a.values.map(v =>
+        `<div class="ss-about-value"><span class="ss-about-value-ico">${v.emoji || "🍪"}</span>
+          <div><strong>${v.title}</strong><p>${v.text}</p></div></div>`).join("");
+    }
+    const sWrap = document.getElementById("about-stats");
+    if (sWrap && Array.isArray(a.stats)) {
+      sWrap.innerHTML = a.stats.map((s, i) =>
+        `<div class="ss-about-stat"><b data-i="${i}">0</b><span>${s.label}</span></div>`).join("");
+      const nums = sWrap.querySelectorAll("b");
+      let ran = false;
+      function run() {
+        if (ran) return; ran = true;
+        a.stats.forEach((s, i) => {
+          const el = nums[i]; if (!el) return;
+          const dec = s.decimals || 0, end = s.value, suf = s.suffix || "", dur = 1400;
+          const t0 = performance.now();
+          (function step(now) {
+            const p = Math.min(1, (now - t0) / dur);
+            const e = 1 - Math.pow(1 - p, 3);
+            el.textContent = (end * e).toFixed(dec) + (p === 1 ? suf : "");
+            if (p < 1) requestAnimationFrame(step);
+          })(t0);
+        });
+      }
+      if ("IntersectionObserver" in window) {
+        const io = new IntersectionObserver(es => { es.forEach(en => { if (en.isIntersecting) { run(); io.disconnect(); } }); }, { threshold: 0.4 });
+        io.observe(sWrap);
+      } else run();
+    }
   })();
 
   if (Array.isArray(C.howItWorks)) {

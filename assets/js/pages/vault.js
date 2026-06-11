@@ -30,8 +30,9 @@
     revealed.style.display = "none";
   }
 
-  // show already-unlocked products on load
-  if (SS.vaultUnlocks(region).length) renderRevealed();
+  // Drops change often — the Vault re-locks on every visit. Always start locked.
+  SS.clearVaultUnlocks();
+  showLocked();
 
   form.addEventListener("submit", e => {
     e.preventDefault();

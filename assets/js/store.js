@@ -242,6 +242,8 @@
     const all = read(LS.vault, {});
     return all[rid] || [];
   }
+  // Wipe all vault unlocks so the Vault re-locks (drops change often).
+  function clearVaultUnlocks() { try { localStorage.removeItem(LS.vault); } catch (e) {} }
   function tryVaultCode(rawCode, regionId) {
     const rid = regionId || getRegion();
     const code = (rawCode || "").trim().toLowerCase();
@@ -435,7 +437,7 @@
     getContent, saveContent, resetContent, getSettings, saveSettings, resetSettings,
     regionById, saveRegionPatch, resetRegions, deepMerge,
     getCart, saveCart, addToCart, setQty, removeFromCart, clearCart, cartCount, cartDetail, deliveryFee,
-    vaultUnlocks, tryVaultCode, unlockedSecretProducts, isUnlocked,
+    vaultUnlocks, tryVaultCode, unlockedSecretProducts, isUnlocked, clearVaultUnlocks,
     genOrderNumber, placeOrder, getOrders, updateOrderStatus, flattenForSheet,
     getCustomers, addSignup, getSignups,
   };

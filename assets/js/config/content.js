@@ -30,6 +30,25 @@ window.SS_CONTENT = {
   effects: {
     scrollReveal: true,   // fade/slide sections in as you scroll
     heroParallax: true,   // gentle parallax on the hero
+    swapTitles: true,     // scroll-and-swap animation on big section titles
+  },
+
+  /* ---- HOMEPAGE SECTIONS (toggle on/off in Backend → Homepage) ----
+     Set any of these to false to hide that block from the home page.    */
+  home: {
+    sections: {
+      regions:     true,   // region picker cards
+      featured:    true,   // Featured Scoops
+      bestSellers: true,   // Best Sellers
+      limited:     true,   // Limited Drops
+      vault:       true,   // The Vault teaser
+      about:       true,   // About Second Scoop
+      howItWorks:  true,   // How It Works steps
+      reviews:     true,   // Customer reviews
+      carousel:    true,   // Photo carousel
+      instagram:   true,   // Instagram feed
+      signup:      true,   // Email / SMS signup
+    },
   },
 
   /* ---- PHOTO CAROUSEL (homepage) ----------------------------------- */
@@ -58,6 +77,9 @@ window.SS_CONTENT = {
     // Scroll-expand hero video (in assets/video/ or a full URL). Poster shows before it loads.
     video: "assets/video/hero.mp4",
     videoPoster: "assets/video/hero-poster.jpg",
+    // Phones often block video autoplay. "tap" = show poster + a play button on mobile
+    // (most reliable). "auto" = still try to autoplay on mobile. Desktop always autoplays.
+    mobileMode: "tap",
     headline: "The cookie you were never supposed to <span class=\"accent\">stop</span> eating.",
     sub: "Warm. Gooey. Scoopable. Baked in a tin and built for a spoon. Meet <strong>The OG Scoopie</strong> — and try not to finish it standing up.",
     trust: [
@@ -89,6 +111,14 @@ window.SS_CONTENT = {
       { emoji: "🔒", title: "Secret by intention", text: "The best flavours hide in The Vault for the people in the know." },
       { emoji: "🌍", title: "Two cities, one craving", text: "Independent storefronts in Pakistan and Toronto, each with its own menu." },
     ],
+    // Animated counters that count up when the section scrolls into view.
+    stats: [
+      { value: 800, suffix: "+", label: "Happy scoopers" },
+      { value: 12, suffix: "", label: "Signature flavours" },
+      { value: 4.9, suffix: "★", label: "Average rating", decimals: 1 },
+      { value: 100, suffix: "%", label: "Made in small batches" },
+    ],
+    cta: { title: "Hungry yet?", text: "Pick your region and start scooping." },
   },
 
   faq: [
