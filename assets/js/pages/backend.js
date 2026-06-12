@@ -23,6 +23,7 @@
   const NAV = [
     { id: "dashboard", label: "Dashboard", icon: "📊" },
     { id: "orders", label: "Orders", icon: "🧾" },
+    { id: "mailing", label: "Mailing List", icon: "📨" },
     { id: "reviews", label: "Reviews", icon: "⭐" },
     { id: "products", label: "Products", icon: "🍪" },
     { id: "vault", label: "The Vault", icon: "🔒" },
@@ -36,7 +37,7 @@
   ];
   // Grouped like a real store admin (Shopify-style) for an organised sidebar.
   const NAV_GROUPS = [
-    { label: "Store", items: ["dashboard", "orders", "reviews"] },
+    { label: "Store", items: ["dashboard", "orders", "mailing", "reviews"] },
     { label: "Catalog", items: ["products", "vault"] },
     { label: "Online store", items: ["homepage", "menu", "content", "design", "announce"] },
     { label: "Settings", items: ["settings", "export"] },
@@ -288,7 +289,7 @@
   function body() { return document.getElementById("bk-body"); }
 
   function renderSection() {
-    ({ dashboard: renderDashboard, orders: renderOrders, reviews: renderReviews, products: renderProducts,
+    ({ dashboard: renderDashboard, orders: renderOrders, mailing: renderMailing, reviews: renderReviews, products: renderProducts,
        homepage: renderHomepage, menu: renderMenu, vault: renderVault, content: renderContent, design: renderDesign, announce: renderAnnounce,
        settings: renderSettings, export: renderExport }[section] || renderDashboard)();
   }
@@ -576,6 +577,72 @@
     const cols = ["orderNumber", "submissionDate", "region", "firstName", "lastName", "phone", "email", "instagram", "fulfilment", "addressLine1", "addressLine2", "productsFormatted", "preferredMethod", "revenue", "deliveryFee", "grandTotal", "currency", "paymentStatus", "orderStatus", "notes", "vaultProduct"];
     const rows = orders.map(o => { const fl = SS.flattenForSheet(o); return cols.map(k => `"${String(fl[k] ?? "").replace(/"/g, '""').replace(/\n/g, " ")}"`).join(","); });
     download("second-scoop-orders.csv", cols.join(",") + "\n" + rows.join("\n"), "text/csv");
+  }
+
+  /* ================================================== MAILING LIST == */
+  function jsonpSignups() {
+    return new Promise((resolve, reject) => {
+      const url = (SS.getSettings().googleSheets || {}).webhookUrl;
+      const key = SS.read("ss_orders_key", "");
+      if (!url || !key) return reject("not configured");
+      const cb = "sssig_" + Math.random().toString(36).slice(2);
+      const sep = url.indexOf("?") > -1 ? "&" : "?";
+      const s = document.createElement("script");
+      s.src = url + sep + "action=signups&key=" + encodeURIComponent(key) + "&callback=" + cb;
+      let done = false;
+      window[cb] = (data) => { done = true; cleanup(); (data && data.ok) ? resolve(data.signups || []) : reject((data && data.error) || "error"); };
+      s.onerror = () => { if (!done) { cleanup(); reject("network"); } };
+      function cleanup() { try { delete window[cb]; } catch (e) { window[cb] = undefined; } s.remove(); }
+      document.body.appendChild(s);
+      setTimeout(() => { if (!done) { cleanup(); reject("timeout"); } }, 15000);
+    });
+  }
+  function renderMailing() {
+    body().innerHTML = `
+      <div class="ss-panel">
+        <div class="ss-bk-actionbar">
+          <h3 style="margin:0">📨 Mailing list <span id="ml-count" class="ss-tag" style="background:#e8dcc8;color:#6b5544"></span></h3>
+          <span style="flex:1"></span>
+          <button class="ss-btn ss-btn--sm ss-btn--ghost" id="ml-refresh">↻ Refresh</button>
+          <button class="ss-btn ss-btn--sm" id="ml-csv">⬇ Export CSV</button>
+        </div>
+        <p style="color:var(--ink-60);font-size:.9rem">Everyone who joins your list (homepage or footer signup) lands here — name, email, phone and where they signed up. Pulled live from your Google Sheet's “Mailing List” tab.</p>
+        <div id="ml-body"><p class="ss-seed">Loading…</p></div>
+      </div>`;
+    let rows = [];
+    function table(list) {
+      if (!list.length) return `<p class="ss-empty">No signups yet. When someone joins your list, they'll appear here. 🍪</p>`;
+      return `<div class="ss-table-wrap"><table class="ss-table">
+        <thead><tr><th>Date</th><th>Name</th><th>Email</th><th>Phone</th><th>Region</th><th>Source</th></tr></thead>
+        <tbody>${list.map(s => `<tr>
+          <td>${esc((s.ts || "").slice(0, 10))}</td>
+          <td>${esc(s.name || "")}</td>
+          <td><a href="mailto:${esc(s.email)}">${esc(s.email || "")}</a></td>
+          <td>${esc(s.phone || "")}</td>
+          <td>${esc((SS_REGIONS[s.region] && SS_REGIONS[s.region].name) || s.region || "")}</td>
+          <td>${esc(s.source || "")}</td></tr>`).join("")}</tbody></table></div>`;
+    }
+    function load() {
+      const mb = document.getElementById("ml-body");
+      if (!remoteConfigured()) { mb.innerHTML = `<div class="ss-livebar" style="background:var(--cream-3);color:var(--caramel)">Connect your Google Sheet first — set the Sheets URL + read key in <a href="#settings" data-gosettings>Settings</a>. (Also re-deploy your Apps Script so it has the new “signups” feature.)</div>`; bindGo(); return; }
+      mb.innerHTML = `<p class="ss-seed">Loading…</p>`;
+      jsonpSignups().then(list => {
+        rows = (list || []).slice().reverse();
+        document.getElementById("ml-count").textContent = rows.length + " people";
+        mb.innerHTML = table(rows);
+      }).catch(err => {
+        mb.innerHTML = `<p class="ss-empty">Couldn't load (${esc(String(err))}). If you just added this feature, re-deploy your Apps Script as a NEW version.</p>`;
+      });
+    }
+    function bindGo() { body().querySelectorAll("[data-gosettings]").forEach(a => a.onclick = e => { e.preventDefault(); go("settings"); }); }
+    document.getElementById("ml-refresh").onclick = load;
+    document.getElementById("ml-csv").onclick = () => {
+      if (!rows.length) return SSApp.toast("Nothing to export yet.", "err");
+      const head = ["Date", "Name", "Email", "Phone", "Region", "Source"];
+      const body = rows.map(s => [s.ts, s.name, s.email, s.phone, s.region, s.source].map(v => `"${String(v == null ? "" : v).replace(/"/g, '""')}"`).join(","));
+      download("second-scoop-mailing-list.csv", head.join(",") + "\n" + body.join("\n"), "text/csv");
+    };
+    load();
   }
 
   /* ====================================================== REVIEWS == */
@@ -1466,16 +1533,31 @@
       r.onerror = reject; r.readAsDataURL(file);
     });
   }
+  // Trigger a browser download of a File/Blob under a chosen filename.
+  function downloadBlob(file, name) {
+    const url = URL.createObjectURL(file);
+    const a = document.createElement("a"); a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 6000);
+  }
   // Upload a file → assets/img/<unique-name>; returns the filename to reference.
+  // If one-click GitHub publishing is connected, it commits straight to the repo.
+  // If NOT (you publish with GitHub Desktop instead), it downloads the renamed
+  // file so you can drop it into assets/img/ and push — no token needed.
   async function uploadImageToGitHub(file) {
-    if (!publishConfigured()) throw "Connect GitHub publishing in Settings → One-click publishing first (then you can upload photos here).";
     if (file.size > 40 * 1024 * 1024) throw "Image is over 40MB — please use one under 40MB.";
-    const cfg = getPublishCfg();
-    const b64 = await fileToBase64(file);
     const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
     const base = (file.name.replace(/\.[^.]+$/, "") || "image").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "image";
     const name = base + "-" + Date.now().toString(36) + "." + ext;
-    await commitImage(cfg, "assets/img/" + name, b64, "Add image " + name);
+    if (publishConfigured()) {
+      const cfg = getPublishCfg();
+      const b64 = await fileToBase64(file);
+      await commitImage(cfg, "assets/img/" + name, b64, "Add image " + name);
+      return name;
+    }
+    // GitHub Desktop fallback
+    downloadBlob(file, name);
+    SSApp.toast("Saved “" + name + "” to your Downloads. Move it into your project's assets/img/ folder, then push with GitHub Desktop.", "ok");
     return name;
   }
   // Upload a hero video → assets/video/<name>; returns the path to reference.

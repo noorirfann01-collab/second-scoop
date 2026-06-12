@@ -451,9 +451,19 @@
 
   /* ----------------------------------------------------- signups --- */
   function addSignup(data) {
+    const entry = Object.assign({ ts: new Date().toISOString(), region: getRegion() }, data);
     const list = read(LS.signups, []);
-    list.push(Object.assign({ ts: new Date().toISOString(), region: getRegion() }, data));
+    list.push(entry);
     write(LS.signups, list);
+    // Also send to the owner's Google Sheet so they actually RECEIVE the contact.
+    try {
+      const url = (getSettings().googleSheets || {}).webhookUrl;
+      if (url) fetch(url, {
+        method: "POST", mode: "no-cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(Object.assign({ type: "signup" }, entry)),
+      }).catch(() => {});
+    } catch (e) {}
   }
   function getSignups() { return read(LS.signups, []); }
 

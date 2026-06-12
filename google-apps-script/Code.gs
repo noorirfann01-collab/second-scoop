@@ -26,6 +26,7 @@ function doPost(e) {
     var d = JSON.parse(e.postData.contents);
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     if (d.type === "review") { writeReview_(ss, d); return out_(null, { ok: true }); }
+    if (d.type === "signup") { writeSignup_(ss, d); return out_(null, { ok: true }); }
     if (String(d.region).toLowerCase().indexOf("pakistan") > -1 || String(d.regionId).toLowerCase() === "pakistan") {
       writePakistan_(ss, d);
     } else {
@@ -88,6 +89,48 @@ function delReview_(id) {
   return false;
 }
 
+/* ------------------------------ MAILING LIST ----------------------- */
+var LIST_SHEET = "Mailing List";
+var LIST_HEADERS = ["Timestamp", "Name", "Email", "Phone", "Region", "Source"];
+
+function listSheet_(ss) {
+  var sheet = ss.getSheetByName(LIST_SHEET);
+  if (!sheet) {
+    sheet = ss.insertSheet(LIST_SHEET);
+    sheet.appendRow(LIST_HEADERS);
+    sheet.getRange(1, 1, 1, LIST_HEADERS.length).setFontWeight("bold");
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+function writeSignup_(ss, d) {
+  var sheet = listSheet_(ss);
+  var email = String(d.email || "").trim();
+  if (email) {  // skip duplicates so the list stays clean
+    var v = sheet.getDataRange().getValues();
+    for (var i = 1; i < v.length; i++) {
+      if (String(v[i][2] || "").toLowerCase() === email.toLowerCase()) return;
+    }
+  }
+  sheet.appendRow([new Date(), String(d.name || "").slice(0, 80), email,
+    "'" + String(d.phone || ""), d.region || "", d.source || ""]);
+}
+function readSignups_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(LIST_SHEET);
+  if (!sheet) return [];
+  var v = sheet.getDataRange().getValues(), out = [];
+  for (var i = 1; i < v.length; i++) {
+    var r = v[i]; if (!r[2] && !r[1]) continue;
+    out.push({
+      ts: (r[0] instanceof Date) ? r[0].toISOString() : String(r[0] || ""),
+      name: r[1] || "", email: r[2] || "", phone: String(r[3] || "").replace(/^'/, ""),
+      region: r[4] || "", source: r[5] || ""
+    });
+  }
+  return out;
+}
+
 function writePakistan_(ss, d) {
   var sheet = ss.getSheetByName(PK_SHEET);
   if (!sheet) sheet = ss.insertSheet(PK_SHEET);
@@ -143,6 +186,10 @@ function doGet(e) {
   if (p.action === "delreview") {
     if (p.key !== READ_KEY) return out_(p.callback, { ok: false, error: "unauthorized" });
     return out_(p.callback, { ok: delReview_(p.id) });
+  }
+  if (p.action === "signups") {
+    if (p.key !== READ_KEY) return out_(p.callback, { ok: false, error: "unauthorized" });
+    return out_(p.callback, { ok: true, signups: readSignups_() });
   }
   return out_(p.callback, { ok: true, service: "Second Scoop order webhook" });
 }

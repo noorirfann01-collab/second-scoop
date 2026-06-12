@@ -313,6 +313,14 @@
     if (f.mode === "embed" && f.embedHtml && f.embedHtml.trim()) {
       ig.classList.add("ss-ig-embed");                 // full-width embed, not a tile grid
       ig.innerHTML = f.embedHtml;
+      // <script> tags inserted via innerHTML don't run — re-create them so the
+      // widget (LightWidget / Behold / SnapWidget) actually loads.
+      ig.querySelectorAll("script").forEach(old => {
+        const s = document.createElement("script");
+        for (const a of old.attributes) s.setAttribute(a.name, a.value);
+        s.textContent = old.textContent;
+        old.replaceWith(s);
+      });
       return;
     }
     if (tiles.length) {                                 // uploaded photo tiles
