@@ -1,5 +1,5 @@
 /* Second Scoop — content.js
-   Exported from the Backend on 12/06/2026, 19:51:14.
+   Exported from the Backend on 12/06/2026, 23:35:26.
    Replace the matching file in assets/js/config/ to publish. */
 
 window.SS_CONTENT = {
@@ -66,7 +66,15 @@ window.SS_CONTENT = {
     "eyebrow": "Out & About",
     "title": "Our Popups",
     "intro": "Every place we've set up a scoop station — markets, collabs and one-night-only drops.",
-    "events": []
+    "events": [
+      {
+        "title": "Baked ",
+        "location": "Cantt, Lahore",
+        "date": "",
+        "image": "",
+        "caption": "Sold out on our  launch day!"
+      }
+    ]
   },
   "pages": {
     "shop": {
@@ -140,8 +148,8 @@ window.SS_CONTENT = {
       "Warm.",
       "Gooey.",
       "Loaded.",
-      "Scoopable.",
-      "Addictive."
+      "Addictive.",
+      "Scoopable."
     ],
     "logoEnding": true,
     "logo": "assets/img/logo-mark-cream.png"
