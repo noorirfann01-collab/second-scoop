@@ -1,5 +1,5 @@
 /* Second Scoop — content.js
-   Exported from the Backend on 12/06/2026, 04:39:06.
+   Exported from the Backend on 12/06/2026, 16:32:21.
    Replace the matching file in assets/js/config/ to publish. */
 
 window.SS_CONTENT = {
@@ -171,7 +171,7 @@ window.SS_CONTENT = {
     "tagline": "The First Scoop Is Never Enough.",
     "email": "hello@secondscoop.co",
     "instagram": "secondscoopco",
-    "instagramUrl": "https://instagram.com/secondscoop",
+    "instagramUrl": "https://instagram.com/secondscoopco",
     "footerNote": "You will NOT want to share this."
   },
   "hero": {
@@ -183,8 +183,6 @@ window.SS_CONTENT = {
     "headline": "The cookie you were never supposed to <span class=\"accent\">stop</span> eating.",
     "sub": "Warm. Gooey. Scoopable. Baked in a tin and built for a spoon. Meet <strong>The OG Scoopie</strong> — and try not to finish it standing up.",
     "trust": [
-      "★ 4.9 from 100+ scoopers",
-      "🍪 Egg-free dough options",
       "⚡ Delivery all over Lahore"
     ],
     "image": "dsc-4505-1-mqa0okiu.png"
