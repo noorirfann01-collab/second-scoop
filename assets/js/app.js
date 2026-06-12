@@ -78,6 +78,7 @@
     { key: "home", label: "Home", href: "index.html" },
     { key: "shop", label: "Shop", href: "shop.html" },
     { key: "vault", label: "The Vault", href: "vault.html", vault: true },
+    { key: "popups", label: "Popups", href: "popups.html" },
     { key: "preorders", label: "Pre-Orders", href: "preorders.html" },
     { key: "about", label: "About", href: "about.html" },
     { key: "faq", label: "FAQ", href: "faq.html" },

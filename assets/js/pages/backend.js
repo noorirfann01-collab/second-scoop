@@ -28,6 +28,7 @@
     { id: "products", label: "Products", icon: "🍪" },
     { id: "vault", label: "The Vault", icon: "🔒" },
     { id: "homepage", label: "Homepage", icon: "🏠" },
+    { id: "popups", label: "Popups", icon: "📍" },
     { id: "menu", label: "Menu & Regions", icon: "🧭" },
     { id: "content", label: "Pages & Text", icon: "✍️" },
     { id: "design", label: "Design & Logo", icon: "🎨" },
@@ -39,7 +40,7 @@
   const NAV_GROUPS = [
     { label: "Store", items: ["dashboard", "orders", "mailing", "reviews"] },
     { label: "Catalog", items: ["products", "vault"] },
-    { label: "Online store", items: ["homepage", "menu", "content", "design", "announce"] },
+    { label: "Online store", items: ["homepage", "popups", "menu", "content", "design", "announce"] },
     { label: "Settings", items: ["settings", "export"] },
   ];
 
@@ -290,7 +291,7 @@
 
   function renderSection() {
     ({ dashboard: renderDashboard, orders: renderOrders, mailing: renderMailing, reviews: renderReviews, products: renderProducts,
-       homepage: renderHomepage, menu: renderMenu, vault: renderVault, content: renderContent, design: renderDesign, announce: renderAnnounce,
+       homepage: renderHomepage, popups: renderPopups, menu: renderMenu, vault: renderVault, content: renderContent, design: renderDesign, announce: renderAnnounce,
        settings: renderSettings, export: renderExport }[section] || renderDashboard)();
   }
 
@@ -1065,8 +1066,77 @@
     };
   }
 
+  /* ===================================================== POPUPS ===== */
+  function renderPopups() {
+    const C = content; C.popups = C.popups || { enabled: true, events: [] };
+    const P = C.popups; P.events = P.events || [];
+    const localPreviews = {};
+    body().innerHTML = `
+      <div class="ss-panel" style="margin-bottom:14px"><h3>Popups page</h3>
+        <p style="color:var(--ink-60);font-size:.9rem">Showcase your events — markets, collabs, one-night drops. Each one shows a photo, title and where/when it happened. Appears on the <b>Popups</b> page (toggle the menu link in Menu &amp; Regions).</p>
+        <label class="ss-switch ss-switch--chip"><input type="checkbox" id="pop-on" ${P.enabled !== false ? "checked" : ""}><span>Show the Popups page</span></label>
+        <div class="ss-grid2" style="margin-top:10px">
+          <div><label class="ss-label">Eyebrow</label><input class="ss-field" id="pop-eye" value="${esc(P.eyebrow || "")}"></div>
+          <div><label class="ss-label">Title</label><input class="ss-field" id="pop-title" value="${esc(P.title || "")}"></div>
+        </div>
+        <label class="ss-label" style="margin-top:10px">Intro line</label><input class="ss-field" id="pop-intro" value="${esc(P.intro || "")}">
+      </div>
+      <div class="ss-panel" style="margin-bottom:14px"><h3>Events</h3>
+        ${folderConnected() ? "" : `<p class="ss-seed" style="margin-bottom:10px">Tip: connect your project folder in <b>Design &amp; Logo</b> so event photos upload straight into your site.</p>`}
+        <div id="pop-events"></div>
+        <button class="ss-chip" id="pop-add" style="margin-top:8px">+ Add a popup</button>
+      </div>
+      <button class="ss-btn" id="pop-save">Save popups (go live)</button>`;
+
+    function draw() {
+      const wrap = document.getElementById("pop-events");
+      wrap.innerHTML = P.events.map((ev, i) => `
+        <div class="ss-subpanel" data-ev="${i}">
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <div class="ss-thumb" style="flex:0 0 auto"><img src="${localPreviews[ev.image] || (ev.image ? SS.imgSrc(ev.image) : "")}" alt="" onerror="this.parentNode.classList.add('bad')"></div>
+            <div style="flex:1">
+              <div class="ss-grid2">
+                <div><label class="ss-label">Title</label><input class="ss-field ss-field--sm" data-k="title" value="${esc(ev.title || "")}" placeholder="Lahore Eat Festival"></div>
+                <div><label class="ss-label">Location</label><input class="ss-field ss-field--sm" data-k="location" value="${esc(ev.location || "")}" placeholder="Gulberg, Lahore"></div>
+                <div><label class="ss-label">Date / when</label><input class="ss-field ss-field--sm" data-k="date" value="${esc(ev.date || "")}" placeholder="March 2026"></div>
+                <div><label class="ss-label">Photo file / URL</label><input class="ss-field ss-field--sm" data-k="image" value="${esc(ev.image || "")}" placeholder="popup-1.jpg"></div>
+              </div>
+              <label class="ss-label" style="margin-top:8px">Caption</label><input class="ss-field ss-field--sm" data-k="caption" value="${esc(ev.caption || "")}" placeholder="Sold out in 3 hours.">
+              <div style="margin-top:8px;display:flex;gap:8px"><button class="ss-chip" data-up="${i}">⬆ Upload photo</button><button class="ss-chip ss-chip--danger" data-del="${i}">✕ Remove</button></div>
+            </div>
+          </div>
+        </div>`).join("") || `<p class="ss-seed">No popups yet — add your first one below.</p>`;
+      wrap.querySelectorAll("[data-ev]").forEach(row => {
+        const i = +row.getAttribute("data-ev");
+        row.querySelectorAll("[data-k]").forEach(inp => inp.oninput = () => { P.events[i][inp.getAttribute("data-k")] = inp.value; });
+      });
+      wrap.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { P.events.splice(+b.getAttribute("data-del"), 1); draw(); });
+      wrap.querySelectorAll("[data-up]").forEach(b => b.onclick = () => {
+        const i = +b.getAttribute("data-up");
+        const inp = document.createElement("input"); inp.type = "file"; inp.accept = "image/*";
+        inp.onchange = async e => {
+          const file = e.target.files[0]; if (!file) return;
+          b.disabled = true; b.textContent = "Uploading…";
+          try { const name = await uploadImageToGitHub(file); localPreviews[name] = URL.createObjectURL(file); P.events[i].image = name; draw(); }
+          catch (err) { SSApp.toast(String(err), "err"); }
+          b.disabled = false;
+        };
+        inp.click();
+      });
+    }
+    draw();
+    document.getElementById("pop-add").onclick = () => { P.events.push({ title: "", location: "", date: "", image: "", caption: "" }); draw(); };
+    document.getElementById("pop-save").onclick = () => {
+      P.enabled = chkd("pop-on"); P.eyebrow = val("pop-eye"); P.title = val("pop-title"); P.intro = val("pop-intro");
+      C.nav = C.nav || {}; C.nav.popups = P.enabled;   // hide the menu link if the page is off
+      const ok = persistContent();
+      if (!ok) { SSApp.toast("Couldn't save — too much data (upload photos instead of pasting them).", "err"); return; }
+      updateLiveBadge(); SSApp.toast("Popups saved — live 📍", "ok");
+    };
+  }
+
   /* ================================================ MENU & REGIONS == */
-  const NAV_ITEMS = [["home", "Home"], ["shop", "Shop"], ["vault", "The Vault"],
+  const NAV_ITEMS = [["home", "Home"], ["shop", "Shop"], ["vault", "The Vault"], ["popups", "Popups"],
     ["preorders", "Pre-Orders"], ["about", "About"], ["faq", "FAQ"], ["contact", "Contact"]];
   function renderMenu() {
     const C = content; C.nav = C.nav || {};
@@ -1127,6 +1197,13 @@
     const igf = C.instagramFeed;
     const g = C.gallery;
     body().innerHTML = `
+      <div class="ss-panel ss-pub-hero" style="margin-bottom:14px"><h3>📁 Connect your project folder ${folderConnected() ? `<span class="ss-tag" style="background:#d7f0df;color:#2a6b43">Connected</span>` : ""}</h3>
+        <p style="color:var(--ink-60)">${folderSupported()
+          ? "Connect your Second Scoop project folder once, and every photo you upload here is written <b>straight into</b> <code>assets/img/</code> on your computer — ready to push with GitHub Desktop. This is the reliable way to get carousel &amp; gallery photos onto your live site."
+          : "⚠️ Your browser doesn't support folder access. Use <b>Chrome</b> or <b>Edge</b> for direct uploads — otherwise photos download to your computer and you move them into <code>assets/img/</code> yourself."}</p>
+        ${folderSupported() ? `<button class="ss-btn" id="folder-connect">${folderConnected() ? "✓ Folder connected — reconnect" : "📂 Connect project folder"}</button>
+        <p class="ss-seed" style="margin-top:8px" id="folder-status">${folderConnected() ? "Writing photos directly to your project." : "Pick the folder that contains index.html (your repo folder)."}</p>` : ""}
+      </div>
       <div class="ss-panel" style="margin-bottom:14px"><h3>Colour scheme</h3>
         <p style="color:var(--ink-60);font-size:.9rem">Pick your colours — the whole site (and this backend) updates live as you choose. Press Save to keep them, then Publish to go live.</p>
         <div class="ss-design-colors">
@@ -1186,10 +1263,11 @@
           <div><label class="ss-label">Title</label><input class="ss-field" id="g-title" value="${esc(g.title || "")}"></div>
         </div>
         <label class="ss-switch ss-switch--chip" style="margin-top:8px"><input type="checkbox" id="g-auto" ${g.autoplay !== false ? "checked" : ""}><span>Auto-advance slides</span></label>
-        <label class="ss-label" style="margin-top:12px">Photos (filename in assets/img/ or a full URL — one per line)</label>
-        <textarea class="ss-field" id="g-imgs" style="min-height:110px">${esc((g.images || []).join("\n"))}</textarea>
-        <div style="margin-top:8px"><button class="ss-chip" id="g-up-btn">⬆ Upload photos to carousel</button><input type="file" id="g-up" accept="image/*" multiple hidden></div>
-        <small class="ss-seed">Upload publishes the photos to your site (via GitHub) and adds their filenames above automatically. Tip: a full image URL (https://…) also works.</small>
+        <div id="g-thumbs" class="ss-thumbs" style="margin-top:12px"></div>
+        <div style="margin-top:10px"><button class="ss-chip" id="g-up-btn">⬆ Upload high-quality photos</button><input type="file" id="g-up" accept="image/*" multiple hidden></div>
+        <small class="ss-seed">${folderConnected() ? "✓ Folder connected — photos write straight into assets/img and appear below." : "Connect your project folder above for one-click uploads. A full image URL (https://…) also works."}</small>
+        <details style="margin-top:10px"><summary style="cursor:pointer;font-size:.85rem;color:var(--ink-60)">Advanced: edit filenames / URLs by hand</summary>
+          <textarea class="ss-field" id="g-imgs" style="min-height:90px;margin-top:8px">${esc((g.images || []).join("\n"))}</textarea></details>
       </div>
 
       <div class="ss-panel" style="margin-bottom:14px"><h3>Instagram feed (“From The Feed”)</h3>
@@ -1222,6 +1300,28 @@
     };
     // hero image upload
     C.hero = C.hero || {};
+    // connect project folder (File System Access)
+    const localPreviews = {};
+    const fc = document.getElementById("folder-connect");
+    if (fc) fc.onclick = async () => {
+      try { const nm = await connectProjectFolder(); SSApp.toast("Connected “" + nm + "”. Uploads now write into assets/img.", "ok"); renderDesign(); }
+      catch (err) { SSApp.toast(String(err), "err"); }
+    };
+    // carousel thumbnails (source of truth = #g-imgs textarea)
+    function renderThumbs() {
+      const ta = document.getElementById("g-imgs"), wrap = document.getElementById("g-thumbs");
+      if (!ta || !wrap) return;
+      const list = ta.value.split("\n").map(s => s.trim()).filter(Boolean);
+      wrap.innerHTML = list.length ? list.map((src, i) =>
+        `<div class="ss-thumb"><img src="${localPreviews[src] || SS.imgSrc(src)}" alt="" onerror="this.parentNode.classList.add('bad')"><button class="ss-thumb-x" data-i="${i}" title="Remove">✕</button></div>`).join("")
+        : `<p class="ss-seed">No photos yet — upload some above.</p>`;
+      wrap.querySelectorAll("[data-i]").forEach(b => b.onclick = () => {
+        const arr = ta.value.split("\n").map(s => s.trim()).filter(Boolean);
+        arr.splice(+b.getAttribute("data-i"), 1); ta.value = arr.join("\n"); renderThumbs();
+      });
+    }
+    renderThumbs();
+
     const heroBtn = document.getElementById("hero-up-btn"), heroIn = document.getElementById("hero-up");
     heroBtn.onclick = () => heroIn.click();
     heroIn.onchange = async e => {
@@ -1258,10 +1358,10 @@
       const ta = document.getElementById("g-imgs");
       for (const file of files) {
         gBtn.disabled = true; gBtn.textContent = "Uploading…";
-        try { const name = await uploadImageToGitHub(file); ta.value = (ta.value.trim() ? ta.value.trim() + "\n" : "") + name; SSApp.toast("Added " + name, "ok"); }
+        try { const name = await uploadImageToGitHub(file); localPreviews[name] = URL.createObjectURL(file); ta.value = (ta.value.trim() ? ta.value.trim() + "\n" : "") + name; renderThumbs(); }
         catch (err) { SSApp.toast(String(err), "err"); }
       }
-      gBtn.disabled = false; gBtn.textContent = "⬆ Upload photos to carousel";
+      gBtn.disabled = false; gBtn.textContent = "⬆ Upload high-quality photos";
     };
 
     // instagram photo upload
@@ -1540,24 +1640,54 @@
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 6000);
   }
-  // Upload a file → assets/img/<unique-name>; returns the filename to reference.
-  // If one-click GitHub publishing is connected, it commits straight to the repo.
-  // If NOT (you publish with GitHub Desktop instead), it downloads the renamed
-  // file so you can drop it into assets/img/ and push — no token needed.
+
+  /* ---- CONNECT PROJECT FOLDER (write images straight into assets/img) -
+     Uses the browser's File System Access API. The owner picks their local
+     project folder once; uploads then write directly into assets/img/ on
+     disk — so GitHub Desktop sees them and pushes them. No token needed.   */
+  let projectDir = null;
+  function folderSupported() { return typeof window.showDirectoryPicker === "function"; }
+  function folderConnected() { return !!projectDir; }
+  async function connectProjectFolder() {
+    if (!folderSupported()) throw "Your browser doesn't support folder access — use Chrome or Edge (or upload with the download fallback).";
+    const dir = await window.showDirectoryPicker({ mode: "readwrite" });
+    // sanity-check it's the project folder (has index.html or an assets folder)
+    let looksRight = false;
+    try { await dir.getFileHandle("index.html"); looksRight = true; } catch (e) {}
+    if (!looksRight) { try { await dir.getDirectoryHandle("assets"); looksRight = true; } catch (e) {} }
+    if (!looksRight) throw "That doesn't look like your Second Scoop project folder (no index.html / assets). Pick the folder that contains index.html.";
+    if (dir.requestPermission) { const perm = await dir.requestPermission({ mode: "readwrite" }); if (perm !== "granted") throw "Permission to write to the folder was denied."; }
+    projectDir = dir; return dir.name;
+  }
+  async function writeIntoProject(relPath, file) {
+    if (!projectDir) throw "no folder";
+    const parts = relPath.split("/"); const fileName = parts.pop();
+    let dir = projectDir;
+    for (const part of parts) dir = await dir.getDirectoryHandle(part, { create: true });
+    const fh = await dir.getFileHandle(fileName, { create: true });
+    const w = await fh.createWritable(); await w.write(file); await w.close();
+  }
+
+  // Upload an image → assets/img/<unique-name>; returns the filename to reference.
+  // Order of preference: (1) connected project folder → writes to disk;
+  // (2) one-click GitHub token → commits via API; (3) download fallback.
   async function uploadImageToGitHub(file) {
     if (file.size > 40 * 1024 * 1024) throw "Image is over 40MB — please use one under 40MB.";
     const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
     const base = (file.name.replace(/\.[^.]+$/, "") || "image").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "image";
     const name = base + "-" + Date.now().toString(36) + "." + ext;
+    if (folderConnected()) {
+      await writeIntoProject("assets/img/" + name, file);
+      return name;
+    }
     if (publishConfigured()) {
       const cfg = getPublishCfg();
       const b64 = await fileToBase64(file);
       await commitImage(cfg, "assets/img/" + name, b64, "Add image " + name);
       return name;
     }
-    // GitHub Desktop fallback
     downloadBlob(file, name);
-    SSApp.toast("Saved “" + name + "” to your Downloads. Move it into your project's assets/img/ folder, then push with GitHub Desktop.", "ok");
+    SSApp.toast("Saved “" + name + "” to Downloads. Move it into your project's assets/img/ folder, then push. (Tip: connect your project folder to skip this step.)", "ok");
     return name;
   }
   // Upload a hero video → assets/video/<name>; returns the path to reference.
