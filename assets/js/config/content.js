@@ -1,5 +1,5 @@
 /* Second Scoop — content.js
-   Exported from the Backend on 12/06/2026, 23:35:26.
+   Exported from the Backend on 12/06/2026, 23:43:53.
    Replace the matching file in assets/js/config/ to publish. */
 
 window.SS_CONTENT = {
@@ -70,9 +70,9 @@ window.SS_CONTENT = {
       {
         "title": "Baked ",
         "location": "Cantt, Lahore",
-        "date": "",
-        "image": "",
-        "caption": "Sold out on our  launch day!"
+        "date": "22 -23 March 2026",
+        "image": "dsc-4507-mqb9rwym.png",
+        "caption": "We sold out on our  launch day!"
       }
     ]
   },
