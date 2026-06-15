@@ -5,6 +5,7 @@
   SSApp.mount({ recentlySold: false });
   const root = document.getElementById("checkout-root");
   const r = SS.region();
+  const zones = SS.deliveryZones();
 
   const { lines, subtotal } = SS.cartDetail();
   if (!lines.length) {
@@ -42,12 +43,20 @@
             🏠 Pickup <span class="sub">${r.pickup.hours}</span></label>
         </div>
         <div id="address-block" style="margin-top:16px">
-          <label class="ss-label">Delivery address <span class="req">*</span></label>
+          ${zones.length ? `
+          <label class="ss-label">Your area <span class="req">*</span></label>
+          <select class="ss-field" name="area" id="ck-area">
+            <option value="">Select your area…</option>
+            ${zones.map(z => `<option value="${z.name.replace(/"/g, "&quot;")}">${z.name} — ${SS.money(z.fee)} delivery</option>`).join("")}
+          </select>
+          <div class="ss-error">Please choose your area.</div>
+          <small style="color:var(--ink-60)" id="ck-area-hint">Delivery is charged by area — pick yours and the fee updates automatically.</small>` : ""}
+          <label class="ss-label"${zones.length ? ' style="margin-top:10px"' : ""}>Delivery address <span class="req">*</span></label>
           <textarea class="ss-field" name="address" placeholder="Street address…"></textarea>
           <div class="ss-error">Please enter a delivery address.</div>
           <label class="ss-label" style="margin-top:10px">Address line 2 <span style="color:var(--ink-40);font-weight:500">(optional)</span></label>
           <input class="ss-field" name="address2" placeholder="Apartment, floor, landmark…">
-          <small style="color:var(--ink-60)">Cities: ${r.delivery.cities.join(", ")}.</small>
+          ${zones.length ? "" : `<small style="color:var(--ink-60)">Cities: ${r.delivery.cities.join(", ")}.</small>`}
         </div>
         <div id="pickup-block" style="margin-top:16px;display:none">
           <div class="ss-pdp-notes">📍 <span><strong>${r.pickup.address}</strong><br>${r.pickup.hours}. ${r.pickup.notes}</span></div>
@@ -80,10 +89,31 @@
   const pickupBlock = document.getElementById("pickup-block");
 
   function fulfilment() { return form.querySelector('[name="fulfilment"]:checked').value; }
+  function selectedArea() { const el = form.querySelector('[name="area"]'); return el ? el.value : ""; }
   function refreshTotals() {
-    const fee = SS.deliveryFee(fulfilment(), subtotal);
-    document.getElementById("sum-delivery").textContent = fulfilment() === "pickup" ? "Pickup (free)" : (fee ? SS.money(fee) : "Free");
-    document.getElementById("sum-total").textContent = SS.money(subtotal + fee);
+    const isDelivery = fulfilment() === "delivery";
+    const fee = SS.deliveryFee(fulfilment(), subtotal, undefined, selectedArea());
+    const sumD = document.getElementById("sum-delivery");
+    if (!isDelivery) sumD.textContent = "Pickup (free)";
+    else if (zones.length && !selectedArea()) sumD.textContent = "Pick your area";
+    else sumD.textContent = fee ? SS.money(fee) : "Free";
+    document.getElementById("sum-total").textContent = SS.money(subtotal + (isDelivery ? fee : 0));
+  }
+  // auto-detect: if the typed address mentions a known area, select it
+  const areaSel = document.getElementById("ck-area");
+  if (areaSel) areaSel.addEventListener("change", refreshTotals);
+  if (zones.length) {
+    const addr = form.querySelector('[name="address"]');
+    if (addr) addr.addEventListener("input", () => {
+      if (areaSel.value) return;                       // don't override a manual choice
+      const text = addr.value.toLowerCase();
+      const hit = zones.find(z => text.includes(z.name.toLowerCase()));
+      if (hit) {
+        areaSel.value = hit.name; refreshTotals();
+        const hint = document.getElementById("ck-area-hint");
+        if (hint) hint.textContent = `Detected "${hit.name}" — delivery ${SS.money(hit.fee)}. Change above if that's not right.`;
+      }
+    });
   }
   document.getElementById("fulfil-toggle").addEventListener("change", () => {
     const isDelivery = fulfilment() === "delivery";
@@ -108,6 +138,7 @@
     const required = [["name", v => v.trim()], ["phone", v => v.trim().length >= 6],
                       ["email", v => /\S+@\S+\.\S+/.test(v)], ["preferredDate", v => v]];
     if (isDelivery) required.push(["address", v => v.trim()]);
+    if (isDelivery && zones.length) required.push(["area", v => v.trim()]);
     required.forEach(([n, test]) => {
       const inp = form[n]; const valid = test(inp.value); showError(inp, !valid); if (!valid) ok = false;
     });
@@ -121,6 +152,7 @@
       instagram: form.instagram ? form.instagram.value : "",
       fulfilment: fulfilment(), address: form.address.value,
       address2: form.address2 ? form.address2.value : "",
+      area: selectedArea(),
       preferredDate: form.preferredDate.value, notes: form.notes.value,
     });
 

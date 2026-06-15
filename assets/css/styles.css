@@ -625,6 +625,8 @@ section{position:relative}
 .ss-size-opt.is-active{border-color:var(--caramel);box-shadow:0 0 0 3px rgba(176,118,60,.18)}
 .ss-size-label{font-family:'Fredoka',sans-serif;font-weight:700;color:var(--choc)}
 .ss-size-price{font-size:.85rem;color:var(--caramel);font-weight:700}
+.ss-sizes-edit{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.ss-size-row{display:grid;grid-template-columns:1.4fr 1fr 32px;gap:6px;align-items:center}
 .ss-pdp-long{color:var(--choc-soft);font-size:1rem;margin:1.2em 0}
 .ss-qty{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:var(--r-pill);overflow:hidden;background:var(--white)}
 .ss-qty button{width:42px;height:46px;font-size:1.3rem;color:var(--choc);font-weight:700}

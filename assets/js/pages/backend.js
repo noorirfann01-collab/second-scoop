@@ -27,25 +27,30 @@
     { id: "reviews", label: "Reviews", icon: "⭐" },
     { id: "products", label: "Products", icon: "🍪" },
     { id: "vault", label: "The Vault", icon: "🔒" },
-    { id: "homepage", label: "Homepage", icon: "🏠" },
-    { id: "popups", label: "Popups", icon: "📍" },
-    { id: "menu", label: "Menu & Regions", icon: "🧭" },
-    { id: "content", label: "Pages & Text", icon: "✍️" },
-    { id: "design", label: "Design & Logo", icon: "🎨" },
+    { id: "homepage", label: "Home Page", icon: "🏠" },
+    { id: "about", label: "About Page", icon: "📖" },
+    { id: "faq", label: "FAQ Page", icon: "❓" },
+    { id: "contact", label: "Contact Page", icon: "✉️" },
+    { id: "preorders", label: "Pre-orders Page", icon: "⏳" },
+    { id: "popups", label: "Popups Page", icon: "📍" },
+    { id: "shoptext", label: "Shop & Checkout", icon: "🛒" },
+    { id: "design", label: "Design (theme/logo)", icon: "🎨" },
+    { id: "menu", label: "Navigation & Regions", icon: "🧭" },
     { id: "announce", label: "Announcements", icon: "📣" },
-    { id: "settings", label: "Settings", icon: "⚙️" },
+    { id: "settings", label: "Brand & Settings", icon: "⚙️" },
     { id: "export", label: "Publish & Backup", icon: "💾" },
   ];
-  // Grouped like a real store admin (Shopify-style) for an organised sidebar.
+  // Page-based grouping — each page owns its content, no overlaps.
   const NAV_GROUPS = [
     { label: "Store", items: ["dashboard", "orders", "mailing", "reviews"] },
     { label: "Catalog", items: ["products", "vault"] },
-    { label: "Online store", items: ["homepage", "popups", "menu", "content", "design", "announce"] },
-    { label: "Settings", items: ["settings", "export"] },
+    { label: "Pages", items: ["homepage", "about", "faq", "contact", "preorders", "popups", "shoptext"] },
+    { label: "Look & setup", items: ["design", "menu", "announce", "settings", "export"] },
   ];
 
   // working copies (edited in memory, persisted on save)
   let cat, vault, content, settings, announce, regionView;
+  let zoneState = {};   // working copy of delivery zones per region (Settings tab)
   let section = (location.hash.replace("#", "") || "dashboard");
   let productSearch = "", orderFilters = { region: "all", status: "all", q: "" };
 
@@ -311,7 +316,8 @@
 
   function renderSection() {
     ({ dashboard: renderDashboard, orders: renderOrders, mailing: renderMailing, reviews: renderReviews, products: renderProducts,
-       homepage: renderHomepage, popups: renderPopups, menu: renderMenu, vault: renderVault, content: renderContent, design: renderDesign, announce: renderAnnounce,
+       homepage: renderHomepage, about: renderAbout, faq: renderFaq, contact: renderContact, preorders: renderPreorders,
+       popups: renderPopups, shoptext: renderShopText, menu: renderMenu, vault: renderVault, design: renderDesign, announce: renderAnnounce,
        settings: renderSettings, export: renderExport }[section] || renderDashboard)();
   }
 
@@ -743,7 +749,7 @@
   function productRow(p) {
     const thumb = (p.images && p.images[0]) ? `<img class="ss-mgr-thumb" src="${SS.imgSrc(p.images[0])}" onerror="this.style.visibility='hidden'">` : `<div class="ss-mgr-thumb ss-mgr-thumb--empty" data-cat="${p.category}">🍪</div>`;
     const flags = [p.hidden ? `<span class="ss-tag ss-tag--off">Hidden</span>` : "", p.featured ? `<span class="ss-tag">Featured</span>` : "", p.secret ? `<span class="ss-tag ss-tag--gold">Secret</span>` : "", p.badge ? `<span class="ss-tag ss-tag--blush">${(BADGES.find(b => b[0] === p.badge) || ["", p.badge])[1]}</span>` : ""].join("");
-    const cells = REGION_IDS.map(rid => { const r = p.regions && p.regions[rid]; if (!r) return `<td><span class="ss-tag ss-tag--off">—</span></td>`; const priceTxt = (r.sizes && r.sizes.length) ? `${SS.money(r.sizes[0].price, rid)}+ <span class="ss-seed">(${r.sizes.length} sizes)</span>` : `${SS.money(r.price, rid)}`; return `<td><strong>${priceTxt}</strong><br><span class="ss-statusdot ss-statusdot--${r.status}">${STATUS_LABEL[r.status]}</span><br><span class="ss-seed">${r.inventory} stock</span></td>`; }).join("");
+    const cells = REGION_IDS.map(rid => { const r = p.regions && p.regions[rid]; if (!r) return `<td><span class="ss-tag ss-tag--off">—</span></td>`; let priceTxt; if (r.sizes && r.sizes.length) { const paid = r.sizes.map(s => Number(s.price) || 0).filter(p => p > 0); const lo = paid.length ? Math.min.apply(null, paid) : (r.price || 0); priceTxt = `${SS.money(lo, rid)}+ <span class="ss-seed">(${r.sizes.length} sizes)</span>`; } else { priceTxt = `${SS.money(r.price, rid)}`; } return `<td><strong>${priceTxt}</strong><br><span class="ss-statusdot ss-statusdot--${r.status}">${STATUS_LABEL[r.status]}</span><br><span class="ss-seed">${r.inventory} stock</span></td>`; }).join("");
     return `<tr><td>${thumb}</td><td><strong>${esc(p.name || "(untitled)")}</strong><br><span class="ss-seed">${esc(p.id)}</span></td>
       <td>${SS.categoryName(p.category)}</td><td><div class="ss-tags">${flags || "—"}</div></td>${cells}
       <td><div class="ss-mgr-actions">
@@ -826,23 +832,48 @@
     };
     document.getElementById("f-url-btn").onclick = () => { const v = prompt("Image filename (in assets/img/) or full URL:"); if (v && v.trim()) { images.push(v.trim()); drawImages(); } };
     REGION_IDS.forEach(rid => { const t = document.getElementById("rg-on-" + rid), fields = document.getElementById("rg-fields-" + rid); const sync = () => fields.style.display = t.checked ? "block" : "none"; t.onchange = sync; sync(); });
+
+    // structured size + price editor (per region)
+    const sizeState = {};
+    REGION_IDS.forEach(rid => { sizeState[rid] = (((p.regions || {})[rid] || {}).sizes || []).map(s => ({ label: s.label || "", price: Number(s.price) || 0 })); });
+    function drawSizes(rid) {
+      const wrap = document.getElementById("rg-sizes-list-" + rid); if (!wrap) return;
+      const arr = sizeState[rid], R = SS_REGIONS[rid];
+      wrap.innerHTML = arr.length ? arr.map((s, i) => `<div class="ss-size-row" data-i="${i}">
+        <input class="ss-field ss-field--sm" data-sk="label" value="${esc(s.label || "")}" placeholder="Size name (e.g. Large)">
+        <input class="ss-field ss-field--sm" data-sk="price" type="number" min="0" step="${R.currency === "PKR" ? 1 : 0.01}" value="${s.price || 0}" placeholder="Price (${R.currency})">
+        <button class="ss-icon-btn" type="button" data-sdel="${i}">✕</button></div>`).join("") : `<p class="ss-seed">No sizes — the single price above is used.</p>`;
+      wrap.querySelectorAll(".ss-size-row").forEach(row => {
+        const i = +row.getAttribute("data-i");
+        row.querySelectorAll("[data-sk]").forEach(inp => inp.oninput = () => { const k = inp.getAttribute("data-sk"); arr[i][k] = k === "price" ? (Number(inp.value) || 0) : inp.value; });
+        row.querySelector("[data-sdel]").onclick = () => { arr.splice(i, 1); drawSizes(rid); };
+      });
+    }
+    REGION_IDS.forEach(rid => {
+      drawSizes(rid);
+      const ab = document.getElementById("rg-size-add-" + rid);
+      if (ab) ab.onclick = () => { sizeState[rid].push({ label: "", price: 0 }); drawSizes(rid); };
+    });
+
     document.getElementById("m-close").onclick = closeDrawer;
     document.getElementById("m-cancel").onclick = closeDrawer;
-    document.getElementById("m-save").onclick = () => saveProduct(index, isNew, images);
+    document.getElementById("m-save").onclick = () => saveProduct(index, isNew, images, sizeState);
   }
   function regionEditor(rid, p) {
     const has = !!(p.regions && p.regions[rid]); const r = has ? p.regions[rid] : { status: "available", price: 0, inventory: 0, deliveryNotes: "" }; const R = SS_REGIONS[rid];
     return `<div class="ss-region-edit"><label class="ss-switch"><input type="checkbox" id="rg-on-${rid}" ${has ? "checked" : ""}><span>${R.flag} Sell in ${R.name} (${R.currency})</span></label>
       <div id="rg-fields-${rid}" class="ss-region-fields"><div class="ss-grid2">
-        <div><label class="ss-label">Price (${R.currency})${(r.sizes && r.sizes.length) ? " — single-size only" : ""}</label><input class="ss-field" id="rg-price-${rid}" type="number" step="${R.currency === "PKR" ? 1 : 0.01}" min="0" value="${r.price || 0}"></div>
+        <div><label class="ss-label">Price (${R.currency}) — used only if no sizes below</label><input class="ss-field" id="rg-price-${rid}" type="number" step="${R.currency === "PKR" ? 1 : 0.01}" min="0" value="${r.price || 0}"></div>
         <div><label class="ss-label">Inventory</label><input class="ss-field" id="rg-inv-${rid}" type="number" min="0" value="${r.inventory}"></div></div>
-        <label class="ss-label" style="margin-top:10px">Sizes &amp; prices (optional — one per line as <b>Label | Price</b>)</label>
-        <textarea class="ss-field" id="rg-sizes-${rid}" style="min-height:64px" placeholder="Regular | ${R.currency === "PKR" ? "1200" : "9"}&#10;Large | ${R.currency === "PKR" ? "1800" : "14"}">${esc((r.sizes || []).map(s => s.label + " | " + s.price).join("\n"))}</textarea>
-        <small class="ss-seed">Leave blank for a single price. Add sizes and customers pick one — the price changes to match.</small>
+        <label class="ss-label" style="margin-top:10px">Sizes &amp; prices (optional)</label>
+        <div class="ss-sizes-edit" id="rg-sizes-list-${rid}"></div>
+        <button class="ss-chip" type="button" id="rg-size-add-${rid}" style="margin-top:6px">+ Add a size</button>
+        <small class="ss-seed">Add sizes (e.g. Regular / Large), each with its own price. Customers pick one and the price updates — and the <b>cheapest size shows as the product's main price</b>.</small>
         <label class="ss-label" style="margin-top:10px">Availability</label><select class="ss-field" id="rg-status-${rid}">${STATUSES.map(s => `<option value="${s}" ${r.status === s ? "selected" : ""}>${STATUS_LABEL[s]}</option>`).join("")}</select>
         <label class="ss-label" style="margin-top:10px">Delivery / product note</label><input class="ss-field" id="rg-notes-${rid}" value="${esc(r.deliveryNotes || "")}"></div></div>`;
   }
-  function saveProduct(index, isNew, images) {
+  function saveProduct(index, isNew, images, sizeState) {
+    sizeState = sizeState || {};
     const name = val("f-name").trim(); if (!name) { SSApp.toast("Add a product name.", "err"); return; }
     let id = val("f-id").trim().toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-|-$/g, ""); if (!id) id = slug(name);
     if (cat.some((p, i) => p.id === id && i !== index)) id = uniqueId(id);
@@ -850,14 +881,11 @@
     REGION_IDS.forEach(rid => {
       if (!document.getElementById("rg-on-" + rid).checked) return;
       const reg = { status: val("rg-status-" + rid), price: Number(val("rg-price-" + rid)) || 0, inventory: Math.max(0, parseInt(val("rg-inv-" + rid), 10) || 0), deliveryNotes: val("rg-notes-" + rid).trim() };
-      const sizesRaw = val("rg-sizes-" + rid).trim();
-      if (sizesRaw) {
-        const sizes = sizesRaw.split("\n").map(ln => {
-          const parts = ln.split("|"); const label = (parts[0] || "").trim();
-          const price = Number((parts[1] || "").replace(/[^0-9.]/g, "")) || 0;
-          return label ? { label, price } : null;
-        }).filter(Boolean);
-        if (sizes.length) { reg.sizes = sizes; reg.price = sizes[0].price; }   // default price = first size
+      const sizes = (sizeState[rid] || []).map(s => ({ label: String(s.label || "").trim(), price: Number(s.price) || 0 })).filter(s => s.label);
+      if (sizes.length) {
+        reg.sizes = sizes;
+        const valid = sizes.map(s => s.price).filter(p => p > 0);   // cheapest paid size = main price
+        reg.price = valid.length ? Math.min.apply(null, valid) : (Number(val("rg-price-" + rid)) || 0);
       }
       regions[rid] = reg;
     });
@@ -935,97 +963,83 @@
     ["cart", "Cart page", [["eyebrow", "Eyebrow"], ["title", "Title"]]],
     ["checkout", "Checkout page", [["eyebrow", "Eyebrow"], ["title", "Title"]]],
   ];
-  function renderContent() {
-    const C = content;
-    C.hero = C.hero || {}; C.about = C.about || {}; C.howItWorks = C.howItWorks || []; C.faq = C.faq || [];
-    C.sections = C.sections || {}; C.brand = C.brand || {}; C.pages = C.pages || {};
+  // shared: render a page's text fields (from PAGE_TEXT) and save them
+  function pageTextPanel(pageKey, heading) {
+    const entry = PAGE_TEXT.find(p => p[0] === pageKey); if (!entry) return "";
+    const C = content; C.pages = C.pages || {};
+    return `<div class="ss-panel" style="margin-bottom:14px"><h3>${heading || entry[1]}</h3>
+      <p style="color:var(--ink-60);font-size:.9rem">Blank = keep the built-in wording.</p>
+      <div class="ss-grid2">
+        ${entry[2].map(([f, label, ml]) => { const v = esc(((C.pages[pageKey] || {})[f]) || "");
+          return ml ? `<div style="grid-column:1/-1"><label class="ss-label">${label}</label><textarea class="ss-field" id="c-pg-${pageKey}-${f}" style="min-height:54px">${v}</textarea></div>`
+                    : `<div><label class="ss-label">${label}</label><input class="ss-field" id="c-pg-${pageKey}-${f}" value="${v}"></div>`; }).join("")}
+      </div></div>`;
+  }
+  function savePageText(pageKey) {
+    const entry = PAGE_TEXT.find(p => p[0] === pageKey); if (!entry) return;
+    content.pages = content.pages || {}; content.pages[pageKey] = content.pages[pageKey] || {};
+    entry[2].forEach(([f]) => { const v = val("c-pg-" + pageKey + "-" + f).trim(); if (v) content.pages[pageKey][f] = v; });
+  }
+
+  /* ====================================================== ABOUT ===== */
+  function renderAbout() {
+    const C = content; C.about = C.about || {};
     body().innerHTML = `
-      <div class="ss-panel" style="margin-bottom:14px"><h3>Homepage hero</h3>
-        <label class="ss-label">Tagline (small, above headline)</label><input class="ss-field" id="c-h-tag" value="${esc(C.hero.tagline || "")}">
-        <label class="ss-label" style="margin-top:10px">Headline (HTML ok — wrap a word in &lt;span class="accent"&gt;…&lt;/span&gt; to colour it)</label><textarea class="ss-field" id="c-h-head" style="min-height:60px">${esc(C.hero.headline || "")}</textarea>
-        <label class="ss-label" style="margin-top:10px">Sub-text (HTML ok)</label><textarea class="ss-field" id="c-h-sub" style="min-height:60px">${esc(C.hero.sub || "")}</textarea>
-        <label class="ss-label" style="margin-top:10px">Trust badges (one per line)</label><textarea class="ss-field" id="c-h-trust" style="min-height:70px">${esc((C.hero.trust || []).join("\n"))}</textarea>
-        <label class="ss-switch ss-switch--chip" style="margin-top:10px"><input type="checkbox" id="c-h-wm" ${C.hero.showWordmark !== false ? "checked" : ""}><span>Show logo wordmark in hero</span></label>
-      </div>
-      <div class="ss-panel" style="margin-bottom:14px"><h3>Brand &amp; social</h3>
-        <div class="ss-grid2">
-          <div><label class="ss-label">Business name</label><input class="ss-field" id="c-b-name" value="${esc(C.brand.name || "")}"></div>
-          <div><label class="ss-label">Tagline</label><input class="ss-field" id="c-b-tag" value="${esc(C.brand.tagline || "")}"></div>
-          <div><label class="ss-label">Contact email</label><input class="ss-field" id="c-b-email" value="${esc(C.brand.email || "")}"></div>
-          <div><label class="ss-label">Instagram handle (no @)</label><input class="ss-field" id="c-b-ig" value="${esc(C.brand.instagram || "")}"></div>
-          <div><label class="ss-label">Instagram URL</label><input class="ss-field" id="c-b-igurl" value="${esc(C.brand.instagramUrl || "")}"></div>
-          <div><label class="ss-label">Footer note</label><input class="ss-field" id="c-b-foot" value="${esc(C.brand.footerNote || "")}"></div>
-        </div>
-      </div>
-      <div class="ss-panel" style="margin-bottom:14px"><h3>Homepage section headings</h3>
-        <p style="color:var(--ink-60);font-size:.9rem">Edit every heading and blurb on the homepage. Leave a field blank to keep the built-in wording.</p>
-        ${SECTION_TEXT.map(([key, name, fields]) => `
-          <div class="ss-subpanel"><h4>${name}</h4><div class="ss-grid2">
-            ${fields.map(([f, label]) => {
-              const v = esc(((C.sections[key] || {})[f]) || "");
-              return f === "text"
-                ? `<div style="grid-column:1/-1"><label class="ss-label">${label}</label><textarea class="ss-field" id="c-sec-${key}-${f}" style="min-height:56px">${v}</textarea></div>`
-                : `<div><label class="ss-label">${label}</label><input class="ss-field" id="c-sec-${key}-${f}" value="${v}"></div>`;
-            }).join("")}
-          </div></div>`).join("")}
-      </div>
-      <div class="ss-panel" style="margin-bottom:14px"><h3>How It Works (4 steps)</h3><div id="c-how"></div></div>
-      <div class="ss-panel" style="margin-bottom:14px"><h3>About page</h3>
+      <p style="color:var(--ink-60);margin:0 0 14px">Your brand story — shows on the <b>About page</b> AND the “About” block on the home page.</p>
+      <div class="ss-panel" style="margin-bottom:14px"><h3>About story</h3>
         <div class="ss-grid2"><div><label class="ss-label">Eyebrow</label><input class="ss-field" id="c-a-eye" value="${esc(C.about.eyebrow || "")}"></div>
           <div><label class="ss-label">Title</label><input class="ss-field" id="c-a-title" value="${esc(C.about.title || "")}"></div></div>
         <label class="ss-label" style="margin-top:10px">Lead line</label><input class="ss-field" id="c-a-lead" value="${esc(C.about.lead || "")}">
         <label class="ss-label" style="margin-top:10px">Paragraphs (blank line between each)</label><textarea class="ss-field" id="c-a-paras" style="min-height:130px">${esc((C.about.paragraphs || []).join("\n\n"))}</textarea>
         <label class="ss-label" style="margin-top:10px">Value cards</label><div id="c-vals"></div>
       </div>
-      <div class="ss-panel" style="margin-bottom:14px"><h3>FAQ questions</h3><div id="c-faq"></div></div>
-      <div class="ss-panel" style="margin-bottom:14px"><h3>Other pages — every heading &amp; label</h3>
-        <p style="color:var(--ink-60);font-size:.9rem">Text on the Shop, FAQ, Contact, Pre-orders, Vault, Cart and Checkout pages. Blank = keep the built-in wording.</p>
-        ${PAGE_TEXT.map(([page, name, fields]) => `
-          <details class="ss-subpanel"><summary><strong>${name}</strong></summary><div class="ss-grid2" style="margin-top:10px">
-            ${fields.map(([f, label, ml]) => {
-              const v = esc(((C.pages[page] || {})[f]) || "");
-              return ml
-                ? `<div style="grid-column:1/-1"><label class="ss-label">${label}</label><textarea class="ss-field" id="c-pg-${page}-${f}" style="min-height:54px">${v}</textarea></div>`
-                : `<div><label class="ss-label">${label}</label><input class="ss-field" id="c-pg-${page}-${f}" value="${v}"></div>`;
-            }).join("")}
-          </div></details>`).join("")}
-      </div>
-      <button class="ss-btn" id="c-save">Save content (go live)</button>`;
-
-    // how it works editor
-    drawList("c-how", C.howItWorks, (item, i) => `
-      <div class="ss-list-row" data-i="${i}"><input class="ss-field ss-field--sm" data-k="title" value="${esc(item.title || "")}" placeholder="Step title">
-      <input class="ss-field ss-field--sm" data-k="text" value="${esc(item.text || "")}" placeholder="Step text"><button class="ss-icon-btn" data-del>✕</button></div>`, () => ({ title: "", text: "" }), "+ Add step");
-    // value cards
+      <button class="ss-btn" id="a-save">Save About (go live)</button>`;
     drawList("c-vals", C.about.values || (C.about.values = []), (item, i) => `
       <div class="ss-list-row" data-i="${i}" style="grid-template-columns:50px 1fr 1.6fr 34px"><input class="ss-field ss-field--sm" data-k="emoji" value="${esc(item.emoji || "")}" placeholder="🥄">
       <input class="ss-field ss-field--sm" data-k="title" value="${esc(item.title || "")}" placeholder="Title">
       <input class="ss-field ss-field--sm" data-k="text" value="${esc(item.text || "")}" placeholder="Text"><button class="ss-icon-btn" data-del>✕</button></div>`, () => ({ emoji: "✨", title: "", text: "" }), "+ Add value");
-    // faq
+    document.getElementById("a-save").onclick = () => {
+      C.about.eyebrow = val("c-a-eye"); C.about.title = val("c-a-title"); C.about.lead = val("c-a-lead");
+      C.about.paragraphs = val("c-a-paras").split(/\n\s*\n/).map(s => s.trim()).filter(Boolean);
+      persistContent(); updateLiveBadge(); SSApp.toast("About saved — live ✍️", "ok");
+    };
+  }
+
+  /* ======================================================= FAQ ====== */
+  function renderFaq() {
+    const C = content; C.faq = C.faq || [];
+    body().innerHTML = `
+      ${pageTextPanel("faq", "FAQ page header")}
+      <div class="ss-panel" style="margin-bottom:14px"><h3>Questions &amp; answers</h3><div id="c-faq"></div></div>
+      <button class="ss-btn" id="faq-save">Save FAQ (go live)</button>`;
     drawList("c-faq", C.faq, (item, i) => `
       <div class="ss-list-row ss-list-row--stack" data-i="${i}"><input class="ss-field ss-field--sm" data-k="q" value="${esc(item.q || "")}" placeholder="Question">
       <textarea class="ss-field ss-field--sm" data-k="a" placeholder="Answer">${esc(item.a || "")}</textarea><button class="ss-icon-btn" data-del>✕</button></div>`, () => ({ q: "", a: "" }), "+ Add question");
+    document.getElementById("faq-save").onclick = () => { savePageText("faq"); persistContent(); updateLiveBadge(); SSApp.toast("FAQ saved — live ✍️", "ok"); };
+  }
 
-    document.getElementById("c-save").onclick = () => {
-      C.hero.tagline = val("c-h-tag"); C.hero.headline = val("c-h-head"); C.hero.sub = val("c-h-sub");
-      C.hero.trust = val("c-h-trust").split("\n").map(s => s.trim()).filter(Boolean); C.hero.showWordmark = chkd("c-h-wm");
-      C.about.eyebrow = val("c-a-eye"); C.about.title = val("c-a-title"); C.about.lead = val("c-a-lead");
-      C.about.paragraphs = val("c-a-paras").split(/\n\s*\n/).map(s => s.trim()).filter(Boolean);
-      // brand & social
-      C.brand.name = val("c-b-name"); C.brand.tagline = val("c-b-tag"); C.brand.email = val("c-b-email");
-      C.brand.instagram = val("c-b-ig").replace(/^@/, ""); C.brand.instagramUrl = val("c-b-igurl"); C.brand.footerNote = val("c-b-foot");
-      // homepage section headings
-      SECTION_TEXT.forEach(([key, , fields]) => {
-        C.sections[key] = C.sections[key] || {};
-        fields.forEach(([f]) => { const v = val("c-sec-" + key + "-" + f).trim(); if (v) C.sections[key][f] = v; });
-      });
-      // other pages' text
-      PAGE_TEXT.forEach(([page, , fields]) => {
-        C.pages[page] = C.pages[page] || {};
-        fields.forEach(([f]) => { const v = val("c-pg-" + page + "-" + f).trim(); if (v) C.pages[page][f] = v; });
-      });
-      persistContent(); updateLiveBadge(); SSApp.toast("Content saved — live ✍️", "ok");
-    };
+  /* ==================================================== CONTACT ===== */
+  function renderContact() {
+    body().innerHTML = `${pageTextPanel("contact", "Contact page")}<button class="ss-btn" id="ct-save">Save Contact (go live)</button>`;
+    document.getElementById("ct-save").onclick = () => { savePageText("contact"); persistContent(); updateLiveBadge(); SSApp.toast("Contact saved — live ✍️", "ok"); };
+  }
+
+  /* ================================================== PRE-ORDERS ==== */
+  function renderPreorders() {
+    body().innerHTML = `${pageTextPanel("preorders", "Pre-orders page")}<button class="ss-btn" id="pre-save">Save Pre-orders (go live)</button>`;
+    document.getElementById("pre-save").onclick = () => { savePageText("preorders"); persistContent(); updateLiveBadge(); SSApp.toast("Pre-orders saved — live ✍️", "ok"); };
+  }
+
+  /* ============================================== SHOP & CHECKOUT === */
+  function renderShopText() {
+    body().innerHTML = `
+      <p style="color:var(--ink-60);margin:0 0 14px">Wording on your Shop, Vault, Cart and Checkout pages.</p>
+      ${pageTextPanel("shop", "Shop page")}
+      ${pageTextPanel("vault", "Vault page")}
+      ${pageTextPanel("cart", "Cart page")}
+      ${pageTextPanel("checkout", "Checkout page")}
+      <button class="ss-btn" id="sc-save">Save (go live)</button>`;
+    document.getElementById("sc-save").onclick = () => { ["shop", "vault", "cart", "checkout"].forEach(savePageText); persistContent(); updateLiveBadge(); SSApp.toast("Saved — live ✍️", "ok"); };
   }
   // generic repeatable list editor bound to an array (syncs on change)
   function drawList(containerId, arr, rowHtml, blank, addLabel) {
@@ -1058,48 +1072,180 @@
   function renderHomepage() {
     const C = content;
     C.home = C.home || {}; C.home.sections = C.home.sections || {};
-    C.hero = C.hero || {}; C.intro = C.intro || {};
-    const sec = C.home.sections, mob = C.hero.mobileMode || "auto", intro = C.intro;
+    C.hero = C.hero || {}; C.intro = C.intro || {}; C.sections = C.sections || {};
+    C.howItWorks = C.howItWorks || []; C.gallery = C.gallery || { images: [] };
+    C.instagramFeed = C.instagramFeed || { mode: "tiles", embedHtml: "", tiles: [] };
+    const sec = C.home.sections, mob = C.hero.mobileMode || "auto", intro = C.intro, g = C.gallery, igf = C.instagramFeed;
+    const localPreviews = {};
     body().innerHTML = `
-      <div class="ss-panel" style="margin-bottom:14px"><h3>Homepage sections</h3>
-        <p style="color:var(--ink-60);font-size:.9rem">Tick the blocks you want on your home page. Untick anything you don't — it disappears for customers (your products are still in the shop). Order top-to-bottom matches the page.</p>
+      <p style="color:var(--ink-60);margin:0 0 14px">Everything on your <b>home page</b> lives here — top to bottom, exactly as it appears.</p>
+      ${folderPanelHTML()}
+
+      <div class="ss-panel" style="margin-bottom:14px"><h3>1 · Opening intro animation</h3>
+        <p style="color:var(--ink-60);font-size:.9rem">A full-screen splash that morphs through words, then melts to reveal the site.</p>
+        <label class="ss-switch ss-switch--chip"><input type="checkbox" id="in-on" ${intro.enabled !== false ? "checked" : ""}><span>Show the opening intro</span></label>
+        <label class="ss-switch ss-switch--chip" style="margin-top:8px"><input type="checkbox" id="in-once" ${intro.oncePerSession !== false ? "checked" : ""}><span>Only the first visit each session</span></label>
+        <label class="ss-label" style="margin-top:10px">Words to morph through (one per line — SS logo plays last)</label>
+        <textarea class="ss-field" id="in-words" style="min-height:80px">${esc((intro.words || ["Warm.", "Gooey.", "Scoopable."]).join("\n"))}</textarea>
+      </div>
+
+      <div class="ss-panel" style="margin-bottom:14px"><h3>2 · Hero — words</h3>
+        <label class="ss-label">Tagline (small, above headline)</label><input class="ss-field" id="c-h-tag" value="${esc(C.hero.tagline || "")}">
+        <label class="ss-label" style="margin-top:10px">Headline (HTML ok — wrap a word in &lt;span class="accent"&gt;…&lt;/span&gt; to colour it)</label><textarea class="ss-field" id="c-h-head" style="min-height:60px">${esc(C.hero.headline || "")}</textarea>
+        <label class="ss-label" style="margin-top:10px">Sub-text (HTML ok)</label><textarea class="ss-field" id="c-h-sub" style="min-height:60px">${esc(C.hero.sub || "")}</textarea>
+        <label class="ss-label" style="margin-top:10px">Trust badges (one per line)</label><textarea class="ss-field" id="c-h-trust" style="min-height:64px">${esc((C.hero.trust || []).join("\n"))}</textarea>
+        <label class="ss-switch ss-switch--chip" style="margin-top:10px"><input type="checkbox" id="c-h-wm" ${C.hero.showWordmark !== false ? "checked" : ""}><span>Show logo wordmark in hero</span></label>
+      </div>
+
+      <div class="ss-panel" style="margin-bottom:14px"><h3>3 · Hero — video</h3>
+        <div class="ss-img-up">
+          <div class="ss-img-up-prev" id="hvid-prev" style="width:90px;height:130px">${(C.hero && C.hero.video) ? `<video src="${SS.imgSrc(C.hero.video)}" muted autoplay loop playsinline style="width:100%;height:100%;object-fit:cover"></video>` : "No video"}</div>
+          <div>
+            <button class="ss-chip" id="hvid-up-btn">⬆ Upload hero video</button>
+            <input type="file" id="hvid-up" accept="video/mp4,video/*" hidden>
+            <label class="ss-label" style="margin-top:8px">…or path / URL</label>
+            <input class="ss-field ss-field--sm" id="hvid-src" value="${esc((C.hero && C.hero.video) || "")}" placeholder="assets/video/hero.mp4" style="width:240px">
+          </div>
+        </div>
+        <p style="color:var(--ink-60);font-size:.85rem;margin-top:10px">Desktop autoplays. On phones:</p>
+        <label class="ss-switch ss-switch--chip" style="margin-bottom:8px"><input type="radio" name="hmob" value="tap" ${mob === "tap" ? "checked" : ""}><span><strong>Tap to play</strong> — phones show the poster + a play button</span></label>
+        <label class="ss-switch ss-switch--chip"><input type="radio" name="hmob" value="auto" ${mob === "auto" ? "checked" : ""}><span><strong>Try autoplay</strong> (recommended)</span></label>
+        <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
+          <a class="ss-chip" href="index.html?preview=1" target="_blank" rel="noopener">🖥️ Preview (new tab)</a>
+          <button class="ss-chip" id="hp-mobprev" type="button">📱 Preview on phone</button>
+        </div>
+      </div>
+
+      <div class="ss-panel" style="margin-bottom:14px"><h3>4 · Hero — fallback image</h3>
+        <p style="color:var(--ink-60);font-size:.9rem">Shown if the video can't play.</p>
+        <div class="ss-img-up">
+          <div class="ss-img-up-prev" id="hero-prev">${C.hero && C.hero.image ? `<img src="${SS.imgSrc(C.hero.image)}" alt="">` : "No image"}</div>
+          <div><button class="ss-chip" id="hero-up-btn">⬆ Upload hero photo</button>
+            <input type="file" id="hero-up" accept="image/*" hidden>
+            <label class="ss-label" style="margin-top:8px">…or filename / URL</label>
+            <input class="ss-field ss-field--sm" id="hero-img" value="${esc((C.hero && C.hero.image) || "")}" placeholder="e.g. hero.jpg"></div>
+        </div>
+      </div>
+
+      <div class="ss-panel" style="margin-bottom:14px"><h3>5 · Which sections show</h3>
+        <p style="color:var(--ink-60);font-size:.9rem">Tick the blocks you want on the home page (top-to-bottom matches the page).</p>
         <div class="ss-home-toggles">
           ${HOME_SECTIONS.map(([k, label, desc]) => `
-            <label class="ss-home-toggle">
-              <input type="checkbox" id="hs-${k}" ${sec[k] !== false ? "checked" : ""}>
-              <span class="ss-home-toggle-box"></span>
-              <span class="ss-home-toggle-txt"><strong>${label}</strong><small>${desc}</small></span>
-            </label>`).join("")}
+            <label class="ss-home-toggle"><input type="checkbox" id="hs-${k}" ${sec[k] !== false ? "checked" : ""}>
+              <span class="ss-home-toggle-box"></span><span class="ss-home-toggle-txt"><strong>${label}</strong><small>${desc}</small></span></label>`).join("")}
         </div>
+        <p class="ss-seed" style="margin-top:8px">The “About” block uses your story from the <b>About</b> tab. Edit its text there.</p>
       </div>
 
-      <div class="ss-panel" style="margin-bottom:14px"><h3>Hero video — mobile &amp; desktop</h3>
-        <p style="color:var(--ink-60);font-size:.9rem">Desktop always autoplays the video. Phones usually <em>block</em> autoplay, so choose what happens there:</p>
-        <label class="ss-switch ss-switch--chip" style="margin-bottom:8px"><input type="radio" name="hmob" value="tap" ${mob === "tap" ? "checked" : ""}><span><strong>Tap to play</strong> (recommended) — phones show the poster + a play button</span></label>
-        <label class="ss-switch ss-switch--chip"><input type="radio" name="hmob" value="auto" ${mob === "auto" ? "checked" : ""}><span><strong>Try autoplay</strong> — attempts to autoplay, falls back to a play button if blocked</span></label>
-        <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
-          <a class="ss-chip" href="index.html?preview=1" target="_blank" rel="noopener">🖥️ Preview homepage (new tab)</a>
-          <button class="ss-chip" id="hp-mobprev">📱 Preview on phone</button>
-        </div>
+      <div class="ss-panel" style="margin-bottom:14px"><h3>6 · Section headings &amp; blurbs</h3>
+        <p style="color:var(--ink-60);font-size:.9rem">The wording above each homepage block. Blank = built-in default.</p>
+        ${SECTION_TEXT.map(([key, name, fields]) => `
+          <div class="ss-subpanel"><h4>${name}</h4><div class="ss-grid2">
+            ${fields.map(([f, label]) => { const v = esc(((C.sections[key] || {})[f]) || ""); return f === "text"
+              ? `<div style="grid-column:1/-1"><label class="ss-label">${label}</label><textarea class="ss-field" id="c-sec-${key}-${f}" style="min-height:54px">${v}</textarea></div>`
+              : `<div><label class="ss-label">${label}</label><input class="ss-field" id="c-sec-${key}-${f}" value="${v}"></div>`; }).join("")}
+          </div></div>`).join("")}
       </div>
-      <div class="ss-panel" style="margin-bottom:14px"><h3>Opening intro animation</h3>
-        <p style="color:var(--ink-60);font-size:.9rem">A full-screen splash that morphs through words when the homepage opens, then melts away to reveal the site.</p>
-        <label class="ss-switch ss-switch--chip"><input type="checkbox" id="in-on" ${intro.enabled !== false ? "checked" : ""}><span>Show the opening intro</span></label>
-        <label class="ss-switch ss-switch--chip" style="margin-top:8px"><input type="checkbox" id="in-once" ${intro.oncePerSession !== false ? "checked" : ""}><span>Only the first visit each session (less repetitive)</span></label>
-        <label class="ss-label" style="margin-top:10px">Words to morph through (one per line — last one shows longest)</label>
-        <textarea class="ss-field" id="in-words" style="min-height:96px">${esc((intro.words || ["Warm.", "Gooey.", "Scoopable.", "Second Scoop."]).join("\n"))}</textarea>
-      </div>
-      <button class="ss-btn" id="hp-save">Save homepage (go live)</button>`;
 
+      <div class="ss-panel" style="margin-bottom:14px"><h3>7 · “How It Works” steps</h3><div id="c-how"></div></div>
+
+      <div class="ss-panel" style="margin-bottom:14px"><h3>8 · Photo carousel</h3>
+        <label class="ss-switch ss-switch--chip"><input type="checkbox" id="g-on" ${g.enabled !== false ? "checked" : ""}><span>Show the carousel</span></label>
+        <div class="ss-grid2" style="margin-top:10px">
+          <div><label class="ss-label">Eyebrow</label><input class="ss-field" id="g-eye" value="${esc(g.eyebrow || "")}"></div>
+          <div><label class="ss-label">Title</label><input class="ss-field" id="g-title" value="${esc(g.title || "")}"></div>
+        </div>
+        <label class="ss-switch ss-switch--chip" style="margin-top:8px"><input type="checkbox" id="g-auto" ${g.autoplay !== false ? "checked" : ""}><span>Auto-advance slides</span></label>
+        <div id="g-thumbs" class="ss-thumbs" style="margin-top:12px"></div>
+        <div style="margin-top:10px"><button class="ss-chip" id="g-up-btn">⬆ Upload high-quality photos</button><input type="file" id="g-up" accept="image/*" multiple hidden></div>
+        <details style="margin-top:10px"><summary style="cursor:pointer;font-size:.85rem;color:var(--ink-60)">Advanced: edit filenames / URLs</summary>
+          <textarea class="ss-field" id="g-imgs" style="min-height:80px;margin-top:8px">${esc((g.images || []).join("\n"))}</textarea></details>
+      </div>
+
+      <div class="ss-panel" style="margin-bottom:14px"><h3>9 · Instagram feed</h3>
+        <p style="color:var(--ink-60);font-size:.9rem">Connect <strong>@${esc((C.brand && C.brand.instagram) || "secondscoopco")}</strong>:</p>
+        <label class="ss-switch ss-switch--chip" style="margin-bottom:8px"><input type="radio" name="igmode" value="tiles" ${igf.mode !== "embed" ? "checked" : ""}><span><strong>Photo tiles</strong> — upload your favourite posts (most reliable)</span></label>
+        <label class="ss-switch ss-switch--chip"><input type="radio" name="igmode" value="embed" ${igf.mode === "embed" ? "checked" : ""}><span><strong>Live widget</strong> — paste an embed that auto-shows your real feed</span></label>
+        <div style="margin-top:12px"><label class="ss-label">Photo tiles (filename or URL — one per line)</label>
+          <textarea class="ss-field" id="ig-tiles" style="min-height:80px">${esc((igf.tiles || []).join("\n"))}</textarea>
+          <div style="margin-top:8px"><button class="ss-chip" id="ig-up-btn">⬆ Upload Instagram photos</button><input type="file" id="ig-up" accept="image/*" multiple hidden></div></div>
+        <label class="ss-label" style="margin-top:14px">Live widget embed code (optional)</label>
+        <textarea class="ss-field" id="ig-embed" style="min-height:70px;font-family:monospace;font-size:.8rem" placeholder="<iframe src='https://lightwidget.com/widgets/...'></iframe>">${esc(igf.embedHtml || "")}</textarea>
+        <small class="ss-seed">Free widget at lightwidget.com / behold.so — connect Instagram, copy the embed, paste here, pick “Live widget”.</small>
+      </div>
+
+      <button class="ss-btn" id="home-save">Save home page (go live)</button>`;
+
+    wireFolderConnect(renderHomepage);
     const hpMob = document.getElementById("hp-mobprev"); if (hpMob) hpMob.onclick = () => openMobilePreview("index.html?preview=1");
-    document.getElementById("hp-save").onclick = () => {
+
+    // how it works editor (auto-syncs to C.howItWorks)
+    drawList("c-how", C.howItWorks, (item, i) => `
+      <div class="ss-list-row" data-i="${i}"><input class="ss-field ss-field--sm" data-k="title" value="${esc(item.title || "")}" placeholder="Step title">
+      <input class="ss-field ss-field--sm" data-k="text" value="${esc(item.text || "")}" placeholder="Step text"><button class="ss-icon-btn" data-del>✕</button></div>`, () => ({ title: "", text: "" }), "+ Add step");
+
+    // carousel thumbnails
+    function renderThumbs() {
+      const ta = document.getElementById("g-imgs"), wrap = document.getElementById("g-thumbs"); if (!ta || !wrap) return;
+      const list = ta.value.split("\n").map(s => s.trim()).filter(Boolean);
+      wrap.innerHTML = list.length ? list.map((src, i) =>
+        `<div class="ss-thumb"><img src="${localPreviews[src] || SS.imgSrc(src)}" alt="" onerror="this.parentNode.classList.add('bad')"><button class="ss-thumb-x" data-i="${i}" title="Remove">✕</button></div>`).join("")
+        : `<p class="ss-seed">No photos yet.</p>`;
+      wrap.querySelectorAll("[data-i]").forEach(b => b.onclick = () => { const arr = ta.value.split("\n").map(s => s.trim()).filter(Boolean); arr.splice(+b.getAttribute("data-i"), 1); ta.value = arr.join("\n"); renderThumbs(); });
+    }
+    renderThumbs();
+
+    // hero image upload
+    const heroBtn = document.getElementById("hero-up-btn"), heroIn = document.getElementById("hero-up");
+    heroBtn.onclick = () => heroIn.click();
+    heroIn.onchange = async e => { const file = e.target.files[0]; e.target.value = ""; if (!file) return; heroBtn.disabled = true; heroBtn.textContent = "Uploading…";
+      try { const name = await uploadImageToGitHub(file); document.getElementById("hero-img").value = name; document.getElementById("hero-prev").innerHTML = `<img src="${URL.createObjectURL(file)}" alt="">`; }
+      catch (err) { SSApp.toast(String(err), "err"); } heroBtn.disabled = false; heroBtn.textContent = "⬆ Upload hero photo"; };
+    // hero video upload
+    const hvBtn = document.getElementById("hvid-up-btn"), hvIn = document.getElementById("hvid-up");
+    hvBtn.onclick = () => hvIn.click();
+    hvIn.onchange = async e => { const file = e.target.files[0]; e.target.value = ""; if (!file) return; hvBtn.disabled = true; hvBtn.textContent = "Uploading…";
+      try { const path = await uploadVideoToGitHub(file); document.getElementById("hvid-src").value = path; document.getElementById("hvid-prev").innerHTML = `<video src="${URL.createObjectURL(file)}" muted autoplay loop playsinline style="width:100%;height:100%;object-fit:cover"></video>`; }
+      catch (err) { SSApp.toast(String(err), "err"); } hvBtn.disabled = false; hvBtn.textContent = "⬆ Upload hero video"; };
+    // carousel upload
+    const gBtn = document.getElementById("g-up-btn"), gIn = document.getElementById("g-up");
+    gBtn.onclick = () => gIn.click();
+    gIn.onchange = async e => { const files = [...e.target.files]; e.target.value = ""; const ta = document.getElementById("g-imgs");
+      for (const file of files) { gBtn.disabled = true; gBtn.textContent = "Uploading…";
+        try { const name = await uploadImageToGitHub(file); localPreviews[name] = URL.createObjectURL(file); ta.value = (ta.value.trim() ? ta.value.trim() + "\n" : "") + name; renderThumbs(); }
+        catch (err) { SSApp.toast(String(err), "err"); } }
+      gBtn.disabled = false; gBtn.textContent = "⬆ Upload high-quality photos"; };
+    // instagram upload
+    const igBtn = document.getElementById("ig-up-btn"), igIn = document.getElementById("ig-up");
+    igBtn.onclick = () => igIn.click();
+    igIn.onchange = async e => { const files = [...e.target.files]; e.target.value = ""; const ta = document.getElementById("ig-tiles");
+      for (const file of files) { igBtn.disabled = true; igBtn.textContent = "Uploading…";
+        try { const name = await uploadImageToGitHub(file); ta.value = (ta.value.trim() ? ta.value.trim() + "\n" : "") + name; SSApp.toast("Added " + name, "ok"); }
+        catch (err) { SSApp.toast(String(err), "err"); } }
+      igBtn.disabled = false; igBtn.textContent = "⬆ Upload Instagram photos"; };
+
+    document.getElementById("home-save").onclick = () => {
+      // sections shown
       HOME_SECTIONS.forEach(([k]) => { C.home.sections[k] = chkd("hs-" + k); });
-      const r = document.querySelector('input[name="hmob"]:checked');
-      C.hero.mobileMode = r ? r.value : "auto";
-      C.intro.enabled = chkd("in-on");
-      C.intro.oncePerSession = chkd("in-once");
+      // hero words + media
+      C.hero.tagline = val("c-h-tag"); C.hero.headline = val("c-h-head"); C.hero.sub = val("c-h-sub");
+      C.hero.trust = val("c-h-trust").split("\n").map(s => s.trim()).filter(Boolean); C.hero.showWordmark = chkd("c-h-wm");
+      C.hero.image = val("hero-img").trim(); C.hero.video = val("hvid-src").trim();
+      const r = document.querySelector('input[name="hmob"]:checked'); C.hero.mobileMode = r ? r.value : "auto";
+      // intro
+      C.intro.enabled = chkd("in-on"); C.intro.oncePerSession = chkd("in-once");
       C.intro.words = val("in-words").split("\n").map(s => s.trim()).filter(Boolean);
-      persistContent(); updateLiveBadge(); SSApp.toast("Homepage layout saved — live 🏠", "ok");
+      // section headings
+      SECTION_TEXT.forEach(([key, , fields]) => { C.sections[key] = C.sections[key] || {}; fields.forEach(([f]) => { const v = val("c-sec-" + key + "-" + f).trim(); if (v) C.sections[key][f] = v; }); });
+      // carousel
+      C.gallery.enabled = chkd("g-on"); C.gallery.eyebrow = val("g-eye"); C.gallery.title = val("g-title"); C.gallery.autoplay = chkd("g-auto");
+      C.gallery.images = val("g-imgs").split("\n").map(s => s.trim()).filter(Boolean);
+      // instagram
+      const igm = document.querySelector('input[name="igmode"]:checked'); C.instagramFeed.mode = igm ? igm.value : "tiles";
+      C.instagramFeed.tiles = val("ig-tiles").split("\n").map(s => s.trim()).filter(Boolean); C.instagramFeed.embedHtml = val("ig-embed").trim();
+      const ok = persistContent();
+      if (!ok) { SSApp.toast("Couldn't save — too much data (upload photos instead of pasting them).", "err"); return; }
+      updateLiveBadge(); SSApp.toast("Home page saved — live 🏠", "ok");
     };
   }
 
@@ -1234,18 +1380,9 @@
   ];
   function renderDesign() {
     const C = content;
-    C.theme = C.theme || {}; C.header = C.header || {}; C.effects = C.effects || {}; C.gallery = C.gallery || { images: [] };
-    C.instagramFeed = C.instagramFeed || { mode: "tiles", embedHtml: "", tiles: [] };
-    const igf = C.instagramFeed;
-    const g = C.gallery;
+    C.theme = C.theme || {}; C.header = C.header || {}; C.effects = C.effects || {};
     body().innerHTML = `
-      <div class="ss-panel ss-pub-hero" style="margin-bottom:14px"><h3>📁 Connect your project folder ${folderConnected() ? `<span class="ss-tag" style="background:#d7f0df;color:#2a6b43">Connected</span>` : ""}</h3>
-        <p style="color:var(--ink-60)">${folderSupported()
-          ? "Connect your Second Scoop project folder once, and every photo you upload here is written <b>straight into</b> <code>assets/img/</code> on your computer — ready to push with GitHub Desktop. This is the reliable way to get carousel &amp; gallery photos onto your live site."
-          : "⚠️ Your browser doesn't support folder access. Use <b>Chrome</b> or <b>Edge</b> for direct uploads — otherwise photos download to your computer and you move them into <code>assets/img/</code> yourself."}</p>
-        ${folderSupported() ? `<button class="ss-btn" id="folder-connect">${folderConnected() ? "✓ Folder connected — reconnect" : "📂 Connect project folder"}</button>
-        <p class="ss-seed" style="margin-top:8px" id="folder-status">${folderConnected() ? "Writing photos directly to your project." : "Pick the folder that contains index.html (your repo folder)."}</p>` : ""}
-      </div>
+      <p style="color:var(--ink-60);margin:0 0 14px">Site-wide look — applies to every page. (Hero, carousel &amp; Instagram photos live in the <b>Home</b> tab.)</p>
       <div class="ss-panel" style="margin-bottom:14px"><h3>Colour scheme</h3>
         <p style="color:var(--ink-60);font-size:.9rem">Pick your colours — the whole site (and this backend) updates live as you choose. Press Save to keep them, then Publish to go live.</p>
         <div class="ss-design-colors">
@@ -1256,32 +1393,6 @@
             </label>`).join("")}
         </div>
         <button class="ss-chip" id="th-reset" style="margin-top:10px">↺ Reset to original colours</button>
-      </div>
-
-      <div class="ss-panel" style="margin-bottom:14px"><h3>Homepage hero image</h3>
-        <p style="color:var(--ink-60);font-size:.9rem">${publishConfigured() ? "Upload a high-quality photo — it publishes to your site automatically." : "⚠️ Connect GitHub publishing in Settings to upload photos here."}</p>
-        <div class="ss-img-up">
-          <div class="ss-img-up-prev" id="hero-prev">${C.hero && C.hero.image ? `<img src="${SS.imgSrc(C.hero.image)}" alt="">` : "No image"}</div>
-          <div>
-            <button class="ss-chip" id="hero-up-btn">⬆ Upload hero photo</button>
-            <input type="file" id="hero-up" accept="image/*" hidden>
-            <label class="ss-label" style="margin-top:8px">…or filename / URL</label>
-            <input class="ss-field ss-field--sm" id="hero-img" value="${esc((C.hero && C.hero.image) || "")}" placeholder="e.g. hero.jpg">
-          </div>
-        </div>
-      </div>
-
-      <div class="ss-panel" style="margin-bottom:14px"><h3>Homepage hero video</h3>
-        <p style="color:var(--ink-60);font-size:.9rem">${publishConfigured() ? "Upload the looping video that opens your homepage (it expands as visitors scroll). A 5–15 sec clip works best — up to 80MB. Tip: for autoplay it must be muted; phones load faster with a smaller file." : "⚠️ Connect GitHub publishing in Settings to upload a video here."}</p>
-        <div class="ss-img-up">
-          <div class="ss-img-up-prev" id="hvid-prev" style="width:90px;height:130px">${(C.hero && C.hero.video) ? `<video src="${SS.imgSrc(C.hero.video)}" muted autoplay loop playsinline style="width:100%;height:100%;object-fit:cover"></video>` : "No video"}</div>
-          <div>
-            <button class="ss-chip" id="hvid-up-btn">⬆ Upload hero video</button>
-            <input type="file" id="hvid-up" accept="video/mp4,video/*" hidden>
-            <label class="ss-label" style="margin-top:8px">…or path / URL</label>
-            <input class="ss-field ss-field--sm" id="hvid-src" value="${esc((C.hero && C.hero.video) || "")}" placeholder="assets/video/hero.mp4" style="width:240px">
-          </div>
-        </div>
       </div>
 
       <div class="ss-panel" style="margin-bottom:14px"><h3>Logo &amp; header</h3>
@@ -1298,35 +1409,6 @@
         <label class="ss-switch ss-switch--chip" style="margin-top:8px"><input type="checkbox" id="e-parallax" ${C.effects.heroParallax !== false ? "checked" : ""}><span>Hero parallax on scroll</span></label>
       </div>
 
-      <div class="ss-panel" style="margin-bottom:14px"><h3>Photo carousel (homepage)</h3>
-        <label class="ss-switch ss-switch--chip"><input type="checkbox" id="g-on" ${g.enabled !== false ? "checked" : ""}><span>Show the carousel</span></label>
-        <div class="ss-grid2" style="margin-top:10px">
-          <div><label class="ss-label">Eyebrow</label><input class="ss-field" id="g-eye" value="${esc(g.eyebrow || "")}"></div>
-          <div><label class="ss-label">Title</label><input class="ss-field" id="g-title" value="${esc(g.title || "")}"></div>
-        </div>
-        <label class="ss-switch ss-switch--chip" style="margin-top:8px"><input type="checkbox" id="g-auto" ${g.autoplay !== false ? "checked" : ""}><span>Auto-advance slides</span></label>
-        <div id="g-thumbs" class="ss-thumbs" style="margin-top:12px"></div>
-        <div style="margin-top:10px"><button class="ss-chip" id="g-up-btn">⬆ Upload high-quality photos</button><input type="file" id="g-up" accept="image/*" multiple hidden></div>
-        <small class="ss-seed">${folderConnected() ? "✓ Folder connected — photos write straight into assets/img and appear below." : "Connect your project folder above for one-click uploads. A full image URL (https://…) also works."}</small>
-        <details style="margin-top:10px"><summary style="cursor:pointer;font-size:.85rem;color:var(--ink-60)">Advanced: edit filenames / URLs by hand</summary>
-          <textarea class="ss-field" id="g-imgs" style="min-height:90px;margin-top:8px">${esc((g.images || []).join("\n"))}</textarea></details>
-      </div>
-
-      <div class="ss-panel" style="margin-bottom:14px"><h3>Instagram feed (“From The Feed”)</h3>
-        <p style="color:var(--ink-60);font-size:.9rem">Two ways to connect <strong>@${esc((C.brand && C.brand.instagram) || "secondscoopco")}</strong>:</p>
-        <label class="ss-switch ss-switch--chip" style="margin-bottom:8px"><input type="radio" name="igmode" value="tiles" ${igf.mode !== "embed" ? "checked" : ""}><span><strong>Photo tiles</strong> — upload your favourite posts; each links to your profile (most reliable)</span></label>
-        <label class="ss-switch ss-switch--chip"><input type="radio" name="igmode" value="embed" ${igf.mode === "embed" ? "checked" : ""}><span><strong>Live widget</strong> — paste an embed that auto-shows your real feed</span></label>
-
-        <div style="margin-top:12px"><label class="ss-label">Photo tiles (filename in assets/img/ or a full URL — one per line)</label>
-          <textarea class="ss-field" id="ig-tiles" style="min-height:90px">${esc((igf.tiles || []).join("\n"))}</textarea>
-          <div style="margin-top:8px"><button class="ss-chip" id="ig-up-btn">⬆ Upload Instagram photos</button><input type="file" id="ig-up" accept="image/*" multiple hidden></div>
-        </div>
-
-        <label class="ss-label" style="margin-top:14px">Live widget embed code (optional)</label>
-        <textarea class="ss-field" id="ig-embed" style="min-height:80px;font-family:monospace;font-size:.82rem" placeholder="<iframe src='https://lightwidget.com/widgets/...'></iframe>">${esc(igf.embedHtml || "")}</textarea>
-        <small class="ss-seed">Get a free embed at <b>lightwidget.com</b>, <b>behold.so</b> or <b>snapwidget.com</b> — connect your Instagram there, copy the embed code, paste it here, and choose “Live widget” above.</small>
-      </div>
-
       <button class="ss-btn" id="d-save">Save design (go live preview)</button>`;
 
     // live colour preview
@@ -1340,100 +1422,10 @@
       THEME_FIELDS.forEach(([k]) => { C.theme[k] = defaultTheme(k); document.documentElement.style.setProperty("--" + k, defaultTheme(k)); });
       SSApp.applyTheme(); renderDesign(); SSApp.toast("Colours reset", "ok");
     };
-    // hero image upload
-    C.hero = C.hero || {};
-    // connect project folder (File System Access)
-    const localPreviews = {};
-    const fc = document.getElementById("folder-connect");
-    if (fc) fc.onclick = async () => {
-      try { const nm = await connectProjectFolder(); SSApp.toast("Connected “" + nm + "”. Uploads now write into assets/img.", "ok"); renderDesign(); }
-      catch (err) { SSApp.toast(String(err), "err"); }
-    };
-    // carousel thumbnails (source of truth = #g-imgs textarea)
-    function renderThumbs() {
-      const ta = document.getElementById("g-imgs"), wrap = document.getElementById("g-thumbs");
-      if (!ta || !wrap) return;
-      const list = ta.value.split("\n").map(s => s.trim()).filter(Boolean);
-      wrap.innerHTML = list.length ? list.map((src, i) =>
-        `<div class="ss-thumb"><img src="${localPreviews[src] || SS.imgSrc(src)}" alt="" onerror="this.parentNode.classList.add('bad')"><button class="ss-thumb-x" data-i="${i}" title="Remove">✕</button></div>`).join("")
-        : `<p class="ss-seed">No photos yet — upload some above.</p>`;
-      wrap.querySelectorAll("[data-i]").forEach(b => b.onclick = () => {
-        const arr = ta.value.split("\n").map(s => s.trim()).filter(Boolean);
-        arr.splice(+b.getAttribute("data-i"), 1); ta.value = arr.join("\n"); renderThumbs();
-      });
-    }
-    renderThumbs();
-
-    const heroBtn = document.getElementById("hero-up-btn"), heroIn = document.getElementById("hero-up");
-    heroBtn.onclick = () => heroIn.click();
-    heroIn.onchange = async e => {
-      const file = e.target.files[0]; e.target.value = ""; if (!file) return;
-      heroBtn.disabled = true; heroBtn.textContent = "Uploading…";
-      try {
-        const name = await uploadImageToGitHub(file);
-        document.getElementById("hero-img").value = name;
-        document.getElementById("hero-prev").innerHTML = `<img src="${URL.createObjectURL(file)}" alt="">`;
-        SSApp.toast("Hero photo uploaded — live after Publish ✓", "ok");
-      } catch (err) { SSApp.toast(String(err), "err"); }
-      heroBtn.disabled = false; heroBtn.textContent = "⬆ Upload hero photo";
-    };
-    // hero video upload
-    const hvBtn = document.getElementById("hvid-up-btn"), hvIn = document.getElementById("hvid-up");
-    hvBtn.onclick = () => hvIn.click();
-    hvIn.onchange = async e => {
-      const file = e.target.files[0]; e.target.value = ""; if (!file) return;
-      hvBtn.disabled = true; hvBtn.textContent = "Uploading…";
-      try {
-        const path = await uploadVideoToGitHub(file);
-        document.getElementById("hvid-src").value = path;
-        document.getElementById("hvid-prev").innerHTML = `<video src="${URL.createObjectURL(file)}" muted autoplay loop playsinline style="width:100%;height:100%;object-fit:cover"></video>`;
-        SSApp.toast("Hero video uploaded — live after Publish ✓", "ok");
-      } catch (err) { SSApp.toast(String(err), "err"); }
-      hvBtn.disabled = false; hvBtn.textContent = "⬆ Upload hero video";
-    };
-
-    // carousel photo upload (appends filenames to the textarea)
-    const gBtn = document.getElementById("g-up-btn"), gIn = document.getElementById("g-up");
-    gBtn.onclick = () => gIn.click();
-    gIn.onchange = async e => {
-      const files = [...e.target.files]; e.target.value = "";
-      const ta = document.getElementById("g-imgs");
-      for (const file of files) {
-        gBtn.disabled = true; gBtn.textContent = "Uploading…";
-        try { const name = await uploadImageToGitHub(file); localPreviews[name] = URL.createObjectURL(file); ta.value = (ta.value.trim() ? ta.value.trim() + "\n" : "") + name; renderThumbs(); }
-        catch (err) { SSApp.toast(String(err), "err"); }
-      }
-      gBtn.disabled = false; gBtn.textContent = "⬆ Upload high-quality photos";
-    };
-
-    // instagram photo upload
-    const igBtn = document.getElementById("ig-up-btn"), igIn = document.getElementById("ig-up");
-    igBtn.onclick = () => igIn.click();
-    igIn.onchange = async e => {
-      const files = [...e.target.files]; e.target.value = "";
-      const ta = document.getElementById("ig-tiles");
-      for (const file of files) {
-        igBtn.disabled = true; igBtn.textContent = "Uploading…";
-        try { const name = await uploadImageToGitHub(file); ta.value = (ta.value.trim() ? ta.value.trim() + "\n" : "") + name; SSApp.toast("Added " + name, "ok"); }
-        catch (err) { SSApp.toast(String(err), "err"); }
-      }
-      igBtn.disabled = false; igBtn.textContent = "⬆ Upload Instagram photos";
-    };
-
     document.getElementById("d-save").onclick = () => {
       C.header.logoAlign = val("h-align"); C.header.logoSize = Math.max(20, Math.min(60, parseInt(val("h-size"), 10) || 34)); C.header.showWordmark = chkd("h-word");
       C.effects.scrollReveal = chkd("e-reveal"); C.effects.heroParallax = chkd("e-parallax");
-      C.hero.image = val("hero-img").trim();
-      C.hero.video = val("hvid-src").trim();
-      g.enabled = chkd("g-on"); g.eyebrow = val("g-eye"); g.title = val("g-title"); g.autoplay = chkd("g-auto");
-      g.images = val("g-imgs").split("\n").map(s => s.trim()).filter(Boolean);
-      const igm = document.querySelector('input[name="igmode"]:checked');
-      igf.mode = igm ? igm.value : "tiles";
-      igf.tiles = val("ig-tiles").split("\n").map(s => s.trim()).filter(Boolean);
-      igf.embedHtml = val("ig-embed").trim();
-      const ok = persistContent();
-      if (!ok) { SSApp.toast("Couldn't save — too much data (avoid embedding huge images; upload them instead).", "err"); return; }
-      updateLiveBadge(); SSApp.applyTheme(); SSApp.toast("Design saved — preview live. Press Publish to go live 🎨", "ok");
+      persistContent(); updateLiveBadge(); SSApp.applyTheme(); SSApp.toast("Design saved — live 🎨", "ok");
     };
   }
   function defaultTheme(k) {
@@ -1487,6 +1479,28 @@
       <button class="ss-btn" id="s-save">Save settings (go live)</button>`;
     document.getElementById("s-save").onclick = saveSettingsForm;
     const pt = document.getElementById("pub-test"); if (pt) pt.onclick = testPublish;
+
+    // delivery-zones editor (per region)
+    zoneState = {};
+    REGION_IDS.forEach(rid => { zoneState[rid] = (((regionView[rid] || {}).delivery || {}).zones || []).map(z => ({ name: z.name || "", fee: Number(z.fee) || 0 })); });
+    function drawZones(rid) {
+      const wrap = document.getElementById("r-" + rid + "-zones"); if (!wrap) return;
+      const arr = zoneState[rid], R = SS_REGIONS[rid];
+      wrap.innerHTML = arr.length ? arr.map((z, i) => `<div class="ss-size-row" data-i="${i}">
+        <input class="ss-field ss-field--sm" data-zk="name" value="${esc(z.name || "")}" placeholder="Area (e.g. Gulberg)">
+        <input class="ss-field ss-field--sm" data-zk="fee" type="number" min="0" step="${R.currency === "PKR" ? 1 : 0.01}" value="${z.fee || 0}" placeholder="Fee (${R.currency})">
+        <button class="ss-icon-btn" type="button" data-zdel="${i}">✕</button></div>`).join("") : `<p class="ss-seed">No areas — the flat fee above is used.</p>`;
+      wrap.querySelectorAll(".ss-size-row").forEach(row => {
+        const i = +row.getAttribute("data-i");
+        row.querySelectorAll("[data-zk]").forEach(inp => inp.oninput = () => { const k = inp.getAttribute("data-zk"); arr[i][k] = k === "fee" ? (Number(inp.value) || 0) : inp.value; });
+        row.querySelector("[data-zdel]").onclick = () => { arr.splice(i, 1); drawZones(rid); };
+      });
+    }
+    REGION_IDS.forEach(rid => {
+      drawZones(rid);
+      const ab = document.getElementById("r-" + rid + "-zone-add");
+      if (ab) ab.onclick = () => { zoneState[rid].push({ name: "", fee: 0 }); drawZones(rid); };
+    });
   }
   function regionSettings(rid) {
     const r = regionView[rid], R = SS_REGIONS[rid];
@@ -1502,6 +1516,12 @@
         <div class="full"><label class="ss-label">Delivery cities (comma separated)</label><input class="ss-field" id="r-${rid}-dcities" value="${esc((dl.cities || []).join(", "))}"></div>
         <div><label class="ss-label">WhatsApp</label><input class="ss-field" id="r-${rid}-cwa" value="${esc(ct.whatsapp || "")}"></div>
         <div><label class="ss-label">Region email</label><input class="ss-field" id="r-${rid}-cem" value="${esc(ct.email || "")}"></div>
+        <div class="full" style="border-top:1px solid var(--line);padding-top:12px;margin-top:4px">
+          <label class="ss-label">Delivery areas &amp; fees (charge by area)</label>
+          <div class="ss-zones-edit" id="r-${rid}-zones"></div>
+          <button class="ss-chip" type="button" id="r-${rid}-zone-add" style="margin-top:6px">+ Add an area</button>
+          <small class="ss-seed">Add each area you deliver to and its own fee. At checkout the customer picks their area (or it's auto-detected from their address) and that fee is charged. Leave empty to use the single flat fee above.</small>
+        </div>
       </div></div>`;
   }
   function publishPanel() {
@@ -1555,7 +1575,7 @@
     REGION_IDS.forEach(rid => {
       const patch = {
         pickup: { address: val(`r-${rid}-paddr`), hours: val(`r-${rid}-phours`), notes: val(`r-${rid}-pnote`) },
-        delivery: { fee: Number(val(`r-${rid}-dfee`)) || 0, freeOver: Number(val(`r-${rid}-dfree`)) || 0, etaText: val(`r-${rid}-deta`), cities: val(`r-${rid}-dcities`).split(",").map(s => s.trim()).filter(Boolean) },
+        delivery: { fee: Number(val(`r-${rid}-dfee`)) || 0, freeOver: Number(val(`r-${rid}-dfree`)) || 0, etaText: val(`r-${rid}-deta`), cities: val(`r-${rid}-dcities`).split(",").map(s => s.trim()).filter(Boolean), zones: (zoneState[rid] || []).map(z => ({ name: String(z.name || "").trim(), fee: Number(z.fee) || 0 })).filter(z => z.name) },
         contact: { whatsapp: val(`r-${rid}-cwa`), email: val(`r-${rid}-cem`) },
       };
       SS.saveRegionPatch(rid, patch);
@@ -1700,6 +1720,20 @@
     if (!looksRight) throw "That doesn't look like your Second Scoop project folder (no index.html / assets). Pick the folder that contains index.html.";
     if (dir.requestPermission) { const perm = await dir.requestPermission({ mode: "readwrite" }); if (perm !== "granted") throw "Permission to write to the folder was denied."; }
     projectDir = dir; return dir.name;
+  }
+  function folderPanelHTML() {
+    return `<div class="ss-panel ss-pub-hero" style="margin-bottom:14px"><h3>📁 Photo uploads — connect your folder ${folderConnected() ? `<span class="ss-tag" style="background:#d7f0df;color:#2a6b43">Connected</span>` : ""}</h3>
+      <p style="color:var(--ink-60)">${folderSupported()
+        ? "Connect your project folder once and every photo you upload below writes <b>straight into</b> <code>assets/img/</code> on your computer, ready to push with GitHub Desktop."
+        : "⚠️ Use <b>Chrome</b> or <b>Edge</b> for one-click uploads. Otherwise photos download and you move them into <code>assets/img/</code> yourself."}</p>
+      ${folderSupported() ? `<button class="ss-btn ss-btn--sm" id="folder-connect">${folderConnected() ? "✓ Connected — reconnect" : "📂 Connect project folder"}</button>` : ""}</div>`;
+  }
+  function wireFolderConnect(rerender) {
+    const fc = document.getElementById("folder-connect");
+    if (fc) fc.onclick = async () => {
+      try { const nm = await connectProjectFolder(); SSApp.toast("Connected “" + nm + "”. Uploads now write into assets/img.", "ok"); rerender(); }
+      catch (err) { SSApp.toast(String(err), "err"); }
+    };
   }
   async function writeIntoProject(relPath, file) {
     if (!projectDir) throw "no folder";

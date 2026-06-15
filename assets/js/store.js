@@ -188,6 +188,8 @@
     const sizes = (Array.isArray(r.sizes) && r.sizes.length)
       ? r.sizes.map(s => ({ label: String(s.label || ""), price: Number(s.price) || 0 })).filter(s => s.label)
       : null;
+    // Main/default price = the cheapest size (falls back to the single price).
+    const cheapest = sizes && sizes.length ? Math.min.apply(null, sizes.map(s => s.price)) : null;
     return {
       id: p.id, name: p.name, category: p.category, tagline: p.tagline,
       description: p.description, longDescription: p.longDescription,
@@ -195,7 +197,7 @@
       imageSrc: imgSrc((p.images && p.images[0]) || null),
       badge: comingSoon ? "" : p.badge, featured: !!p.featured, hero: !!p.hero, secret: !!p.secret,
       reviews: p.reviews || { rating: 0, count: 0 },
-      status: status, price: sizes ? sizes[0].price : (r.price || 0), inventory: r.inventory,
+      status: status, price: sizes ? cheapest : (r.price || 0), inventory: r.inventory,
       sizes: sizes,
       deliveryNotes: r.deliveryNotes || "",
       buyable: !comingSoon && (status === "available" || status === "preorder" || status === "closing"),
@@ -271,11 +273,22 @@
     const subtotal = lines.reduce((s, l) => s + l.lineTotal, 0);
     return { region: rid, lines, subtotal };
   }
-  function deliveryFee(method, subtotal, regionId) {
+  // Delivery zones (areas) for a region, each with its own fee.
+  function deliveryZones(regionId) {
+    const r = regionById(regionId || getRegion());
+    return (r && r.delivery && Array.isArray(r.delivery.zones)) ? r.delivery.zones.filter(z => z && z.name) : [];
+  }
+  function deliveryFee(method, subtotal, regionId, zoneName) {
     const r = regionById(regionId || getRegion());
     if (method !== "delivery") return 0;
+    let fee = Number(r.delivery.fee) || 0;
+    const zones = (r.delivery && Array.isArray(r.delivery.zones)) ? r.delivery.zones : [];
+    if (zones.length) {
+      const z = zoneName ? zones.find(z => z.name === zoneName) : null;
+      fee = z ? (Number(z.fee) || 0) : (Number(r.delivery.fee) || 0);  // until an area is picked, show the base fee
+    }
     if (r.delivery.freeOver && subtotal >= r.delivery.freeOver) return 0;
-    return r.delivery.fee || 0;
+    return fee;
   }
 
   /* ------------------------------------------------------ vault ---- */
@@ -330,7 +343,8 @@
 
     const rid = detail.region;
     const r = regionById(rid);
-    const fee = deliveryFee(form.fulfilment, detail.subtotal, rid);
+    const area = form.area || "";
+    const fee = deliveryFee(form.fulfilment, detail.subtotal, rid, area);
     const grand = detail.subtotal + fee;
     const orderNumber = genOrderNumber();
     const ts = new Date().toISOString();
@@ -346,6 +360,7 @@
         phone: form.phone, email: form.email, instagram: form.instagram || "",
         address: form.fulfilment === "delivery" ? form.address : "(Pickup)",
         address2: form.address2 || "",
+        area: area,
         fulfilment: form.fulfilment, preferredDate: form.preferredDate, notes: form.notes || "",
       },
       lines: detail.lines.map(l => ({ id: l.id, name: l.name, qty: l.qty, price: l.price, lineTotal: l.lineTotal, secret: l.secret })),
@@ -407,7 +422,7 @@
       phone: order.customer.phone,
       instagram: order.customer.instagram || "",
       addressLine1: order.customer.fulfilment === "delivery" ? order.customer.address : "(Pickup)",
-      addressLine2: order.customer.address2 || "",
+      addressLine2: [order.customer.address2 || "", order.customer.area ? "Area: " + order.customer.area : ""].filter(Boolean).join(" · "),
       productsFormatted: productsBlock(order),
       preferredMethod: preferredMethodText(order),
       submissionId: order.orderNumber,
@@ -495,7 +510,7 @@
     getVault, saveVault, resetVault, saveAnnounce, getAnnounce, resetAnnounce,
     getContent, saveContent, resetContent, getSettings, saveSettings, resetSettings,
     regionById, saveRegionPatch, resetRegions, deepMerge,
-    getCart, saveCart, addToCart, setQty, removeFromCart, clearCart, cartCount, cartDetail, deliveryFee,
+    getCart, saveCart, addToCart, setQty, removeFromCart, clearCart, cartCount, cartDetail, deliveryFee, deliveryZones,
     vaultUnlocks, tryVaultCode, unlockedSecretProducts, isUnlocked, clearVaultUnlocks,
     genOrderNumber, placeOrder, getOrders, updateOrderStatus, flattenForSheet,
     getCustomers, addSignup, getSignups,
