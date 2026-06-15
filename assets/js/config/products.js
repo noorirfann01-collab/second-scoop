@@ -1,5 +1,5 @@
 /* Second Scoop — products.js
-   Exported from the Backend on 16/06/2026, 00:12:41.
+   Exported from the Backend on 16/06/2026, 00:43:59.
    Replace the matching file in assets/js/config/ to publish. */
 
 window.SS_CATEGORIES = [
@@ -72,21 +72,21 @@ window.SS_PRODUCTS = [
     "regions": {
       "pakistan": {
         "status": "preorder",
-        "price": 0.45,
+        "price": 450,
         "inventory": 80,
         "deliveryNotes": "",
         "sizes": [
           {
             "label": "1 cookie",
-            "price": 0.45
+            "price": 450
           },
           {
             "label": "4 Cookies",
-            "price": 0.17
+            "price": 1700
           },
           {
             "label": "6 Cookies",
-            "price": 0.25
+            "price": 2550
           }
         ]
       }
@@ -147,17 +147,17 @@ window.SS_PRODUCTS = [
     "regions": {
       "pakistan": {
         "status": "preorder",
-        "price": 0,
+        "price": 1600,
         "inventory": 70,
         "deliveryNotes": "Keep refrigerated.",
         "sizes": [
           {
-            "label": "200g - Rs. 1600",
-            "price": 0
+            "label": "200g",
+            "price": 1600
           },
           {
-            "label": "500g - Rs. 3100",
-            "price": 0
+            "label": "500g",
+            "price": 3100
           }
         ]
       }
