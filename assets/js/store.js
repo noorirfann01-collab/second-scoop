@@ -184,6 +184,10 @@
     const reg = regionById(rid);
     const comingSoon = !!(reg && reg.comingSoon);
     const status = comingSoon ? "coming-soon" : r.status;
+    // Optional size/price options for this region (e.g. Regular / Large).
+    const sizes = (Array.isArray(r.sizes) && r.sizes.length)
+      ? r.sizes.map(s => ({ label: String(s.label || ""), price: Number(s.price) || 0 })).filter(s => s.label)
+      : null;
     return {
       id: p.id, name: p.name, category: p.category, tagline: p.tagline,
       description: p.description, longDescription: p.longDescription,
@@ -191,11 +195,18 @@
       imageSrc: imgSrc((p.images && p.images[0]) || null),
       badge: comingSoon ? "" : p.badge, featured: !!p.featured, hero: !!p.hero, secret: !!p.secret,
       reviews: p.reviews || { rating: 0, count: 0 },
-      status: status, price: r.price, inventory: r.inventory,
+      status: status, price: sizes ? sizes[0].price : (r.price || 0), inventory: r.inventory,
+      sizes: sizes,
       deliveryNotes: r.deliveryNotes || "",
       buyable: !comingSoon && (status === "available" || status === "preorder" || status === "closing"),
     };
   }
+  // Price for a chosen size label (falls back to the product's default price).
+  function sizePrice(pv, size) {
+    if (pv && pv.sizes && size) { const s = pv.sizes.find(s => s.label === size); if (s) return s.price; }
+    return pv ? pv.price : 0;
+  }
+  function cartKey(id, size) { return size ? id + "::" + size : id; }
   function categoryName(id) {
     const c = (window.SS_CATEGORIES || []).find(c => c.id === id);
     return c ? c.name : id;
@@ -210,30 +221,34 @@
   }
   function saveCart(c) { write(LS.cart, c); document.dispatchEvent(new CustomEvent("ss:cart")); }
 
-  function addToCart(productId, qty) {
+  function addToCart(productId, qty, size) {
     qty = qty || 1;
     const p = getProduct(productId);
     const pv = productView(p);
     if (!pv || !pv.buyable) return false;
+    let chosen = size || "";
+    if (pv.sizes && pv.sizes.length && !chosen) chosen = pv.sizes[0].label;   // default to first size
+    const key = cartKey(productId, chosen);
     const c = getCart();
     c.region = getRegion();
-    const cur = c.items[productId] ? c.items[productId].qty : 0;
+    const cur = c.items[key] ? c.items[key].qty : 0;
     const max = pv.inventory > 0 ? pv.inventory : 999;
-    c.items[productId] = { qty: Math.min(cur + qty, max) };
+    c.items[key] = { id: productId, size: chosen, qty: Math.min(cur + qty, max) };
     saveCart(c);
     return true;
   }
-  function setQty(productId, qty) {
+  function setQty(key, qty) {
     const c = getCart();
-    if (qty <= 0) { delete c.items[productId]; }
+    if (qty <= 0) { delete c.items[key]; }
     else {
-      const pv = productView(getProduct(productId));
+      const it = c.items[key] || {};
+      const pv = productView(getProduct(it.id || String(key).split("::")[0]));
       const max = pv && pv.inventory > 0 ? pv.inventory : 999;
-      c.items[productId] = { qty: Math.min(qty, max) };
+      c.items[key] = Object.assign({}, it, { qty: Math.min(qty, max) });
     }
     saveCart(c);
   }
-  function removeFromCart(productId) { const c = getCart(); delete c.items[productId]; saveCart(c); }
+  function removeFromCart(key) { const c = getCart(); delete c.items[key]; saveCart(c); }
   function clearCart() { saveCart({ region: getRegion(), items: {} }); }
   function cartCount() {
     const c = getCart();
@@ -244,11 +259,14 @@
     const c = getCart();
     const rid = c.region;
     const lines = [];
-    Object.entries(c.items).forEach(([id, it]) => {
+    Object.entries(c.items).forEach(([key, it]) => {
+      const id = it.id || String(key).split("::")[0];
       const pv = productView(getProduct(id), rid);
       if (!pv) return;
-      lines.push({ id, name: pv.name, qty: it.qty, price: pv.price,
-                   lineTotal: pv.price * it.qty, image: pv.image, status: pv.status, secret: pv.secret });
+      const size = it.size || "";
+      const price = sizePrice(pv, size);
+      lines.push({ key, id, size, name: pv.name + (size ? " — " + size : ""), qty: it.qty, price,
+                   lineTotal: price * it.qty, image: pv.image, status: pv.status, secret: pv.secret });
     });
     const subtotal = lines.reduce((s, l) => s + l.lineTotal, 0);
     return { region: rid, lines, subtotal };

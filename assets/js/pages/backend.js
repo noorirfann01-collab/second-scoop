@@ -289,6 +289,26 @@
   }
   function body() { return document.getElementById("bk-body"); }
 
+  // True in-browser phone preview: an iframe at phone width renders the mobile
+  // layout (media queries respond to the iframe's own width).
+  function openMobilePreview(url) {
+    url = url || "index.html?preview=1";
+    const old = document.getElementById("ss-mobprev"); if (old) old.remove();
+    const m = document.createElement("div");
+    m.id = "ss-mobprev"; m.className = "ss-mobprev";
+    m.innerHTML = `<div class="ss-mobprev-bd"></div>
+      <div class="ss-mobprev-inner">
+        <div class="ss-mobprev-bar"><strong>📱 Mobile preview</strong>
+          <span style="flex:1"></span>
+          <a href="${url}" target="_blank" rel="noopener" class="ss-chip">Open full tab</a>
+          <button class="ss-chip" id="mobprev-close">✕ Close</button></div>
+        <div class="ss-phone"><div class="ss-phone-notch"></div><iframe src="${url}" title="Mobile preview"></iframe></div>
+      </div>`;
+    document.body.appendChild(m);
+    m.querySelector(".ss-mobprev-bd").onclick = () => m.remove();
+    m.querySelector("#mobprev-close").onclick = () => m.remove();
+  }
+
   function renderSection() {
     ({ dashboard: renderDashboard, orders: renderOrders, mailing: renderMailing, reviews: renderReviews, products: renderProducts,
        homepage: renderHomepage, popups: renderPopups, menu: renderMenu, vault: renderVault, content: renderContent, design: renderDesign, announce: renderAnnounce,
@@ -723,7 +743,7 @@
   function productRow(p) {
     const thumb = (p.images && p.images[0]) ? `<img class="ss-mgr-thumb" src="${SS.imgSrc(p.images[0])}" onerror="this.style.visibility='hidden'">` : `<div class="ss-mgr-thumb ss-mgr-thumb--empty" data-cat="${p.category}">🍪</div>`;
     const flags = [p.hidden ? `<span class="ss-tag ss-tag--off">Hidden</span>` : "", p.featured ? `<span class="ss-tag">Featured</span>` : "", p.secret ? `<span class="ss-tag ss-tag--gold">Secret</span>` : "", p.badge ? `<span class="ss-tag ss-tag--blush">${(BADGES.find(b => b[0] === p.badge) || ["", p.badge])[1]}</span>` : ""].join("");
-    const cells = REGION_IDS.map(rid => { const r = p.regions && p.regions[rid]; return r ? `<td><strong>${SS.money(r.price, rid)}</strong><br><span class="ss-statusdot ss-statusdot--${r.status}">${STATUS_LABEL[r.status]}</span><br><span class="ss-seed">${r.inventory} stock</span></td>` : `<td><span class="ss-tag ss-tag--off">—</span></td>`; }).join("");
+    const cells = REGION_IDS.map(rid => { const r = p.regions && p.regions[rid]; if (!r) return `<td><span class="ss-tag ss-tag--off">—</span></td>`; const priceTxt = (r.sizes && r.sizes.length) ? `${SS.money(r.sizes[0].price, rid)}+ <span class="ss-seed">(${r.sizes.length} sizes)</span>` : `${SS.money(r.price, rid)}`; return `<td><strong>${priceTxt}</strong><br><span class="ss-statusdot ss-statusdot--${r.status}">${STATUS_LABEL[r.status]}</span><br><span class="ss-seed">${r.inventory} stock</span></td>`; }).join("");
     return `<tr><td>${thumb}</td><td><strong>${esc(p.name || "(untitled)")}</strong><br><span class="ss-seed">${esc(p.id)}</span></td>
       <td>${SS.categoryName(p.category)}</td><td><div class="ss-tags">${flags || "—"}</div></td>${cells}
       <td><div class="ss-mgr-actions">
@@ -814,8 +834,11 @@
     const has = !!(p.regions && p.regions[rid]); const r = has ? p.regions[rid] : { status: "available", price: 0, inventory: 0, deliveryNotes: "" }; const R = SS_REGIONS[rid];
     return `<div class="ss-region-edit"><label class="ss-switch"><input type="checkbox" id="rg-on-${rid}" ${has ? "checked" : ""}><span>${R.flag} Sell in ${R.name} (${R.currency})</span></label>
       <div id="rg-fields-${rid}" class="ss-region-fields"><div class="ss-grid2">
-        <div><label class="ss-label">Price (${R.currency})</label><input class="ss-field" id="rg-price-${rid}" type="number" step="${R.currency === "PKR" ? 1 : 0.01}" min="0" value="${r.price}"></div>
+        <div><label class="ss-label">Price (${R.currency})${(r.sizes && r.sizes.length) ? " — single-size only" : ""}</label><input class="ss-field" id="rg-price-${rid}" type="number" step="${R.currency === "PKR" ? 1 : 0.01}" min="0" value="${r.price || 0}"></div>
         <div><label class="ss-label">Inventory</label><input class="ss-field" id="rg-inv-${rid}" type="number" min="0" value="${r.inventory}"></div></div>
+        <label class="ss-label" style="margin-top:10px">Sizes &amp; prices (optional — one per line as <b>Label | Price</b>)</label>
+        <textarea class="ss-field" id="rg-sizes-${rid}" style="min-height:64px" placeholder="Regular | ${R.currency === "PKR" ? "1200" : "9"}&#10;Large | ${R.currency === "PKR" ? "1800" : "14"}">${esc((r.sizes || []).map(s => s.label + " | " + s.price).join("\n"))}</textarea>
+        <small class="ss-seed">Leave blank for a single price. Add sizes and customers pick one — the price changes to match.</small>
         <label class="ss-label" style="margin-top:10px">Availability</label><select class="ss-field" id="rg-status-${rid}">${STATUSES.map(s => `<option value="${s}" ${r.status === s ? "selected" : ""}>${STATUS_LABEL[s]}</option>`).join("")}</select>
         <label class="ss-label" style="margin-top:10px">Delivery / product note</label><input class="ss-field" id="rg-notes-${rid}" value="${esc(r.deliveryNotes || "")}"></div></div>`;
   }
@@ -824,7 +847,20 @@
     let id = val("f-id").trim().toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-|-$/g, ""); if (!id) id = slug(name);
     if (cat.some((p, i) => p.id === id && i !== index)) id = uniqueId(id);
     const regions = {};
-    REGION_IDS.forEach(rid => { if (document.getElementById("rg-on-" + rid).checked) regions[rid] = { status: val("rg-status-" + rid), price: Number(val("rg-price-" + rid)) || 0, inventory: Math.max(0, parseInt(val("rg-inv-" + rid), 10) || 0), deliveryNotes: val("rg-notes-" + rid).trim() }; });
+    REGION_IDS.forEach(rid => {
+      if (!document.getElementById("rg-on-" + rid).checked) return;
+      const reg = { status: val("rg-status-" + rid), price: Number(val("rg-price-" + rid)) || 0, inventory: Math.max(0, parseInt(val("rg-inv-" + rid), 10) || 0), deliveryNotes: val("rg-notes-" + rid).trim() };
+      const sizesRaw = val("rg-sizes-" + rid).trim();
+      if (sizesRaw) {
+        const sizes = sizesRaw.split("\n").map(ln => {
+          const parts = ln.split("|"); const label = (parts[0] || "").trim();
+          const price = Number((parts[1] || "").replace(/[^0-9.]/g, "")) || 0;
+          return label ? { label, price } : null;
+        }).filter(Boolean);
+        if (sizes.length) { reg.sizes = sizes; reg.price = sizes[0].price; }   // default price = first size
+      }
+      regions[rid] = reg;
+    });
     if (!Object.keys(regions).length) { SSApp.toast("Enable at least one region.", "err"); return; }
     const product = { id, name, category: val("f-cat"), tagline: val("f-tag").trim(), description: val("f-desc").trim(), longDescription: val("f-long").trim(), images: images.slice(), badge: val("f-badge") || null, featured: chkd("f-featured"), hero: chkd("f-hero"), secret: chkd("f-secret"), hidden: chkd("f-hidden"), reviews: { rating: clampNum(val("f-rating"), 0, 5), count: Math.max(0, parseInt(val("f-rcount"), 10) || 0) }, regions };
     const prevCat = cat.slice();
@@ -1042,8 +1078,8 @@
         <label class="ss-switch ss-switch--chip" style="margin-bottom:8px"><input type="radio" name="hmob" value="tap" ${mob === "tap" ? "checked" : ""}><span><strong>Tap to play</strong> (recommended) — phones show the poster + a play button</span></label>
         <label class="ss-switch ss-switch--chip"><input type="radio" name="hmob" value="auto" ${mob === "auto" ? "checked" : ""}><span><strong>Try autoplay</strong> — attempts to autoplay, falls back to a play button if blocked</span></label>
         <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
-          <a class="ss-chip" href="index.html" target="_blank" rel="noopener">🖥️ Preview homepage (new tab)</a>
-          <a class="ss-chip" href="index.html" target="_blank" rel="noopener" onclick="try{window.open('index.html','_blank','width=400,height=820')}catch(e){};return false;">📱 Preview as phone</a>
+          <a class="ss-chip" href="index.html?preview=1" target="_blank" rel="noopener">🖥️ Preview homepage (new tab)</a>
+          <button class="ss-chip" id="hp-mobprev">📱 Preview on phone</button>
         </div>
       </div>
       <div class="ss-panel" style="margin-bottom:14px"><h3>Opening intro animation</h3>
@@ -1055,6 +1091,7 @@
       </div>
       <button class="ss-btn" id="hp-save">Save homepage (go live)</button>`;
 
+    const hpMob = document.getElementById("hp-mobprev"); if (hpMob) hpMob.onclick = () => openMobilePreview("index.html?preview=1");
     document.getElementById("hp-save").onclick = () => {
       HOME_SECTIONS.forEach(([k]) => { C.home.sections[k] = chkd("hs-" + k); });
       const r = document.querySelector('input[name="hmob"]:checked');
@@ -1088,38 +1125,43 @@
       </div>
       <button class="ss-btn" id="pop-save">Save popups (go live)</button>`;
 
+    // migrate any old single-image events to the images[] array
+    P.events.forEach(ev => { if (!ev.images) ev.images = ev.image ? [ev.image] : []; });
+    function thumbHTML(ev, i) {
+      return (ev.images || []).map((src, j) =>
+        `<div class="ss-thumb"><img src="${localPreviews[src] || SS.imgSrc(src)}" alt="" onerror="this.parentNode.classList.add('bad')"><button class="ss-thumb-x" data-delimg="${i}:${j}" title="Remove">✕</button></div>`).join("");
+    }
     function draw() {
       const wrap = document.getElementById("pop-events");
       wrap.innerHTML = P.events.map((ev, i) => `
         <div class="ss-subpanel" data-ev="${i}">
-          <div style="display:flex;gap:12px;align-items:flex-start">
-            <div class="ss-thumb" style="flex:0 0 auto"><img src="${localPreviews[ev.image] || (ev.image ? SS.imgSrc(ev.image) : "")}" alt="" onerror="this.parentNode.classList.add('bad')"></div>
-            <div style="flex:1">
-              <div class="ss-grid2">
-                <div><label class="ss-label">Title</label><input class="ss-field ss-field--sm" data-k="title" value="${esc(ev.title || "")}" placeholder="Lahore Eat Festival"></div>
-                <div><label class="ss-label">Location</label><input class="ss-field ss-field--sm" data-k="location" value="${esc(ev.location || "")}" placeholder="Gulberg, Lahore"></div>
-                <div><label class="ss-label">Date / when</label><input class="ss-field ss-field--sm" data-k="date" value="${esc(ev.date || "")}" placeholder="March 2026"></div>
-                <div><label class="ss-label">Photo file / URL</label><input class="ss-field ss-field--sm" data-k="image" value="${esc(ev.image || "")}" placeholder="popup-1.jpg"></div>
-              </div>
-              <label class="ss-label" style="margin-top:8px">Caption</label><input class="ss-field ss-field--sm" data-k="caption" value="${esc(ev.caption || "")}" placeholder="Sold out in 3 hours.">
-              <div style="margin-top:8px;display:flex;gap:8px"><button class="ss-chip" data-up="${i}">⬆ Upload photo</button><button class="ss-chip ss-chip--danger" data-del="${i}">✕ Remove</button></div>
-            </div>
+          <div class="ss-grid2">
+            <div><label class="ss-label">Title</label><input class="ss-field ss-field--sm" data-k="title" value="${esc(ev.title || "")}" placeholder="Lahore Eat Festival"></div>
+            <div><label class="ss-label">Location</label><input class="ss-field ss-field--sm" data-k="location" value="${esc(ev.location || "")}" placeholder="Gulberg, Lahore"></div>
+            <div><label class="ss-label">Date / when</label><input class="ss-field ss-field--sm" data-k="date" value="${esc(ev.date || "")}" placeholder="March 2026"></div>
+            <div><label class="ss-label">Caption</label><input class="ss-field ss-field--sm" data-k="caption" value="${esc(ev.caption || "")}" placeholder="Sold out in 3 hours."></div>
           </div>
+          <label class="ss-label" style="margin-top:10px">Photos for this popup</label>
+          <div class="ss-thumbs">${thumbHTML(ev, i) || `<p class="ss-seed">No photos yet.</p>`}</div>
+          <div style="margin-top:8px;display:flex;gap:8px"><button class="ss-chip" data-up="${i}">⬆ Upload photos</button><button class="ss-chip ss-chip--danger" data-del="${i}">✕ Remove this popup</button></div>
         </div>`).join("") || `<p class="ss-seed">No popups yet — add your first one below.</p>`;
       wrap.querySelectorAll("[data-ev]").forEach(row => {
         const i = +row.getAttribute("data-ev");
         row.querySelectorAll("[data-k]").forEach(inp => inp.oninput = () => { P.events[i][inp.getAttribute("data-k")] = inp.value; });
       });
       wrap.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { P.events.splice(+b.getAttribute("data-del"), 1); draw(); });
+      wrap.querySelectorAll("[data-delimg]").forEach(b => b.onclick = () => { const [i, j] = b.getAttribute("data-delimg").split(":").map(Number); P.events[i].images.splice(j, 1); draw(); });
       wrap.querySelectorAll("[data-up]").forEach(b => b.onclick = () => {
         const i = +b.getAttribute("data-up");
-        const inp = document.createElement("input"); inp.type = "file"; inp.accept = "image/*";
+        const inp = document.createElement("input"); inp.type = "file"; inp.accept = "image/*"; inp.multiple = true;
         inp.onchange = async e => {
-          const file = e.target.files[0]; if (!file) return;
+          const files = [...e.target.files]; if (!files.length) return;
           b.disabled = true; b.textContent = "Uploading…";
-          try { const name = await uploadImageToGitHub(file); localPreviews[name] = URL.createObjectURL(file); P.events[i].image = name; draw(); }
-          catch (err) { SSApp.toast(String(err), "err"); }
-          b.disabled = false;
+          for (const file of files) {
+            try { const name = await uploadImageToGitHub(file); localPreviews[name] = URL.createObjectURL(file); P.events[i].images.push(name); }
+            catch (err) { SSApp.toast(String(err), "err"); }
+          }
+          b.disabled = false; draw();
         };
         inp.click();
       });

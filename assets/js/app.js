@@ -234,7 +234,7 @@
         <p class="ss-card-desc">${pv.description}</p>
         <div class="ss-card-meta">${reviews}${lowStock(pv)}</div>
         <div class="ss-card-foot">
-          <span class="ss-card-price">${SS.money(pv.price)}</span>
+          <span class="ss-card-price">${pv.sizes && pv.sizes.length ? `<small style="font-weight:600;color:var(--ink-60)">from </small>` : ""}${SS.money(pv.price)}</span>
           ${cta}
         </div>
       </div>

@@ -38,7 +38,7 @@
 
   function lineHTML(l) {
     const img = l.image ? `<img src="${SS.imgSrc(l.image)}" alt="" onerror="this.remove()">` : "";
-    return `<div class="ss-cart-line" data-id="${l.id}">
+    return `<div class="ss-cart-line" data-key="${l.key}">
       <div class="ss-cart-thumb">${img}</div>
       <div class="ss-cart-info">
         <h4>${l.name}${l.secret ? " 🔓" : ""}</h4>
@@ -58,15 +58,15 @@
 
   function bind() {
     root.querySelectorAll(".ss-cart-line").forEach(line => {
-      const id = line.getAttribute("data-id");
+      const key = line.getAttribute("data-key");
       line.querySelectorAll("[data-step]").forEach(b =>
         b.addEventListener("click", () => {
-          const cur = SS.cartDetail().lines.find(l => l.id === id);
-          SS.setQty(id, (cur ? cur.qty : 1) + Number(b.getAttribute("data-step")));
+          const cur = SS.cartDetail().lines.find(l => l.key === key);
+          SS.setQty(key, (cur ? cur.qty : 1) + Number(b.getAttribute("data-step")));
           render(); SSApp.refreshCartCount();
         }));
       line.querySelector("[data-remove]").addEventListener("click", () => {
-        SS.removeFromCart(id); render(); SSApp.refreshCartCount();
+        SS.removeFromCart(key); render(); SSApp.refreshCartCount();
       });
     });
   }

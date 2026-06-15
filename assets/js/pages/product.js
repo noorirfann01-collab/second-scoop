@@ -33,6 +33,15 @@
   const reviews = pv.reviews && pv.reviews.count
     ? `<div class="ss-card-rating" style="font-size:1rem;margin:.4em 0">★ ${pv.reviews.rating} <em>· ${pv.reviews.count} reviews</em></div>` : "";
 
+  const sizeBlock = (pv.sizes && pv.sizes.length) ? `
+      <div class="ss-pdp-sizes" id="pdp-sizes">
+        <label class="ss-label">Choose your size</label>
+        <div class="ss-size-opts">
+          ${pv.sizes.map((s, i) => `<button class="ss-size-opt${i === 0 ? " is-active" : ""}" data-size="${s.label.replace(/"/g, "&quot;")}" data-price="${s.price}">
+            <span class="ss-size-label">${s.label}</span><span class="ss-size-price">${SS.money(s.price)}</span></button>`).join("")}
+        </div>
+      </div>` : "";
+
   const buyBlock = pv.buyable ? `
       <div class="ss-pdp-buy">
         <div class="ss-qty" id="pdp-qty">
@@ -57,8 +66,9 @@
         <h1>${pv.name}</h1>
         <p class="ss-pdp-tag">${pv.tagline || ""}</p>
         ${reviews}
-        <div class="ss-pdp-price">${SS.money(pv.price)}</div>
+        <div class="ss-pdp-price" id="pdp-price">${SS.money(pv.price)}</div>
         <p class="ss-pdp-long">${pv.longDescription || pv.description}</p>
+        ${sizeBlock}
         ${buyBlock}
         ${pv.deliveryNotes ? `<div class="ss-pdp-notes">🥄 <span>${pv.deliveryNotes}</span></div>` : ""}
         <div class="ss-pdp-trust">
@@ -69,11 +79,26 @@
       </div>
     </div>`;
 
-  // qty + add
+  // qty + size + add
   let qty = 1;
+  let size = (pv.sizes && pv.sizes.length) ? pv.sizes[0].label : "";
+  function unitPrice() {
+    if (pv.sizes && size) { const s = pv.sizes.find(s => s.label === size); if (s) return s.price; }
+    return pv.price;
+  }
   function priceLabel() {
-    const el = document.getElementById("pdp-add-price");
-    if (el) el.textContent = SS.money(pv.price * qty);
+    const add = document.getElementById("pdp-add-price"); if (add) add.textContent = SS.money(unitPrice() * qty);
+    const main = document.getElementById("pdp-price"); if (main) main.textContent = SS.money(unitPrice());
+  }
+  // size selector
+  const sizesWrap = document.getElementById("pdp-sizes");
+  if (sizesWrap) {
+    sizesWrap.addEventListener("click", e => {
+      const b = e.target.closest("[data-size]"); if (!b) return;
+      size = b.getAttribute("data-size");
+      sizesWrap.querySelectorAll(".ss-size-opt").forEach(o => o.classList.toggle("is-active", o === b));
+      priceLabel();
+    });
   }
   const qwrap = document.getElementById("pdp-qty");
   if (qwrap) {
@@ -85,7 +110,7 @@
     });
     priceLabel();
     document.getElementById("pdp-add").addEventListener("click", () => {
-      if (SS.addToCart(pv.id, qty)) { SSApp.refreshCartCount(); SSApp.toast(`Added ${qty} × ${pv.name} 🍪`, "ok"); }
+      if (SS.addToCart(pv.id, qty, size)) { SSApp.refreshCartCount(); SSApp.toast(`Added ${qty} × ${pv.name}${size ? " (" + size + ")" : ""} 🍪`, "ok"); }
     });
   }
 
