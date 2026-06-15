@@ -1,5 +1,5 @@
 /* Second Scoop — content.js
-   Exported from the Backend on 12/06/2026, 23:43:53.
+   Exported from the Backend on 15/06/2026, 23:38:22.
    Replace the matching file in assets/js/config/ to publish. */
 
 window.SS_CONTENT = {
@@ -38,7 +38,7 @@ window.SS_CONTENT = {
     "vaultTeaser": {
       "eyebrow": "Invite-Only",
       "title": "The Vault",
-      "text": "Secret scoops you won't find anywhere on this site. Salted caramel stuffed Scoopies, churro drops, collabs — unlocked only with a code.",
+      "text": "Secret scoops you won't find anywhere on this site — unlocked only with a code.",
       "button": "Enter The Vault →"
     },
     "howItWorks": {
@@ -223,7 +223,7 @@ window.SS_CONTENT = {
     },
     {
       "title": "Scoop in",
-      "text": "Reheat for 15s, grab a spoon, and remember — the first scoop is never enough."
+      "text": "Reheat for 15-30s, grab a spoon, and remember — the first scoop is never enough."
     }
   ],
   "about": {
