@@ -1,5 +1,5 @@
 /* Second Scoop — content.js
-   Exported from the Backend on 15/06/2026, 23:38:22.
+   Exported from the Backend on 15/06/2026, 23:59:29.
    Replace the matching file in assets/js/config/ to publish. */
 
 window.SS_CONTENT = {
@@ -72,7 +72,14 @@ window.SS_CONTENT = {
         "location": "Cantt, Lahore",
         "date": "22 -23 March 2026",
         "image": "dsc-4507-mqb9rwym.png",
-        "caption": "We sold out on our  launch day!"
+        "caption": "We sold out on our  launch day!",
+        "images": [
+          "dsc-4507-mqb9rwym.png",
+          "dsc-4496-mqfk5smc.png",
+          "dsc-4505-mqfk5zz0.png",
+          "dsc-4534-1-mqfk66oj.png",
+          "dsc-4549-mqfk6fp7.png"
+        ]
       }
     ]
   },
@@ -148,7 +155,6 @@ window.SS_CONTENT = {
       "Warm.",
       "Gooey.",
       "Loaded.",
-      "Addictive.",
       "Scoopable."
     ],
     "logoEnding": true,
@@ -170,8 +176,8 @@ window.SS_CONTENT = {
     }
   },
   "instagramFeed": {
-    "mode": "tiles",
-    "embedHtml": "",
+    "mode": "embed",
+    "embedHtml": "<!-- LightWidget WIDGET --><script src=\"https://cdn.lightwidget.com/widgets/lightwidget.js\"></script><iframe src=\"//lightwidget.com/widgets/b17c5c31f31e52c3aedb484429b248ec.html\" scrolling=\"no\" allowtransparency=\"true\" class=\"lightwidget-widget\" style=\"width:100%;border:0;overflow:hidden;\"></iframe>",
     "tiles": []
   },
   "gallery": {
@@ -189,7 +195,7 @@ window.SS_CONTENT = {
   },
   "brand": {
     "name": "Second Scoop",
-    "tagline": "The First Scoop Is Never Enough.",
+    "tagline": "Because one is never enough",
     "email": "hello@secondscoop.co",
     "instagram": "secondscoopco",
     "instagramUrl": "https://instagram.com/secondscoopco",
@@ -202,7 +208,7 @@ window.SS_CONTENT = {
     "videoPoster": "assets/video/hero-poster.jpg",
     "mobileMode": "auto",
     "headline": "The cookie you were never supposed to <span class=\"accent\">stop</span> eating.",
-    "sub": "Warm. Gooey. Scoopable. Baked in a tin and built for a spoon. Meet <strong>The OG Scoopie</strong> — and try not to finish it standing up.",
+    "sub": "Warm. Gooey. Scoopable. Baked in a tin and built to dig in. Meet <strong>The OG Scoopie</strong> — and try not to finish it standing up.",
     "trust": [
       "⚡ Delivery all over Lahore"
     ],
@@ -228,12 +234,10 @@ window.SS_CONTENT = {
   ],
   "about": {
     "eyebrow": "Our Story",
-    "title": "The First Scoop Is Never Enough.",
+    "title": "Because One is Never Enough!",
     "lead": "We make the dessert you think about after you've already had dessert.",
     "paragraphs": [
-      "Second Scoop started with one stubborn idea: a cookie so soft and gooey it had to be eaten with a spoon. Not a biscuit. Not a cake. Something in between — warm, molten, and impossible to put down. We baked it in a tin, called it The OG Scoopie, and watched people finish it standing over the counter.",
-      "From there it grew. Thick, soft-centred Chunkies loaded with chocolate. Egg-free, safe-to-eat-raw Doughiginals you can dig into straight from the tub. And a hidden corner — The Vault — where our experiments, collabs and stuffed secret scoops live, unlocked only with a code.",
-      "We're a small operation that takes craving seriously. Everything is made in tight batches, dropped in limited runs, and built around one feeling: that pull to go back for just one more scoop."
+      "Second Scoop started with a simple belief: the best bites are the ones you go back for. What began as a love for warm cookies and sneaking spoonfuls of cookie dough from the mixing bowl has grown into a collection of desserts designed to be shared, scooped, and remembered. From our signature Scoopies™—gooey cookies baked for the spoon—to our Doughiginals™ edible cookie dough, everything is made in small batches with premium ingredients and an obsession for texture, flavor, and nostalgia. Whether you're digging into a warm Scoopie or straight into a tub of cookie dough, we're here to make every scoop worth coming back for."
     ],
     "values": [
       {
@@ -288,11 +292,11 @@ window.SS_CONTENT = {
   "faq": [
     {
       "q": "What is a Scoopie?",
-      "a": "The OG Scoopie is a super soft, gooey cookie baked in its own tin and designed to be eaten with a spoon. Crisp edges, a warm molten middle, and pools of melting chocolate. Heat it for ~15-30 seconds and scoop straight in."
+      "a": "The OG Scoopie is a super soft, gooey, scoopable cookie baked in its own tin and designed to be eaten with a spoon. Crisp edges, a warm molten middle, and pools of melting chocolate. Heat it for ~15-30 seconds and scoop straight in."
     },
     {
       "q": "What is edible cookie dough?",
-      "a": "Our Doughiginals are tubs of cookie dough made to be eaten raw, by the spoon. They're egg-free and made with heat-treated flour, so there's no raw-egg or raw-flour risk. Rich, fudgy and loaded with Callebaut chocolate."
+      "a": "A Doughiginal™ is our take on edible cookie dough—made to be eaten straight from the tub, no baking required. Crafted in small batches with premium ingredients, like real vanilla beans and Callebaut Chocolate. Think of it as everything you loved about sneaking cookie dough from the mixing bowl, reimagined into a dessert that's safe to eat and impossible to put down."
     },
     {
       "q": "Can I bake The Doughiginals?",
