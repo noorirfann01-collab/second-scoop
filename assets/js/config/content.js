@@ -1,5 +1,5 @@
 /* Second Scoop — content.js
-   Exported from the Backend on 16/06/2026, 00:01:20.
+   Exported from the Backend on 16/06/2026, 00:09:40.
    Replace the matching file in assets/js/config/ to publish. */
 
 window.SS_CONTENT = {
@@ -171,12 +171,12 @@ window.SS_CONTENT = {
       "howItWorks": true,
       "reviews": true,
       "carousel": true,
-      "instagram": true,
+      "instagram": false,
       "signup": true
     }
   },
   "instagramFeed": {
-    "mode": "embed",
+    "mode": "tiles",
     "embedHtml": "<!-- LightWidget WIDGET --><script src=\"https://cdn.lightwidget.com/widgets/lightwidget.js\"></script><iframe src=\"//lightwidget.com/widgets/b17c5c31f31e52c3aedb484429b248ec.html\" scrolling=\"no\" allowtransparency=\"true\" class=\"lightwidget-widget\" style=\"width:100%;border:0;overflow:hidden;\"></iframe>",
     "tiles": []
   },
@@ -186,11 +186,10 @@ window.SS_CONTENT = {
     "eyebrow": "The Gallery",
     "autoplay": true,
     "images": [
-      "dsc-4505-mqa0pbr4.png",
-      "dsc-4507-mqa0pihc.png",
-      "dsc-4534-1-mqa0pqmr.png",
-      "dsc-4549-mqa0pz5g.png",
-      "dsc-4496-mqa0q6il.png"
+      "dsc-4496-mqfl61sk.png",
+      "dsc-4505-1-mqfl68dp.png",
+      "dsc-4534-1-mqfl6fbj.png",
+      "dsc-4549-mqfl6ngj.png"
     ]
   },
   "brand": {
