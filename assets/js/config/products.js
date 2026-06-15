@@ -1,5 +1,5 @@
 /* Second Scoop — products.js
-   Exported from the Backend on 12/06/2026, 23:43:53.
+   Exported from the Backend on 15/06/2026, 23:38:22.
    Replace the matching file in assets/js/config/ to publish. */
 
 window.SS_CATEGORIES = [
@@ -56,7 +56,7 @@ window.SS_PRODUCTS = [
     "category": "chunkies",
     "tagline": "Thick. Soft-centred. Loaded.",
     "description": "Our bakery-style flagship cookie: thick, soft in the middle, and packed wall-to-wall with chocolate.",
-    "longDescription": "A proper bakery-style Chunkie — thick-cut, soft-centred and stacked with melting chocolate in every bite. Crisp at the edge, dense and chewy through the middle.",
+    "longDescription": "A proper bakery-style Chunkie — thick-cut, soft-centred and stacked with melting chocolate in every bite. Crisp at the edge, soft and chewy through the middle.",
     "images": [
       "f93f77a6-358b-49b9-89b6-daf8bdd5fb33-mqa4s3c2.png"
     ],
@@ -71,10 +71,24 @@ window.SS_PRODUCTS = [
     },
     "regions": {
       "pakistan": {
-        "status": "available",
-        "price": 450,
+        "status": "preorder",
+        "price": 0,
         "inventory": 80,
-        "deliveryNotes": ""
+        "deliveryNotes": "",
+        "sizes": [
+          {
+            "label": "1 cookie - Rs.450",
+            "price": 0
+          },
+          {
+            "label": "4 Cookies - Rs.1700",
+            "price": 0
+          },
+          {
+            "label": "6 Cookies - Rs. 2500",
+            "price": 0
+          }
+        ]
       }
     }
   },
@@ -117,7 +131,7 @@ window.SS_PRODUCTS = [
     "category": "doughiginals",
     "tagline": "Egg-free. Safe to eat raw. Dangerously good.",
     "description": "Our signature edible cookie dough tub. Egg-free, heat-treated flour, ready to eat by the spoon.",
-    "longDescription": "The original tub that started the dough obsession. Made egg-free with heat-treated flour so it's completely safe to eat raw — rich, fudgy and loaded with chocolate chips. Eat it straight from the tub, chilled.",
+    "longDescription": "The original tub that started the dough obsession. Made egg-free with heat-treated flour so it's completely safe to eat raw - made with real vanilla beans, and loaded with Callebaut chocolate. Eat it straight from the tub. Leave at room temperature for 15-20 mins, or dig in chilled.",
     "images": [
       "5e01e517-9a0f-4b02-a645-500bdd0fa61f-mqa4rjbw.png"
     ],
@@ -133,9 +147,19 @@ window.SS_PRODUCTS = [
     "regions": {
       "pakistan": {
         "status": "preorder",
-        "price": 2900,
+        "price": 0,
         "inventory": 70,
-        "deliveryNotes": "Keep refrigerated."
+        "deliveryNotes": "Keep refrigerated.",
+        "sizes": [
+          {
+            "label": "200g - Rs. 1600",
+            "price": 0
+          },
+          {
+            "label": "500g - Rs. 3100",
+            "price": 0
+          }
+        ]
       }
     }
   },
