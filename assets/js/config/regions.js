@@ -1,5 +1,5 @@
 /* Second Scoop — regions.js
-   Exported from the Backend on 16/06/2026, 00:43:59.
+   Exported from the Backend on 17/06/2026, 02:12:49.
    Replace the matching file in assets/js/config/ to publish. */
 
 window.SS_REGIONS = {
@@ -18,13 +18,35 @@ window.SS_REGIONS = {
     },
     "delivery": {
       "available": true,
-      "fee": 600,
+      "fee": 0,
       "freeOver": 0,
       "etaText": "Delivery time 2–3 days",
       "cities": [
         "Lahore"
       ],
-      "notes": "Delivered chilled in insulated packaging."
+      "notes": "Delivered chilled in insulated packaging.",
+      "zones": [
+        {
+          "name": "Gulberg",
+          "fee": 600
+        },
+        {
+          "name": "Lake City",
+          "fee": 200
+        },
+        {
+          "name": "DHA Ph 1-6",
+          "fee": 500
+        },
+        {
+          "name": "DHA Ph 8 - Paragon City",
+          "fee": 750
+        },
+        {
+          "name": "Cantt",
+          "fee": 600
+        }
+      ]
     },
     "pickup": {
       "available": true,
@@ -63,7 +85,8 @@ window.SS_REGIONS = {
         "North York",
         "Brampton"
       ],
-      "notes": "Delivered cold. Keep refrigerated on arrival."
+      "notes": "Delivered cold. Keep refrigerated on arrival.",
+      "zones": []
     },
     "pickup": {
       "available": true,
