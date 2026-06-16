@@ -1,5 +1,5 @@
 /* Second Scoop — content.js
-   Exported from the Backend on 16/06/2026, 00:43:59.
+   Exported from the Backend on 17/06/2026, 02:12:49.
    Replace the matching file in assets/js/config/ to publish. */
 
 window.SS_CONTENT = {
@@ -211,7 +211,7 @@ window.SS_CONTENT = {
     "trust": [
       "⚡ Delivery all over Lahore"
     ],
-    "image": "dsc-4505-1-mqa0okiu.png"
+    "image": "dsc-4505-mqh4psrc.png"
   },
   "howItWorks": [
     {
