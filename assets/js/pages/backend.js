@@ -1126,10 +1126,22 @@
 
   /* ============================================== SHOP & CHECKOUT === */
   function renderShopText() {
-    const C = content; C.payment = C.payment || {};
-    const P = C.payment;
+    const C = content; C.payment = C.payment || {}; C.fulfilment = C.fulfilment || {};
+    const P = C.payment, F = C.fulfilment;
     body().innerHTML = `
       <p style="color:var(--ink-60);margin:0 0 14px">Wording on your Shop, Vault, Cart, Checkout and the thank-you page customers see after ordering.</p>
+
+      <div class="ss-panel" style="margin-bottom:14px"><h3>📅 Delivery / pickup dates</h3>
+        <p style="color:var(--ink-60);font-size:.9rem">Control which dates customers can pick at checkout — so you can streamline fulfilment to dates after pre-orders close.</p>
+        <div class="ss-grid2">
+          <div><label class="ss-label">Earliest date allowed</label><input class="ss-field" type="date" id="ff-earliest" value="${esc(F.earliest || "")}">
+            <small class="ss-seed">e.g. the day pre-orders close. Blank = from tomorrow.</small></div>
+          <div><label class="ss-label">Note shown under the date</label><input class="ss-field" id="ff-note" value="${esc(F.note || "")}"></div>
+        </div>
+        <label class="ss-label" style="margin-top:10px">Blocked-out dates (one per line, YYYY-MM-DD)</label>
+        <textarea class="ss-field" id="ff-blocked" style="min-height:80px" placeholder="2026-06-25&#10;2026-06-30">${esc((F.blocked || []).join("\n"))}</textarea>
+        <small class="ss-seed">Customers can't choose these dates (closed days, holidays, etc.).</small>
+      </div>
 
       <div class="ss-panel" style="margin-bottom:14px"><h3>💳 Payment &amp; bank transfer</h3>
         <p style="color:var(--ink-60);font-size:.9rem">Shown at checkout AND on the thank-you page. Use <code>{order}</code> in the share message to auto-insert the order number.</p>
@@ -1160,6 +1172,9 @@
       P.enabled = chkd("pay-on"); P.heading = val("pay-head"); P.intro = val("pay-intro");
       P.bankName = val("pay-bank"); P.accountTitle = val("pay-title"); P.accountNumber = val("pay-acct"); P.iban = val("pay-iban");
       P.shareText = val("pay-share");
+      F.earliest = val("ff-earliest").trim();
+      F.note = val("ff-note");
+      F.blocked = val("ff-blocked").split("\n").map(s => s.trim()).filter(Boolean);
       ["shop", "vault", "cart", "checkout", "confirmation"].forEach(savePageText);
       persistContent(); updateLiveBadge(); SSApp.toast("Saved — live ✍️", "ok");
     };

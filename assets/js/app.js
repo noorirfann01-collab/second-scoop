@@ -256,15 +256,18 @@
   /* ------------------------------------------ recently-sold ticker - */
   function startRecentlySold() {
     if (!SS_SETTINGS.features.recentlySoldNotifications) return;
-    const names = SS_SETTINGS.recentlySold;
+    // Names only — the city is always the CURRENT region (e.g. Lahore), so it
+    // can never show a city you don't serve.
+    const names = (SS_SETTINGS.recentlySold || []).map(n => String(n).split(/\s+in\s+/i)[0].trim()).filter(Boolean);
     const prods = SS.productsForRegion();
     if (!names.length || !prods.length) return;
+    const cityName = (SS.region() && SS.region().name) || "";
     function ping() {
       const who = names[Math.floor(Math.random() * names.length)];
       const p = SS.productView(prods[Math.floor(Math.random() * prods.length)]);
       const el = document.createElement("div");
       el.className = "ss-recent";
-      el.innerHTML = `<span class="ss-recent-dot"></span><div><strong>${who}</strong><br>just ordered ${p.name}</div>`;
+      el.innerHTML = `<span class="ss-recent-dot"></span><div><strong>${who}${cityName ? " in " + cityName : ""}</strong><br>just ordered ${p.name}</div>`;
       document.body.appendChild(el);
       requestAnimationFrame(() => el.classList.add("show"));
       setTimeout(() => { el.classList.remove("show"); setTimeout(() => el.remove(), 400); }, 4200);

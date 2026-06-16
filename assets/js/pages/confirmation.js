@@ -50,7 +50,7 @@
     <div class="ss-confirm-check">✓</div>
     <span class="eyebrow">${txt.eyebrow}</span>
     <h1>${txt.heading}</h1>
-    <p>${txt.message}${r.contact && r.contact.whatsapp ? " We'll be in touch on WhatsApp." : ""}</p>
+    <p>${txt.message}</p>
     <div class="ss-confirm-num">${o.orderNumber}</div>
     ${syncNote}
     ${(function () { const pay = (C.payment) || {}; if (pay.enabled === false) return ""; return `

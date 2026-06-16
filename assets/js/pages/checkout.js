@@ -16,7 +16,10 @@
     return;
   }
 
-  const minDate = new Date(Date.now() + 86400000).toISOString().split("T")[0];
+  const fc = (SS.getContent().fulfilment) || {};
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0];
+  const minDate = (fc.earliest && fc.earliest > tomorrow) ? fc.earliest : tomorrow;
+  const blockedDates = (fc.blocked || []).map(s => String(s).trim()).filter(Boolean);
 
   root.innerHTML = `
   <form class="ss-checkout" id="checkout-form" novalidate>
@@ -65,7 +68,9 @@
         <div class="ss-form-grid" style="margin-top:16px">
           <div><label class="ss-label">Preferred date <span class="req">*</span></label>
             <input class="ss-field" type="date" name="preferredDate" min="${minDate}" required>
-            <div class="ss-error">Please choose a date.</div></div>
+            <div class="ss-error">Please choose an available date.</div>
+            ${fc.note ? `<small style="color:var(--ink-60)">${fc.note}</small>` : ""}
+            ${blockedDates.length ? `<small style="color:var(--ink-60);display:block">Unavailable: ${blockedDates.join(", ")}.</small>` : ""}</div>
         </div>
         <div style="margin-top:16px"><label class="ss-label">Order notes</label>
           <textarea class="ss-field" name="notes" placeholder="Allergies, gift message, drop-off instructions…"></textarea></div>
@@ -101,6 +106,15 @@
   const form = document.getElementById("checkout-form");
   const addressBlock = document.getElementById("address-block");
   const pickupBlock = document.getElementById("pickup-block");
+
+  // warn immediately if they pick a blocked / too-early date
+  const dateInput = form.querySelector('[name="preferredDate"]');
+  if (dateInput) dateInput.addEventListener("change", () => {
+    const v = dateInput.value, bad = v && (v < minDate || blockedDates.indexOf(v) !== -1);
+    const err = dateInput.parentNode.querySelector(".ss-error");
+    if (err) { err.textContent = bad ? "That date isn't available — please pick another." : "Please choose an available date."; err.classList.toggle("show", !!bad); }
+    dateInput.style.borderColor = bad ? "var(--err)" : "";
+  });
 
   function fulfilment() { return form.querySelector('[name="fulfilment"]:checked').value; }
   function selectedArea() { const el = form.querySelector('[name="area"]'); return el ? el.value : ""; }
@@ -150,7 +164,8 @@
     const isDelivery = fulfilment() === "delivery";
     let ok = true;
     const required = [["name", v => v.trim()], ["phone", v => v.trim().length >= 6],
-                      ["email", v => /\S+@\S+\.\S+/.test(v)], ["preferredDate", v => v]];
+                      ["email", v => /\S+@\S+\.\S+/.test(v)],
+                      ["preferredDate", v => v && v >= minDate && blockedDates.indexOf(v) === -1]];
     if (isDelivery) required.push(["address", v => v.trim()]);
     if (isDelivery && zones.length) required.push(["area", v => v.trim()]);
     required.forEach(([n, test]) => {
