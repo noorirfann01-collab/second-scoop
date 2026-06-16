@@ -119,6 +119,13 @@
   function refreshRemote(then) { remoteState = "idle"; remoteOrders = null; (then || renderSection)(); }
 
   // Convert sheet rows → order objects the dashboard understands.
+  // Delivery charge for an order — from a "Delivery Fee" cell if present, else
+  // parsed from the "Preferred Method" text e.g. "Delivery (Rs.600…)" / "($7)".
+  function feeFromMethod(method, feeCell) {
+    const f = Number(feeCell); if (isFinite(f) && f > 0) return f;
+    const m = String(method || "").match(/(?:rs\.?|₨|\$)\s*([\d.,]+)/i);
+    return m ? (Number(m[1].replace(/,/g, "")) || 0) : 0;
+  }
   function normalizeRemote(rows) {
     return (rows || []).map(o => {
       const lines = parseProducts(o.products);
@@ -144,7 +151,7 @@
           fulfilment: /pick ?up/i.test(o.preferredMethod || "") ? "pickup" : "delivery",
           preferredDate: o.preferredDate || "", notes: "",
         },
-        lines, subtotal, deliveryFee: 0, grandTotal: subtotal,
+        lines, subtotal, deliveryFee: feeFromMethod(o.preferredMethod, o.deliveryFee), grandTotal: subtotal,
         orderStatus: sheetOrderStatus || (cancelled ? "Cancelled" : "New"),
         paymentStatus: o.paymentStatus || "Pending",
         vaultProducts: "", _remote: true,
@@ -390,6 +397,13 @@
     const parts = []; if (p) parts.push(SS.money(p, "pakistan")); if (t) parts.push(SS.money(t, "toronto"));
     return parts.length ? parts.join(" + ") : SS.money(0, "pakistan");
   }
+  // Delivery charges collected (kept separate from product revenue).
+  function delLabel(list) {
+    const p = list.filter(o => o.region === "pakistan").reduce((s, o) => s + (Number(o.deliveryFee) || 0), 0);
+    const t = list.filter(o => o.region === "toronto").reduce((s, o) => s + (Number(o.deliveryFee) || 0), 0);
+    const parts = []; if (p) parts.push(SS.money(p, "pakistan")); if (t) parts.push(SS.money(t, "toronto"));
+    return parts.length ? parts.join(" + ") : SS.money(0, "pakistan");
+  }
   function blendedAOV(byRegion) {
     const parts = [];
     REGION_IDS.forEach(rid => { const a = byRegion[rid]; if (a && a.length) parts.push(SS.money(a.reduce((s, o) => s + o.grandTotal, 0) / a.length, rid)); });
@@ -446,7 +460,12 @@
         ${kpi("Pending", pending, "in progress")}
         ${kpi("Completed", statusCount.Delivered || 0, "delivered")}
         ${kpi("Comped", c.comped.length, compedValue ? SS.money(compedValue, "pakistan") + " given free" : "free orders")}
-        ${kpi("Avg Order Value", blendedAOV(c.revByRegion), "paid orders")}
+        ${kpi("Avg Order Value", blendedAOV(c.revByRegion), "products only")}
+      </div>
+      <div class="ss-kpi-grid">
+        ${kpi("Delivery Charges", delLabel(c.rev), "collected (separate from products)", true)}
+        ${kpi("This Month — Delivery", delLabel(month), "delivery fees this month")}
+        ${kpi("This Year — Delivery", delLabel(year), "delivery fees this year")}
       </div>
       <div class="ss-admin-cols">
         <div class="ss-panel"><h3>Regional Performance <span class="ss-seed">(revenue excludes comp/cancelled)</span></h3>
@@ -1107,19 +1126,43 @@
 
   /* ============================================== SHOP & CHECKOUT === */
   function renderShopText() {
+    const C = content; C.payment = C.payment || {};
+    const P = C.payment;
     body().innerHTML = `
       <p style="color:var(--ink-60);margin:0 0 14px">Wording on your Shop, Vault, Cart, Checkout and the thank-you page customers see after ordering.</p>
+
+      <div class="ss-panel" style="margin-bottom:14px"><h3>💳 Payment &amp; bank transfer</h3>
+        <p style="color:var(--ink-60);font-size:.9rem">Shown at checkout AND on the thank-you page. Use <code>{order}</code> in the share message to auto-insert the order number.</p>
+        <label class="ss-switch ss-switch--chip"><input type="checkbox" id="pay-on" ${P.enabled !== false ? "checked" : ""}><span>Show payment / bank details</span></label>
+        <label class="ss-label" style="margin-top:10px">Heading</label><input class="ss-field" id="pay-head" value="${esc(P.heading || "")}">
+        <label class="ss-label" style="margin-top:10px">Intro line</label><input class="ss-field" id="pay-intro" value="${esc(P.intro || "")}">
+        <div class="ss-grid2" style="margin-top:6px">
+          <div><label class="ss-label">Bank name</label><input class="ss-field" id="pay-bank" value="${esc(P.bankName || "")}"></div>
+          <div><label class="ss-label">Account title</label><input class="ss-field" id="pay-title" value="${esc(P.accountTitle || "")}"></div>
+          <div><label class="ss-label">Account number</label><input class="ss-field" id="pay-acct" value="${esc(P.accountNumber || "")}"></div>
+          <div><label class="ss-label">IBAN</label><input class="ss-field" id="pay-iban" value="${esc(P.iban || "")}"></div>
+        </div>
+        <label class="ss-label" style="margin-top:10px">Share-screenshot instructions</label>
+        <textarea class="ss-field" id="pay-share" style="min-height:80px">${esc(P.shareText || "")}</textarea>
+      </div>
+
       ${pageTextPanel("shop", "Shop page")}
       ${pageTextPanel("vault", "Vault page")}
       ${pageTextPanel("cart", "Cart page")}
       ${pageTextPanel("checkout", "Checkout page")}
       <div class="ss-panel ss-pub-hero" style="margin-bottom:14px"><h3>🎉 After-checkout “Thank you” page</h3>
-        <p style="color:var(--ink-60)">This is what customers see right after placing an order. Edit the wording below, then preview it with a sample order.</p>
+        <p style="color:var(--ink-60)">What customers see right after ordering. Edit below, then preview with a sample order.</p>
         <a class="ss-btn ss-btn--sm" href="confirmation.html?preview=1" target="_blank" rel="noopener">👁️ Preview thank-you page</a>
       </div>
       ${pageTextPanel("confirmation", "Thank-you page text")}
       <button class="ss-btn" id="sc-save">Save (go live)</button>`;
-    document.getElementById("sc-save").onclick = () => { ["shop", "vault", "cart", "checkout", "confirmation"].forEach(savePageText); persistContent(); updateLiveBadge(); SSApp.toast("Saved — live ✍️", "ok"); };
+    document.getElementById("sc-save").onclick = () => {
+      P.enabled = chkd("pay-on"); P.heading = val("pay-head"); P.intro = val("pay-intro");
+      P.bankName = val("pay-bank"); P.accountTitle = val("pay-title"); P.accountNumber = val("pay-acct"); P.iban = val("pay-iban");
+      P.shareText = val("pay-share");
+      ["shop", "vault", "cart", "checkout", "confirmation"].forEach(savePageText);
+      persistContent(); updateLiveBadge(); SSApp.toast("Saved — live ✍️", "ok");
+    };
   }
   // generic repeatable list editor bound to an array (syncs on change)
   function drawList(containerId, arr, rowHtml, blank, addLabel) {

@@ -6,6 +6,7 @@
   const root = document.getElementById("checkout-root");
   const r = SS.region();
   const zones = SS.deliveryZones();
+  const pay = (SS.getContent().payment) || {};
 
   const { lines, subtotal } = SS.cartDetail();
   if (!lines.length) {
@@ -29,7 +30,7 @@
             <input class="ss-field" name="phone" inputmode="tel" required><div class="ss-error">Please enter a phone number.</div></div>
           <div><label class="ss-label">Email <span class="req">*</span></label>
             <input class="ss-field" type="email" name="email" required><div class="ss-error">Please enter a valid email.</div></div>
-          <div><label class="ss-label">Instagram <span style="color:var(--ink-40);font-weight:500">(optional)</span></label>
+          <div><label class="ss-label">Instagram username <span style="color:var(--ink-40);font-weight:500">(for payment confirmation)</span></label>
             <input class="ss-field" name="instagram" placeholder="@yourhandle"></div>
         </div>
       </div>
@@ -69,6 +70,19 @@
         <div style="margin-top:16px"><label class="ss-label">Order notes</label>
           <textarea class="ss-field" name="notes" placeholder="Allergies, gift message, drop-off instructions…"></textarea></div>
       </div>
+
+      ${pay.enabled !== false ? `
+      <div class="ss-form-card ss-pay-card">
+        <h3>${pay.heading || "Payment — bank transfer in advance"}</h3>
+        ${pay.intro ? `<p style="color:var(--ink-60)">${pay.intro}</p>` : ""}
+        <div class="ss-pay-bank">
+          ${pay.bankName ? `<div><span>Bank</span><strong>${pay.bankName}</strong></div>` : ""}
+          ${pay.accountTitle ? `<div><span>Account title</span><strong>${pay.accountTitle}</strong></div>` : ""}
+          ${pay.accountNumber ? `<div><span>Account number</span><strong>${pay.accountNumber}</strong></div>` : ""}
+          ${pay.iban ? `<div><span>IBAN</span><strong>${pay.iban}</strong></div>` : ""}
+        </div>
+        ${pay.shareText ? `<div class="ss-pay-share"><span>📸</span><p>${pay.shareText}</p></div>` : ""}
+      </div>` : ""}
     </div>
 
     <aside>

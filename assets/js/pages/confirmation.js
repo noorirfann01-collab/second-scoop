@@ -53,6 +53,18 @@
     <p>${txt.message}${r.contact && r.contact.whatsapp ? " We'll be in touch on WhatsApp." : ""}</p>
     <div class="ss-confirm-num">${o.orderNumber}</div>
     ${syncNote}
+    ${(function () { const pay = (C.payment) || {}; if (pay.enabled === false) return ""; return `
+      <div class="ss-confirm-card ss-pay-card" style="text-align:left">
+        <h3>${pay.heading || "Payment — bank transfer in advance"}</h3>
+        ${pay.intro ? `<p style="color:var(--ink-60)">${pay.intro}</p>` : ""}
+        <div class="ss-pay-bank">
+          ${pay.bankName ? `<div><span>Bank</span><strong>${pay.bankName}</strong></div>` : ""}
+          ${pay.accountTitle ? `<div><span>Account title</span><strong>${pay.accountTitle}</strong></div>` : ""}
+          ${pay.accountNumber ? `<div><span>Account number</span><strong>${pay.accountNumber}</strong></div>` : ""}
+          ${pay.iban ? `<div><span>IBAN</span><strong>${pay.iban}</strong></div>` : ""}
+        </div>
+        ${pay.shareText ? `<div class="ss-pay-share"><span>📸</span><p>${pay.shareText.replace(/\{order\}/g, o.orderNumber)}</p></div>` : ""}
+      </div>`; })()}
     <div class="ss-confirm-card">
       <h3>Order details</h3>
       ${o.lines.map(l => `<div class="ss-summary-row"><span>${l.qty} × ${l.name}${l.secret ? " 🔓" : ""}</span><span>${money(l.lineTotal)}</span></div>`).join("")}
