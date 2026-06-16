@@ -1,5 +1,5 @@
 /* Second Scoop — regions.js
-   Exported from the Backend on 17/06/2026, 03:13:38.
+   Exported from the Backend on 17/06/2026, 03:26:44.
    Replace the matching file in assets/js/config/ to publish. */
 
 window.SS_REGIONS = {
@@ -18,7 +18,7 @@ window.SS_REGIONS = {
     },
     "delivery": {
       "available": true,
-      "fee": 0,
+      "fee": 200,
       "freeOver": 0,
       "etaText": "Delivery time 2–3 days",
       "cities": [
@@ -50,13 +50,13 @@ window.SS_REGIONS = {
     },
     "pickup": {
       "available": true,
-      "address": "Second Scoop Studio, Gulberg III, Lahore",
+      "address": "Lake City, Lahore",
       "hours": "Daily 2pm – 10pm",
       "notes": "We'll text you when your order is ready for pickup."
     },
     "contact": {
       "whatsapp": "+92 3332403900",
-      "email": "pk@secondscoop.co"
+      "email": "-"
     },
     "hidden": false
   },
