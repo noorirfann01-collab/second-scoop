@@ -1,5 +1,5 @@
 /* Second Scoop — content.js
-   Exported from the Backend on 17/06/2026, 03:13:38.
+   Exported from the Backend on 17/06/2026, 03:26:44.
    Replace the matching file in assets/js/config/ to publish. */
 
 window.SS_CONTENT = {
@@ -87,11 +87,11 @@ window.SS_CONTENT = {
     "enabled": true,
     "heading": "Payment — bank transfer in advance",
     "intro": "All orders are confirmed once payment is received in advance by bank transfer.",
-    "bankName": "Your Bank Name",
-    "accountTitle": "Second Scoop",
-    "accountNumber": "0000 0000 0000 0000",
-    "iban": "PK00 0000 0000 0000 0000 0000",
-    "shareText": "After paying, send a screenshot of your transfer — along with your name and order number — to our Instagram (@secondscoopco) or WhatsApp to confirm your order. Your order isn't confirmed until we receive it."
+    "bankName": "Islamic Bkg. Alfalah Court Khi",
+    "accountTitle": "Aisha Irfan",
+    "accountNumber": "6-99-64-29313-714-108727",
+    "iban": "PK31MPBL9964287140108727",
+    "shareText": "After paying, send a screenshot of your transfer — along with your name and order number — to our Instagram (@secondscoopco). Your order isn't confirmed until we receive it."
   },
   "pages": {
     "shop": {
@@ -150,7 +150,7 @@ window.SS_CONTENT = {
     "confirmation": {
       "eyebrow": "Order received",
       "heading": "Thank you, {name}! 🍪",
-      "message": "Your scoops are almost locked in. All orders must be paid for in advance in full.\nTo confirm, please share a screenshot with your order no. and name @secondscoopco\n\nBank Details:\nACCOUNT TITLE: AISHA IRFAN\nBANK NAME: HABIB METROPOLITAN BANK LTD.\nACCOUNT NO:\t6-99-64-29313-714-108727\nIBAN NO: PK31MPBL9964287140108727\nBRANCH: Islamic Bkg. Alfalah Court Khi",
+      "message": "Your scoops are almost locked in. All orders must be paid for in advance in full.",
       "moreButton": "Order more scoops",
       "homeButton": "Back home"
     }
@@ -212,7 +212,7 @@ window.SS_CONTENT = {
   "brand": {
     "name": "Second Scoop",
     "tagline": "Because one is never enough",
-    "email": "hello@secondscoop.co",
+    "email": "",
     "instagram": "secondscoopco",
     "instagramUrl": "https://instagram.com/secondscoopco",
     "footerNote": "You will NOT want to share this."
