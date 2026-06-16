@@ -63,7 +63,7 @@
     var f = document.getElementById("contact-form");
     f.addEventListener("submit", function(e){
       e.preventDefault();
-      SS.addSignup({name:f.name.value, email:f.email.value, message:f.message.value, source:"contact"});
+      SS.addMessage({name:f.name.value, email:f.email.value, message:f.message.value, source:"contact"});
       f.reset();
       document.getElementById("contact-msg").textContent = "Thanks! We'll be in touch soon. 🍪";
     });

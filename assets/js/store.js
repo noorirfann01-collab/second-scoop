@@ -409,6 +409,10 @@
   }
 
   function flattenForSheet(order) {
+    // Never write a broken number into the sheet (a corrupt total once wrecked
+    // the dashboard). Clamp to a sane, finite, non-negative value.
+    const safe = n => { n = Number(n); return (isFinite(n) && n >= 0) ? n : 0; };
+    const subtotalSafe = safe(order.subtotal), feeSafe = safe(order.deliveryFee), grandSafe = safe(order.grandTotal) || (subtotalSafe + feeSafe);
     return {
       // routing
       region: SS_REGIONS[order.region] ? SS_REGIONS[order.region].name : order.region,
@@ -428,7 +432,7 @@
       submissionId: order.orderNumber,
       paymentStatus: order.paymentStatus,
       preferredDate: order.customer.preferredDate,
-      revenue: order.subtotal,
+      revenue: subtotalSafe,
 
       // --- extra fields (used for the Toronto tab / general logging) ---
       orderNumber: order.orderNumber,
@@ -438,9 +442,9 @@
       address: order.customer.address,
       products: order.lines.map(l => l.name).join(" | "),
       quantities: order.lines.map(l => `${l.name} x${l.qty}`).join(" | "),
-      productTotal: order.subtotal,
-      deliveryFee: order.deliveryFee,
-      grandTotal: order.grandTotal,
+      productTotal: subtotalSafe,
+      deliveryFee: feeSafe,
+      grandTotal: grandSafe,
       currency: order.currency,
       orderStatus: order.orderStatus,
       notes: order.customer.notes,
@@ -500,6 +504,21 @@
   }
   function getSignups() { return read(LS.signups, []); }
 
+  /* --------------------------------------------- contact messages -- */
+  function addMessage(data) {
+    const entry = Object.assign({ ts: new Date().toISOString(), region: getRegion() }, data);
+    const list = read("ss_messages", []); list.push(entry); write("ss_messages", list);
+    try {
+      const url = (getSettings().googleSheets || {}).webhookUrl;
+      if (url) fetch(url, {
+        method: "POST", mode: "no-cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(Object.assign({ type: "message" }, entry)),
+      }).catch(() => {});
+    } catch (e) {}
+  }
+  function getMessages() { return read("ss_messages", []); }
+
   /* ----------------------------------------------------- expose ---- */
   window.SS = {
     LS, read, write,
@@ -513,6 +532,6 @@
     getCart, saveCart, addToCart, setQty, removeFromCart, clearCart, cartCount, cartDetail, deliveryFee, deliveryZones,
     vaultUnlocks, tryVaultCode, unlockedSecretProducts, isUnlocked, clearVaultUnlocks,
     genOrderNumber, placeOrder, getOrders, updateOrderStatus, flattenForSheet,
-    getCustomers, addSignup, getSignups,
+    getCustomers, addSignup, getSignups, addMessage, getMessages,
   };
 })();

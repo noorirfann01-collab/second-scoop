@@ -24,6 +24,7 @@
     { id: "dashboard", label: "Dashboard", icon: "📊" },
     { id: "orders", label: "Orders", icon: "🧾" },
     { id: "mailing", label: "Mailing List", icon: "📨" },
+    { id: "messages", label: "Messages", icon: "💬" },
     { id: "reviews", label: "Reviews", icon: "⭐" },
     { id: "products", label: "Products", icon: "🍪" },
     { id: "vault", label: "The Vault", icon: "🔒" },
@@ -42,7 +43,7 @@
   ];
   // Page-based grouping — each page owns its content, no overlaps.
   const NAV_GROUPS = [
-    { label: "Store", items: ["dashboard", "orders", "mailing", "reviews"] },
+    { label: "Store", items: ["dashboard", "orders", "mailing", "messages", "reviews"] },
     { label: "Catalog", items: ["products", "vault"] },
     { label: "Pages", items: ["homepage", "about", "faq", "contact", "preorders", "popups", "shoptext"] },
     { label: "Look & setup", items: ["design", "menu", "announce", "settings", "export"] },
@@ -121,7 +122,13 @@
   function normalizeRemote(rows) {
     return (rows || []).map(o => {
       const lines = parseProducts(o.products);
-      const subtotal = o.revenue || lines.reduce((s, l) => s + l.lineTotal, 0);
+      const lineSum = lines.reduce((s, l) => s + l.lineTotal, 0);
+      // Trust the sheet's revenue cell ONLY if it's a sane number. If it's
+      // negative, non-numeric, or absurdly large (a corrupt/mis-typed cell),
+      // fall back to the real total from the product breakdown.
+      let subtotal = Number(o.revenue);
+      if (!isFinite(subtotal) || subtotal < 0 || subtotal > 100000000) subtotal = lineSum;
+      if (!isFinite(subtotal) || subtotal < 0) subtotal = 0;
       const sheetOrderStatus = (o.orderStatus || "").trim();
       const cancelled = /cancel/i.test(o.paymentStatus || "") || /cancel/i.test(sheetOrderStatus);
       return {
@@ -315,7 +322,7 @@
   }
 
   function renderSection() {
-    const map = { dashboard: renderDashboard, orders: renderOrders, mailing: renderMailing, reviews: renderReviews, products: renderProducts,
+    const map = { dashboard: renderDashboard, orders: renderOrders, mailing: renderMailing, messages: renderMessages, reviews: renderReviews, products: renderProducts,
        homepage: renderHomepage, about: renderAbout, faq: renderFaq, contact: renderContact, preorders: renderPreorders,
        popups: renderPopups, shoptext: renderShopText, menu: renderMenu, vault: renderVault, design: renderDesign, announce: renderAnnounce,
        settings: renderSettings, export: renderExport };
@@ -684,6 +691,61 @@
     load();
   }
 
+  /* ===================================================== MESSAGES == */
+  function jsonpMessages() {
+    return new Promise((resolve, reject) => {
+      const url = (SS.getSettings().googleSheets || {}).webhookUrl;
+      const key = SS.read("ss_orders_key", "");
+      if (!url || !key) return reject("not configured");
+      const cb = "ssmsg_" + Math.random().toString(36).slice(2);
+      const sep = url.indexOf("?") > -1 ? "&" : "?";
+      const s = document.createElement("script");
+      s.src = url + sep + "action=messages&key=" + encodeURIComponent(key) + "&callback=" + cb;
+      let done = false;
+      window[cb] = (data) => { done = true; cleanup(); (data && data.ok) ? resolve(data.messages || []) : reject((data && data.error) || "error"); };
+      s.onerror = () => { if (!done) { cleanup(); reject("network"); } };
+      function cleanup() { try { delete window[cb]; } catch (e) { window[cb] = undefined; } s.remove(); }
+      document.body.appendChild(s);
+      setTimeout(() => { if (!done) { cleanup(); reject("timeout"); } }, 15000);
+    });
+  }
+  function renderMessages() {
+    body().innerHTML = `
+      <div class="ss-panel">
+        <div class="ss-bk-actionbar">
+          <h3 style="margin:0">💬 Contact messages <span id="msg-count" class="ss-tag" style="background:#e8dcc8;color:#6b5544"></span></h3>
+          <span style="flex:1"></span>
+          <button class="ss-btn ss-btn--sm ss-btn--ghost" id="msg-refresh">↻ Refresh</button>
+          <button class="ss-btn ss-btn--sm" id="msg-csv">⬇ Export CSV</button>
+        </div>
+        <p style="color:var(--ink-60);font-size:.9rem">Everything sent through your Contact page lands here. Pulled live from your sheet's “Messages” tab.</p>
+        <div id="msg-body"><p class="ss-seed">Loading…</p></div>
+      </div>`;
+    let rows = [];
+    function load() {
+      const mb = document.getElementById("msg-body");
+      if (!remoteConfigured()) { mb.innerHTML = `<div class="ss-livebar" style="background:var(--cream-3);color:var(--caramel)">Connect your Google Sheet first (Brand &amp; Settings), and re-deploy your Apps Script so it has the new “messages” feature.</div>`; return; }
+      mb.innerHTML = `<p class="ss-seed">Loading…</p>`;
+      jsonpMessages().then(list => {
+        rows = (list || []).slice().reverse();
+        document.getElementById("msg-count").textContent = rows.length + " messages";
+        mb.innerHTML = rows.length ? rows.map(m => `<div class="ss-panel" style="margin:0 0 10px;background:var(--cream-2)">
+          <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><strong>${esc(m.name || "Anonymous")}</strong><span class="ss-seed">${esc((m.ts || "").slice(0, 10))}</span></div>
+          <div style="font-size:.85rem;color:var(--caramel)"><a href="mailto:${esc(m.email)}">${esc(m.email || "")}</a></div>
+          <p style="margin:.5em 0 0;white-space:pre-wrap">${esc(m.message || "")}</p></div>`).join("")
+          : `<p class="ss-empty">No messages yet.</p>`;
+      }).catch(err => { mb.innerHTML = `<p class="ss-empty">Couldn't load (${esc(String(err))}). If you just added this feature, re-deploy your Apps Script as a NEW version.</p>`; });
+    }
+    document.getElementById("msg-refresh").onclick = load;
+    document.getElementById("msg-csv").onclick = () => {
+      if (!rows.length) return SSApp.toast("Nothing to export yet.", "err");
+      const head = ["Date", "Name", "Email", "Region", "Message"];
+      const b = rows.map(m => [m.ts, m.name, m.email, m.region, m.message].map(v => `"${String(v == null ? "" : v).replace(/"/g, '""')}"`).join(","));
+      download("second-scoop-messages.csv", head.join(",") + "\n" + b.join("\n"), "text/csv");
+    };
+    load();
+  }
+
   /* ====================================================== REVIEWS == */
   function renderReviews() {
     if (!window.SSReviews || !remoteConfigured()) {
@@ -974,6 +1036,7 @@
     ["shop", "Shop page", [["searchPlaceholder", "Search box placeholder"]]],
     ["cart", "Cart page", [["eyebrow", "Eyebrow"], ["title", "Title"]]],
     ["checkout", "Checkout page", [["eyebrow", "Eyebrow"], ["title", "Title"]]],
+    ["confirmation", "Order confirmation (after checkout)", [["eyebrow", "Eyebrow"], ["heading", "Heading (use {name} for first name)"], ["message", "Message", 1], ["moreButton", "“Order more” button"], ["homeButton", "“Back home” button"]]],
   ];
   // shared: render a page's text fields (from PAGE_TEXT) and save them
   function pageTextPanel(pageKey, heading) {
@@ -1045,13 +1108,18 @@
   /* ============================================== SHOP & CHECKOUT === */
   function renderShopText() {
     body().innerHTML = `
-      <p style="color:var(--ink-60);margin:0 0 14px">Wording on your Shop, Vault, Cart and Checkout pages.</p>
+      <p style="color:var(--ink-60);margin:0 0 14px">Wording on your Shop, Vault, Cart, Checkout and the thank-you page customers see after ordering.</p>
       ${pageTextPanel("shop", "Shop page")}
       ${pageTextPanel("vault", "Vault page")}
       ${pageTextPanel("cart", "Cart page")}
       ${pageTextPanel("checkout", "Checkout page")}
+      <div class="ss-panel ss-pub-hero" style="margin-bottom:14px"><h3>🎉 After-checkout “Thank you” page</h3>
+        <p style="color:var(--ink-60)">This is what customers see right after placing an order. Edit the wording below, then preview it with a sample order.</p>
+        <a class="ss-btn ss-btn--sm" href="confirmation.html?preview=1" target="_blank" rel="noopener">👁️ Preview thank-you page</a>
+      </div>
+      ${pageTextPanel("confirmation", "Thank-you page text")}
       <button class="ss-btn" id="sc-save">Save (go live)</button>`;
-    document.getElementById("sc-save").onclick = () => { ["shop", "vault", "cart", "checkout"].forEach(savePageText); persistContent(); updateLiveBadge(); SSApp.toast("Saved — live ✍️", "ok"); };
+    document.getElementById("sc-save").onclick = () => { ["shop", "vault", "cart", "checkout", "confirmation"].forEach(savePageText); persistContent(); updateLiveBadge(); SSApp.toast("Saved — live ✍️", "ok"); };
   }
   // generic repeatable list editor bound to an array (syncs on change)
   function drawList(containerId, arr, rowHtml, blank, addLabel) {
@@ -1756,11 +1824,32 @@
     const w = await fh.createWritable(); await w.write(file); await w.close();
   }
 
+  // Shrink + recompress a photo in the browser so it loads fast on the site.
+  // Big phone photos (5–40MB) become ~150–400KB without visible quality loss.
+  function optimizeImage(file, maxW, quality) {
+    return new Promise(resolve => {
+      if (!/^image\/(jpeg|jpg|png|webp)$/i.test(file.type || "")) return resolve(file); // leave SVG/GIF alone
+      const url = URL.createObjectURL(file); const im = new Image();
+      im.onload = () => {
+        const scale = Math.min(1, maxW / (im.width || maxW));
+        const w = Math.max(1, Math.round((im.width || maxW) * scale)), h = Math.max(1, Math.round((im.height || maxW) * scale));
+        const cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+        cv.getContext("2d").drawImage(im, 0, 0, w, h); URL.revokeObjectURL(url);
+        cv.toBlob(blob => {
+          if (!blob || blob.size >= file.size) return resolve(file);   // don't make it bigger
+          resolve(new File([blob], (file.name || "image").replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg" }));
+        }, "image/jpeg", quality || 0.82);
+      };
+      im.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+      im.src = url;
+    });
+  }
   // Upload an image → assets/img/<unique-name>; returns the filename to reference.
   // Order of preference: (1) connected project folder → writes to disk;
   // (2) one-click GitHub token → commits via API; (3) download fallback.
   async function uploadImageToGitHub(file) {
     if (file.size > 40 * 1024 * 1024) throw "Image is over 40MB — please use one under 40MB.";
+    file = await optimizeImage(file, 1600, 0.82);   // fast-loading version
     const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
     const base = (file.name.replace(/\.[^.]+$/, "") || "image").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "image";
     const name = base + "-" + Date.now().toString(36) + "." + ext;

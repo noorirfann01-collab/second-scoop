@@ -212,7 +212,7 @@
     opts = opts || {};
     const img = pv.imageSrc || (pv.image ? SS.imgSrc(pv.image) : "");
     const imgEl = img
-      ? `<img src="${img}" alt="${pv.name}" loading="lazy" onerror="this.parentNode.classList.add('ss-noimg')">`
+      ? `<img src="${img}" alt="${pv.name}" loading="lazy" decoding="async" onerror="this.parentNode.classList.add('ss-noimg')">`
       : "";
     const reviews = pv.reviews && pv.reviews.count
       ? `<span class="ss-card-rating">★ ${pv.reviews.rating} <em>(${pv.reviews.count})</em></span>` : "";
