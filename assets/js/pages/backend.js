@@ -315,10 +315,22 @@
   }
 
   function renderSection() {
-    ({ dashboard: renderDashboard, orders: renderOrders, mailing: renderMailing, reviews: renderReviews, products: renderProducts,
+    const map = { dashboard: renderDashboard, orders: renderOrders, mailing: renderMailing, reviews: renderReviews, products: renderProducts,
        homepage: renderHomepage, about: renderAbout, faq: renderFaq, contact: renderContact, preorders: renderPreorders,
        popups: renderPopups, shoptext: renderShopText, menu: renderMenu, vault: renderVault, design: renderDesign, announce: renderAnnounce,
-       settings: renderSettings, export: renderExport }[section] || renderDashboard)();
+       settings: renderSettings, export: renderExport };
+    const fn = map[section] || renderDashboard;
+    try {
+      fn();
+    } catch (err) {
+      // never leave a blank screen — show what went wrong so it can be fixed
+      const b = body();
+      if (b) b.innerHTML = `<div class="ss-panel"><h3>⚠️ This tab hit an error</h3>
+        <p style="color:var(--ink-60)">Something in this section's saved data couldn't load. Your other tabs and your live site are unaffected.</p>
+        <pre style="white-space:pre-wrap;background:var(--cream-2);padding:10px;border-radius:8px;font-size:.8rem">${String(err && err.stack || err)}</pre>
+        <p style="color:var(--ink-60);font-size:.9rem">If this persists, your <code>backend.html</code> or <code>assets/js/pages/backend.js</code> may not have copied over completely — re-copy the full file and hard-refresh (⌘⇧R).</p></div>`;
+      try { console.error("renderSection error:", err); } catch (e) {}
+    }
   }
 
   /* ===================================================== DASHBOARD == */
