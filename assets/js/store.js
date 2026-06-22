@@ -363,7 +363,7 @@
         area: area,
         fulfilment: form.fulfilment, preferredDate: form.preferredDate, notes: form.notes || "",
       },
-      lines: detail.lines.map(l => ({ id: l.id, name: l.name, qty: l.qty, price: l.price, lineTotal: l.lineTotal, secret: l.secret })),
+      lines: detail.lines.map(l => ({ id: l.id, size: l.size || "", name: l.name, qty: l.qty, price: l.price, lineTotal: l.lineTotal, secret: l.secret })),
       subtotal: detail.subtotal, deliveryFee: fee, grandTotal: grand,
       orderStatus: "New", paymentStatus: "Pending",
       vaultProducts: detail.lines.filter(l => l.secret).map(l => l.name).join(", "),
@@ -454,14 +454,24 @@
 
   async function pushToSheets(order) {
     try {
-      const url = (getSettings().googleSheets || {}).webhookUrl;
+      const gs = getSettings().googleSheets || {};
+      const flat = flattenForSheet(order);
+      // If a secure server endpoint is set (Netlify Function), send the order
+      // THERE — it recomputes the total server-side (blocks price tampering)
+      // and forwards to the sheet with the webhook kept secret.
+      if (gs.orderEndpoint) {
+        const body = Object.assign({}, flat, { lines: order.lines.map(l => ({ id: l.id, size: l.size || "", qty: l.qty })) });
+        await fetch(gs.orderEndpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+        return true;
+      }
+      const url = gs.webhookUrl;
       if (!url) return false;
       // text/plain avoids a CORS preflight against Apps Script.
       await fetch(url, {
         method: "POST",
         mode: "no-cors",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(flattenForSheet(order)),
+        body: JSON.stringify(flat),
       });
       return true; // no-cors gives an opaque response; assume queued
     } catch (e) { return false; }

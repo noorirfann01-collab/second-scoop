@@ -8,6 +8,15 @@
   const zones = SS.deliveryZones();
   const pay = (SS.getContent().payment) || {};
 
+  // Valid Pakistani mobile: 03XX XXXXXXX (also accepts +92 / 0092 / 92 forms).
+  function validPhone(raw) {
+    let d = String(raw || "").replace(/[^\d]/g, "");
+    if (d.indexOf("0092") === 0) d = d.slice(2);
+    if (d.indexOf("92") === 0 && d.length === 12) d = "0" + d.slice(2);
+    if (SS.getRegion() === "pakistan") return /^03\d{9}$/.test(d);   // 11-digit mobile
+    return d.length >= 7;                                            // other regions: lenient
+  }
+
   const { lines, subtotal } = SS.cartDetail();
   if (!lines.length) {
     root.innerHTML = `<div class="ss-empty" style="padding:70px 20px">
@@ -30,7 +39,7 @@
           <div><label class="ss-label">Full name <span class="req">*</span></label>
             <input class="ss-field" name="name" required><div class="ss-error">Please enter your name.</div></div>
           <div><label class="ss-label">Phone <span class="req">*</span></label>
-            <input class="ss-field" name="phone" inputmode="tel" required><div class="ss-error">Please enter a phone number.</div></div>
+            <input class="ss-field" name="phone" inputmode="tel" placeholder="03XX XXXXXXX" autocomplete="tel" required><div class="ss-error">Enter a valid Pakistani mobile (e.g. 0300 1234567).</div></div>
           <div><label class="ss-label">Email <span class="req">*</span></label>
             <input class="ss-field" type="email" name="email" required><div class="ss-error">Please enter a valid email.</div></div>
           <div><label class="ss-label">Instagram username <span style="color:var(--ink-40);font-weight:500">(for payment confirmation)</span></label>
@@ -107,6 +116,15 @@
   const addressBlock = document.getElementById("address-block");
   const pickupBlock = document.getElementById("pickup-block");
 
+  // live phone check
+  const phoneInput = form.querySelector('[name="phone"]');
+  if (phoneInput) phoneInput.addEventListener("blur", () => {
+    const bad = phoneInput.value.trim() && !validPhone(phoneInput.value);
+    const err = phoneInput.parentNode.querySelector(".ss-error");
+    if (err) err.classList.toggle("show", bad);
+    phoneInput.style.borderColor = bad ? "var(--err)" : "";
+  });
+
   // warn immediately if they pick a blocked / too-early date
   const dateInput = form.querySelector('[name="preferredDate"]');
   if (dateInput) dateInput.addEventListener("change", () => {
@@ -163,7 +181,7 @@
     e.preventDefault();
     const isDelivery = fulfilment() === "delivery";
     let ok = true;
-    const required = [["name", v => v.trim()], ["phone", v => v.trim().length >= 6],
+    const required = [["name", v => v.trim()], ["phone", validPhone],
                       ["email", v => /\S+@\S+\.\S+/.test(v)],
                       ["preferredDate", v => v && v >= minDate && blockedDates.indexOf(v) === -1]];
     if (isDelivery) required.push(["address", v => v.trim()]);

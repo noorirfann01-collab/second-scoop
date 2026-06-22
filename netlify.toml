@@ -1,0 +1,5 @@
+# Netlify config for Second Scoop.
+# Functions live in netlify/functions and are auto-deployed.
+[build]
+  publish = "."
+  functions = "netlify/functions"

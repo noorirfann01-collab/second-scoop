@@ -1601,7 +1601,10 @@
       <div class="ss-panel" style="margin-bottom:14px"><h3>Google Sheets order sync</h3>
         <label class="ss-label">Web App URL (from SETUP_GUIDE.md)</label><input class="ss-field" id="s-gs-url" value="${esc(gs.webhookUrl || "")}" placeholder="https://script.google.com/macros/s/…/exec">
         <label class="ss-switch ss-switch--chip" style="margin-top:10px"><input type="checkbox" id="s-gs-on" ${gs.enabled !== false ? "checked" : ""}><span>Send orders to Google Sheets</span></label>
-        <small class="ss-seed">Pakistan orders flow into your “Monthly orders” tab. See SETUP_GUIDE.md.</small></div>
+        <small class="ss-seed">Lahore orders flow into your “Monthly orders” tab. See SETUP_GUIDE.md.</small>
+        <label class="ss-label" style="margin-top:12px">Secure order endpoint (optional — anti-tampering)</label>
+        <input class="ss-field" id="s-gs-endpoint" value="${esc(gs.orderEndpoint || "")}" placeholder="/.netlify/functions/place-order">
+        <small class="ss-seed">Once you set up the Netlify Function (see <code>SERVER-SETUP.md</code>), put <code>/.netlify/functions/place-order</code> here. Orders then get their total re-checked on the server, and your webhook URL stays hidden. Leave blank to keep sending straight to the sheet.</small></div>
 
       <div class="ss-panel" style="margin-bottom:14px"><h3>Live orders in your dashboard</h3>
         <p style="color:var(--ink-60);font-size:.9rem">Lets your Dashboard &amp; Orders tabs show <strong>every customer's order</strong> (not just this device) by reading them back from your sheet. Enter the same secret <code>READ_KEY</code> you set in the Apps Script.</p>
@@ -1706,6 +1709,7 @@
     persistContent();
     settings.googleSheets = settings.googleSheets || {};
     settings.googleSheets.webhookUrl = val("s-gs-url").trim();
+    if (document.getElementById("s-gs-endpoint")) settings.googleSheets.orderEndpoint = val("s-gs-endpoint").trim();
     settings.googleSheets.enabled = chkd("s-gs-on");
     if (document.getElementById("s-readkey")) { SS.write("ss_orders_key", val("s-readkey").trim()); remoteState = "idle"; remoteOrders = null; }
     settings.admin = settings.admin || {}; settings.admin.passcode = val("s-pass").trim() || settings.admin.passcode;

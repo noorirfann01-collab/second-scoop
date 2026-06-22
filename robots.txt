@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+# Keep the private control panel out of search engines
+Disallow: /backend.html
+Disallow: /admin.html
+Disallow: /manager.html

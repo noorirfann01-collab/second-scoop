@@ -28,6 +28,8 @@ function doPost(e) {
   lock.waitLock(30000);
   try {
     var d = JSON.parse(e.postData.contents);
+    // Light anti-spam: ignore payloads that don't look like a real submission.
+    if (!validIncoming_(d)) return out_(null, { ok: false, error: "ignored" });
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     if (d.type === "review")  { writeReview_(ss, d);  return out_(null, { ok: true }); }
     if (d.type === "signup")  { writeSignup_(ss, d);  return out_(null, { ok: true }); }
@@ -42,6 +44,17 @@ function doPost(e) {
   } finally {
     lock.releaseLock();
   }
+}
+
+// Reject obviously-junk POSTs (cheap spam filter; not a full security wall).
+function validIncoming_(d) {
+  if (!d || typeof d !== "object") return false;
+  if (d.type === "review")  return !!(String(d.review || "").trim() || String(d.name || "").trim());
+  if (d.type === "signup")  return /\S+@\S+\.\S+/.test(String(d.email || ""));
+  if (d.type === "message") return !!(String(d.message || "").trim() && /\S+@\S+\.\S+/.test(String(d.email || "")));
+  // otherwise it's an order — needs a region and either a name or products
+  var hasRegion = !!(String(d.region || "") || String(d.regionId || ""));
+  return hasRegion && !!(String(d.firstName || d.customerName || "").trim() || String(d.productsFormatted || d.products || "").trim());
 }
 
 /* ---- header tools: find the column for a field by its header text ---- */
