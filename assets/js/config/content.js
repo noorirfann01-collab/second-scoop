@@ -1,5 +1,5 @@
 /* Second Scoop — content.js
-   Exported from the Backend on 24/06/2026, 15:43:33.
+   Exported from the Backend on 29/06/2026, 14:34:47.
    Replace the matching file in assets/js/config/ to publish. */
 
 window.SS_CONTENT = {
@@ -87,7 +87,7 @@ window.SS_CONTENT = {
     "enabled": true,
     "heading": "Payment — bank transfer in advance",
     "intro": "All orders are confirmed once payment is received in advance by bank transfer.",
-    "bankName": "Islamic Bkg. Alfalah Court Khi",
+    "bankName": "HABIB METROPOLITAN BANK LTD",
     "accountTitle": "Aisha Irfan",
     "accountNumber": "6-99-64-29313-714-108727",
     "iban": "PK31MPBL9964287140108727",
