@@ -451,6 +451,9 @@
     const MON = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     const nowM = new Date().getMonth();
     const thisMonName = MON[nowM], lastMonName = MON[(nowM + 11) % 12];
+    const monthKeyOf = ts => { const d = parseOrderDate(ts); return isNaN(d) ? null : d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"); };
+    const monthLabel = k => { const p = String(k).split("-"); return MON[+p[1] - 1] + " " + p[0]; };
+    const monthKeys = Array.from(new Set(c.rev.map(o => monthKeyOf(o.timestamp)).filter(Boolean))).sort().reverse();
     const statusCount = {}; orders.forEach(o => statusCount[o.orderStatus] = (statusCount[o.orderStatus] || 0) + 1);
     const pending = (statusCount.New || 0) + (statusCount.Confirmed || 0) + (statusCount.Preparing || 0) + (statusCount.Ready || 0);
     const compedValue = c.comped.reduce((s, o) => s + o.grandTotal, 0);
@@ -477,10 +480,10 @@
         ${kpi("This Week", revLabel(week), week.length + " orders")}
         ${kpi("This Month · " + thisMonName, revLabel(month), month.length + " orders")}
         ${kpi("Last Month · " + lastMonName, revLabel(lastMonth), lastMonth.length + " orders")}
-        ${kpi("This Year", revLabel(year), year.length + " orders", true)}
+        ${kpi("This Year", revLabel(year), year.length + " paid orders", true)}
       </div>
       <div class="ss-kpi-grid">
-        ${kpi("Total Orders", orders.length, c.valid.length + " active")}
+        ${kpi("Total Orders", orders.length, c.valid.length + " active · " + (orders.length - c.valid.length) + " cancelled")}
         ${kpi("Pending", pending, "in progress")}
         ${kpi("Completed", statusCount.Delivered || 0, "delivered")}
         ${kpi("Comped", c.comped.length, compedValue ? SS.money(compedValue, "pakistan") + " given free" : "free orders")}
@@ -491,6 +494,15 @@
         ${kpi("This Month — Delivery", delLabel(month), "delivery fees this month")}
         ${kpi("This Year — Delivery", delLabel(year), "delivery fees this year")}
       </div>
+
+      <div class="ss-panel" style="margin-bottom:0"><h3>📅 Browse a specific month</h3>
+        <p style="color:var(--ink-60);font-size:.9rem">Pick any month to see its revenue, delivery charges, orders — and units sold of each product.</p>
+        <select class="ss-field" id="dash-month" style="max-width:240px">
+          ${monthKeys.length ? monthKeys.map(k => `<option value="${k}">${monthLabel(k)}</option>`).join("") : `<option value="">No dated orders yet</option>`}
+        </select>
+        <div id="dash-month-out" style="margin-top:14px"></div>
+      </div>
+
       <div class="ss-admin-cols">
         <div class="ss-panel"><h3>Regional Performance <span class="ss-seed">(revenue excludes comp/cancelled)</span></h3>
           <table class="ss-table"><tr><th>Region</th><th>Orders</th><th>Revenue</th><th>AOV</th></tr>
@@ -523,6 +535,34 @@
     document.getElementById("d-export").onclick = exportCSV;
     const dc = document.getElementById("d-clear");
     if (dc) dc.onclick = () => { clearDemo(); updateLiveBadge(); renderDashboard(); };
+
+    // month picker: revenue + delivery + units per product for the chosen month
+    const mSel = document.getElementById("dash-month");
+    if (mSel) {
+      const showMonth = () => {
+        const k = mSel.value, out = document.getElementById("dash-month-out");
+        if (!k) { out.innerHTML = `<p class="ss-seed">No dated orders yet.</p>`; return; }
+        const list = c.rev.filter(o => monthKeyOf(o.timestamp) === k);
+        // units + revenue per product for this month
+        const agg = {};
+        list.forEach(o => o.lines.forEach(l => {
+          const key = o.region + "|" + l.name;
+          if (!agg[key]) agg[key] = { name: l.name, region: o.region, qty: 0, revenue: 0 };
+          agg[key].qty += Number(l.qty) || 0; agg[key].revenue += Number(l.lineTotal) || 0;
+        }));
+        const rows = Object.values(agg).sort((a, b) => b.qty - a.qty);
+        out.innerHTML = `
+          <div class="ss-kpi-grid" style="margin:0 0 14px">
+            ${kpi("Revenue", revLabel(list), list.length + " paid orders")}
+            ${kpi("Delivery charges", delLabel(list), "collected")}
+            ${kpi("Orders", list.length, monthLabel(k))}
+          </div>
+          <table class="ss-table"><tr><th>Product</th><th>Region</th><th>Units sold</th><th>Revenue</th></tr>
+          ${rows.length ? rows.map(p => `<tr><td>${esc(p.name)}</td><td>${SS_REGIONS[p.region] ? SS_REGIONS[p.region].flag + " " + SS_REGIONS[p.region].name : p.region}</td><td><strong>${p.qty}</strong></td><td>${SS.money(p.revenue, p.region)}</td></tr>`).join("") : `<tr><td colspan="4" style="text-align:center;color:var(--ink-40);padding:16px">No paid orders in ${monthLabel(k)}.</td></tr>`}
+          </table>`;
+      };
+      mSel.onchange = showMonth; showMonth();
+    }
     wireBanner();
   }
 
