@@ -355,6 +355,8 @@
     if (ts instanceof Date) return ts;
     const s = String(ts == null ? "" : ts).trim();
     if (!s) return new Date(NaN);
+    // ISO with a timezone (…Z or +05:00) → trust native parse (correct instant)
+    if (/\dT\d.*(Z|[+\-]\d{2}:?\d{2})$/.test(s)) { const dz = new Date(s); if (!isNaN(dz)) return dz; }
     let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})[ T](\d{1,2}):(\d{2})(?::(\d{2}))?/);
     if (m) return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6] || 0);
     m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
