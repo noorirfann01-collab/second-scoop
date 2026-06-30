@@ -371,6 +371,7 @@
     if (kind === "today") return d.toDateString() === now.toDateString();
     if (kind === "week") { const wk = new Date(now); wk.setHours(0, 0, 0, 0); wk.setDate(wk.getDate() - 6); return d >= wk; }
     if (kind === "month") { const m0 = new Date(now.getFullYear(), now.getMonth(), 1); return d >= m0; }   // 1st of this month → now
+    if (kind === "lastmonth") { const m0 = new Date(now.getFullYear(), now.getMonth() - 1, 1); const m1 = new Date(now.getFullYear(), now.getMonth(), 1); return d >= m0 && d < m1; }
     if (kind === "year") { const y0 = new Date(now.getFullYear(), 0, 1); return d >= y0; }
     return true;
   }
@@ -445,7 +446,11 @@
     const today = c.rev.filter(o => inRange(o.timestamp, "today"));
     const week = c.rev.filter(o => inRange(o.timestamp, "week"));
     const month = c.rev.filter(o => inRange(o.timestamp, "month"));
+    const lastMonth = c.rev.filter(o => inRange(o.timestamp, "lastmonth"));
     const year = c.rev.filter(o => inRange(o.timestamp, "year"));
+    const MON = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const nowM = new Date().getMonth();
+    const thisMonName = MON[nowM], lastMonName = MON[(nowM + 11) % 12];
     const statusCount = {}; orders.forEach(o => statusCount[o.orderStatus] = (statusCount[o.orderStatus] || 0) + 1);
     const pending = (statusCount.New || 0) + (statusCount.Confirmed || 0) + (statusCount.Preparing || 0) + (statusCount.Ready || 0);
     const compedValue = c.comped.reduce((s, o) => s + o.grandTotal, 0);
@@ -470,7 +475,8 @@
       <div class="ss-kpi-grid">
         ${kpi("Today", revLabel(today), today.length + " orders")}
         ${kpi("This Week", revLabel(week), week.length + " orders")}
-        ${kpi("This Month", revLabel(month), month.length + " orders")}
+        ${kpi("This Month · " + thisMonName, revLabel(month), month.length + " orders")}
+        ${kpi("Last Month · " + lastMonName, revLabel(lastMonth), lastMonth.length + " orders")}
         ${kpi("This Year", revLabel(year), year.length + " orders", true)}
       </div>
       <div class="ss-kpi-grid">
@@ -524,7 +530,7 @@
   function monthlyRevenue(valid) {
     const byMonth = {};
     valid.forEach(o => {
-      const d = new Date(o.timestamp); if (isNaN(d)) return;
+      const d = parseOrderDate(o.timestamp); if (isNaN(d)) return;
       const key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
       byMonth[key] = byMonth[key] || { pakistan: 0, toronto: 0, count: 0 };
       byMonth[key][o.region] = (byMonth[key][o.region] || 0) + o.grandTotal;
