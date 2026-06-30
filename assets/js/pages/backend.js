@@ -348,12 +348,28 @@
   }
 
   /* ===================================================== DASHBOARD == */
+  // Robustly parse the many date shapes a sheet can hold (ISO, "YYYY-MM-DD
+  // HH:MM:SS", date-only, and DD/MM/YYYY) as LOCAL time, so month/week buckets
+  // never drift across a timezone or a flipped day/month.
+  function parseOrderDate(ts) {
+    if (ts instanceof Date) return ts;
+    const s = String(ts == null ? "" : ts).trim();
+    if (!s) return new Date(NaN);
+    let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})[ T](\d{1,2}):(\d{2})(?::(\d{2}))?/);
+    if (m) return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6] || 0);
+    m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (m) return new Date(+m[1], +m[2] - 1, +m[3]);
+    m = s.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})/);   // DD/MM/YYYY (PK) — default day-first
+    if (m) { let a = +m[1], b = +m[2], y = +m[3], day = a, mon = b; if (a > 12 && b <= 12) { day = a; mon = b; } else if (b > 12 && a <= 12) { day = b; mon = a; } return new Date(y, mon - 1, day); }
+    return new Date(s);
+  }
   function inRange(ts, kind) {
-    const d = new Date(ts), now = new Date();
+    const d = parseOrderDate(ts); if (isNaN(d)) return false;
+    const now = new Date();
     if (kind === "today") return d.toDateString() === now.toDateString();
-    if (kind === "week") { const wk = new Date(now); wk.setDate(now.getDate() - 6); wk.setHours(0, 0, 0, 0); return d >= wk; }
-    if (kind === "month") return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-    if (kind === "year") return d.getFullYear() === now.getFullYear();
+    if (kind === "week") { const wk = new Date(now); wk.setHours(0, 0, 0, 0); wk.setDate(wk.getDate() - 6); return d >= wk; }
+    if (kind === "month") { const m0 = new Date(now.getFullYear(), now.getMonth(), 1); return d >= m0; }   // 1st of this month → now
+    if (kind === "year") { const y0 = new Date(now.getFullYear(), 0, 1); return d >= y0; }
     return true;
   }
   // An order is CANCELLED (ignore entirely) or non-revenue (COMP / REFUND):
@@ -576,8 +592,8 @@
         ${(isRemote || all.some(o => o._demo)) ? "" : `<button class="ss-chip" id="o-seed">＋ Demo data</button>`}
       </div>
       <div class="ss-panel" style="padding:0;overflow:hidden"><div style="overflow-x:auto">
-      <table class="ss-table"><tr><th>Order #</th><th>Date</th><th>Customer</th><th>Region</th><th>Items</th><th>Total</th><th>Type</th><th>Status</th><th>Payment</th></tr>
-      ${list.length ? list.map(orderRow).join("") : `<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--ink-40)">No orders match.</td></tr>`}
+      <table class="ss-table"><tr><th>Order #</th><th>Date</th><th>Customer</th><th>Region</th><th>Items</th><th>Total</th><th>Type</th><th>Pickup/Delivery date</th><th>Status</th><th>Payment</th></tr>
+      ${list.length ? list.map(orderRow).join("") : `<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--ink-40)">No orders match.</td></tr>`}
       </table></div></div>
       <p class="ss-seed" style="margin-top:10px">${list.length} order(s) shown. ${isRemote ? "Change the <strong>Payment</strong> dropdown to update that order right in your Google Sheet." : "Change a status from the dropdowns — it updates instantly and feeds the dashboard."}</p>`;
 
@@ -610,9 +626,12 @@
     });
   }
   function orderRow(o) {
-    const d = new Date(o.timestamp), r = SS_REGIONS[o.region] || SS_REGIONS.pakistan;
+    const d = parseOrderDate(o.timestamp), r = SS_REGIONS[o.region] || SS_REGIONS.pakistan;
     const items = o.lines.map(l => `${l.qty}× ${l.name}`).join(", ");
     const dateStr = isNaN(d) ? esc(String(o.timestamp || "")) : d.toLocaleDateString();
+    const pd = o.customer.preferredDate || o.preferredDate || "";
+    const pdd = parseOrderDate(pd);
+    const pdStr = pd && !isNaN(pdd) ? pdd.toLocaleDateString() : (pd ? esc(String(pd)) : "—");
     let statusCell;
     if (o._remote) {
       const payOpts = SHEET_PAY.slice();
@@ -633,6 +652,7 @@
       <td style="max-width:200px;font-size:.8rem">${esc(items)}${o.vaultProducts ? ` <span class="ss-tag ss-tag--gold">🔒</span>` : ""}</td>
       <td>${SS.money(o.grandTotal, o.region)}</td>
       <td style="text-transform:capitalize">${o.customer.fulfilment}</td>
+      <td>${pdStr}</td>
       ${statusCell}
     </tr>`;
   }

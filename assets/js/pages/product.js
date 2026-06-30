@@ -30,8 +30,8 @@
        <div class="ss-card-fallback" style="display:none">${pv.name}</div>`
     : `<div class="ss-card-fallback" style="display:flex">${pv.name}</div>`;
 
-  const reviews = pv.reviews && pv.reviews.count
-    ? `<div class="ss-card-rating" style="font-size:1rem;margin:.4em 0">★ ${pv.reviews.rating} <em>· ${pv.reviews.count} reviews</em></div>` : "";
+  // Rating line — filled live from real reviews below (hidden until then).
+  const reviews = `<div class="ss-card-rating" id="pdp-rating-top" style="font-size:1rem;margin:.4em 0;display:none"></div>`;
 
   const sizeBlock = (pv.sizes && pv.sizes.length) ? `
       <div class="ss-pdp-sizes" id="pdp-sizes">
@@ -72,7 +72,7 @@
         ${buyBlock}
         ${pv.deliveryNotes ? `<div class="ss-pdp-notes">🥄 <span>${pv.deliveryNotes}</span></div>` : ""}
         <div class="ss-pdp-trust">
-          <span>★ ${pv.reviews ? pv.reviews.rating : "4.9"} rated</span>
+          <span id="pdp-rating-badge">★ New</span>
           <span>🚚 ${SS.region().delivery.etaText}</span>
           <span>📍 Pickup available</span>
         </div>
@@ -141,8 +141,19 @@
     };
     function load() {
       SSReviews.fetchPublic().then(reviews => {
-        const has = SSReviews.renderList(listEl, reviews, { product: pv.name, limit: 12,
+        SSReviews.renderList(listEl, reviews, { product: pv.name, limit: 12,
           emptyHtml: `<p class="ss-empty" style="grid-column:1/-1">No reviews yet — be the first! 🍪</p>` });
+        // real rating for THIS product (from the live reviews)
+        const mine = (reviews || []).filter(r => {
+          const p = String(r.product || "");
+          return p === pv.name || p.indexOf(pv.name) > -1;
+        });
+        const count = mine.length;
+        const avg = count ? (mine.reduce((s, r) => s + (Number(r.rating) || 0), 0) / count) : 0;
+        const badge = document.getElementById("pdp-rating-badge");
+        if (badge) badge.textContent = count ? `★ ${avg.toFixed(1)} rated (${count})` : "★ New";
+        const top = document.getElementById("pdp-rating-top");
+        if (top && count) { top.style.display = "block"; top.innerHTML = `★ ${avg.toFixed(1)} <em>· ${count} review${count > 1 ? "s" : ""}</em>`; }
       }).catch(() => { listEl.innerHTML = ""; });
     }
     load();
