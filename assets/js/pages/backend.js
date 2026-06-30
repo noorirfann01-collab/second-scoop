@@ -355,8 +355,9 @@
     if (ts instanceof Date) return ts;
     const s = String(ts == null ? "" : ts).trim();
     if (!s) return new Date(NaN);
-    // ISO with a timezone (…Z or +05:00) → trust native parse (correct instant)
-    if (/\dT\d.*(Z|[+\-]\d{2}:?\d{2})$/.test(s)) { const dz = new Date(s); if (!isNaN(dz)) return dz; }
+    // Bucket by the date AS WRITTEN — take the calendar Y-M-D (and time) from the
+    // string literally, with NO timezone conversion, so a 30 June order can never
+    // slide into July because of the viewer's timezone.
     let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})[ T](\d{1,2}):(\d{2})(?::(\d{2}))?/);
     if (m) return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6] || 0);
     m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
@@ -364,6 +365,19 @@
     m = s.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})/);   // DD/MM/YYYY (PK) — default day-first
     if (m) { let a = +m[1], b = +m[2], y = +m[3], day = a, mon = b; if (a > 12 && b <= 12) { day = a; mon = b; } else if (b > 12 && a <= 12) { day = b; mon = a; } return new Date(y, mon - 1, day); }
     return new Date(s);
+  }
+  // TRUEST order date: the order number (SS-YYMMDD-####) is stamped in the
+  // customer's local time the instant they order, so it never drifts across
+  // timezones the way a sheet timestamp can. Use it first; fall back to the
+  // submission timestamp only when the number can't be read.
+  function orderDateOf(o) {
+    const num = String((o && o.orderNumber) || "");
+    const m = num.match(/(\d{2})(\d{2})(\d{2})-\d+\s*$/);   // …-YYMMDD-####
+    if (m) {
+      const d = new Date(2000 + +m[1], +m[2] - 1, +m[3]);
+      if (!isNaN(d) && +m[2] >= 1 && +m[2] <= 12 && +m[3] >= 1 && +m[3] <= 31) return d;
+    }
+    return parseOrderDate(o && o.timestamp);
   }
   function inRange(ts, kind) {
     const d = parseOrderDate(ts); if (isNaN(d)) return false;
@@ -443,17 +457,17 @@
       return;
     }
     const c = compute(orders), customers = remoteConfigured() ? remoteCustomers(orders) : SS.getCustomers();
-    const today = c.rev.filter(o => inRange(o.timestamp, "today"));
-    const week = c.rev.filter(o => inRange(o.timestamp, "week"));
-    const month = c.rev.filter(o => inRange(o.timestamp, "month"));
-    const lastMonth = c.rev.filter(o => inRange(o.timestamp, "lastmonth"));
-    const year = c.rev.filter(o => inRange(o.timestamp, "year"));
+    const today = c.rev.filter(o => inRange(orderDateOf(o), "today"));
+    const week = c.rev.filter(o => inRange(orderDateOf(o), "week"));
+    const month = c.rev.filter(o => inRange(orderDateOf(o), "month"));
+    const lastMonth = c.rev.filter(o => inRange(orderDateOf(o), "lastmonth"));
+    const year = c.rev.filter(o => inRange(orderDateOf(o), "year"));
     const MON = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     const nowM = new Date().getMonth();
     const thisMonName = MON[nowM], lastMonName = MON[(nowM + 11) % 12];
-    const monthKeyOf = ts => { const d = parseOrderDate(ts); return isNaN(d) ? null : d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"); };
+    const monthKeyOf = o => { const d = orderDateOf(o); return isNaN(d) ? null : d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"); };
     const monthLabel = k => { const p = String(k).split("-"); return MON[+p[1] - 1] + " " + p[0]; };
-    const monthKeys = Array.from(new Set(c.rev.map(o => monthKeyOf(o.timestamp)).filter(Boolean))).sort().reverse();
+    const monthKeys = Array.from(new Set(c.rev.map(o => monthKeyOf(o)).filter(Boolean))).sort().reverse();
     const statusCount = {}; orders.forEach(o => statusCount[o.orderStatus] = (statusCount[o.orderStatus] || 0) + 1);
     const pending = (statusCount.New || 0) + (statusCount.Confirmed || 0) + (statusCount.Preparing || 0) + (statusCount.Ready || 0);
     const compedValue = c.comped.reduce((s, o) => s + o.grandTotal, 0);
@@ -542,7 +556,7 @@
       const showMonth = () => {
         const k = mSel.value, out = document.getElementById("dash-month-out");
         if (!k) { out.innerHTML = `<p class="ss-seed">No dated orders yet.</p>`; return; }
-        const list = c.rev.filter(o => monthKeyOf(o.timestamp) === k);
+        const list = c.rev.filter(o => monthKeyOf(o) === k);
         // units + revenue per product for this month
         const agg = {};
         list.forEach(o => o.lines.forEach(l => {
@@ -570,7 +584,7 @@
   function monthlyRevenue(valid) {
     const byMonth = {};
     valid.forEach(o => {
-      const d = parseOrderDate(o.timestamp); if (isNaN(d)) return;
+      const d = orderDateOf(o); if (isNaN(d)) return;
       const key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
       byMonth[key] = byMonth[key] || { pakistan: 0, toronto: 0, count: 0 };
       byMonth[key][o.region] = (byMonth[key][o.region] || 0) + o.grandTotal;
@@ -674,7 +688,7 @@
     });
   }
   function orderRow(o) {
-    const d = parseOrderDate(o.timestamp), r = SS_REGIONS[o.region] || SS_REGIONS.pakistan;
+    const d = orderDateOf(o), r = SS_REGIONS[o.region] || SS_REGIONS.pakistan;
     const items = o.lines.map(l => `${l.qty}× ${l.name}`).join(", ");
     const dateStr = isNaN(d) ? esc(String(o.timestamp || "")) : d.toLocaleDateString();
     const pd = o.customer.preferredDate || o.preferredDate || "";
