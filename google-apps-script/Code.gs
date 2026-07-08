@@ -18,9 +18,56 @@ var TO_SHEET = "Toronto Orders";   // Toronto orders
 var REV_SHEET = "Reviews";
 var LIST_SHEET = "Mailing List";
 var MSG_SHEET = "Messages";
+var CAMPAIGN_SHEET = "Campaigns";  // log of every email blast
 
 // 🔒 Keep this the SAME as Backend → Brand & Settings → "Dashboard read key".
 var READ_KEY = "scoop-read-2026";
+
+/* =====================================================================
+   EMAIL (Brevo) — SET THESE ONCE, then run setupEmail() from the editor.
+   Your Brevo API key lives ONLY here in the script (never in the website
+   files). Get a free key at brevo.com → Settings → SMTP & API → API Keys.
+   The sender email MUST be a Brevo-verified sender (Senders & IPs).
+   ===================================================================== */
+function setupEmail() {
+  var props = PropertiesService.getScriptProperties();
+  props.setProperty("BREVO_API_KEY", "PASTE-YOUR-BREVO-API-KEY-HERE");
+  props.setProperty("SENDER_EMAIL", "hello@second-scoop.com");   // must be verified in Brevo
+  props.setProperty("SENDER_NAME",  "Second Scoop");
+  Logger.log("Saved. Sender + key stored in Script Properties.");
+}
+function getProp_(k, dflt) {
+  var v = PropertiesService.getScriptProperties().getProperty(k);
+  return (v === null || v === undefined || v === "") ? (dflt || "") : v;
+}
+function emailReady_() {
+  var key = getProp_("BREVO_API_KEY");
+  return !!(key && key.indexOf("PASTE-") !== 0);
+}
+// Deterministic per-email unsubscribe token (stops strangers unsubscribing others).
+function unsubToken_(email) {
+  var raw = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,
+    String(email).toLowerCase() + "|" + READ_KEY);
+  return Utilities.base64EncodeWebSafe(raw).replace(/[=]+$/, "").slice(0, 20);
+}
+function webappUrl_() { try { return ScriptApp.getService().getUrl(); } catch (e) { return ""; } }
+
+// Send ONE email through Brevo. Returns true on success.
+function brevoSend_(toEmail, toName, subject, html) {
+  var payload = {
+    sender: { name: getProp_("SENDER_NAME", "Second Scoop"), email: getProp_("SENDER_EMAIL") },
+    to: [{ email: toEmail, name: toName || toEmail }],
+    subject: subject,
+    htmlContent: html
+  };
+  var res = UrlFetchApp.fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "post", contentType: "application/json",
+    headers: { "api-key": getProp_("BREVO_API_KEY"), "accept": "application/json" },
+    payload: JSON.stringify(payload), muteHttpExceptions: true
+  });
+  var code = res.getResponseCode();
+  return code >= 200 && code < 300;
+}
 
 /* ----------------------------- WRITE (incoming) -------------------- */
 function doPost(e) {
@@ -154,20 +201,137 @@ function delReview_(id) {
 }
 
 /* ------------------------------ MAILING LIST ----------------------- */
-var LIST_HEADERS = ["Timestamp", "Name", "Email", "Phone", "Region", "Source"];
-function writeSignup_(ss, d) {
+var LIST_HEADERS = ["Timestamp", "Name", "Email", "Phone", "Region", "Source", "Subscribed"];
+function listSheet_(ss) {
   var sheet = ss.getSheetByName(LIST_SHEET);
   if (!sheet) { sheet = ss.insertSheet(LIST_SHEET); sheet.appendRow(LIST_HEADERS); sheet.getRange(1, 1, 1, LIST_HEADERS.length).setFontWeight("bold"); sheet.setFrozenRows(1); }
+  return sheet;
+}
+// Column (1-based) of the "Subscribed" header — added automatically if missing,
+// so older sheets keep working. Blank/"yes" = subscribed; "no" = unsubscribed.
+function listSubCol_(sheet) {
+  var headers = headerRow_(sheet);
+  var c = findCol_(headers, ["subscribed", "status"]);
+  if (c > -1) return c + 1;
+  var col = sheet.getLastColumn() + 1;
+  sheet.getRange(1, col).setValue("Subscribed").setFontWeight("bold");
+  return col;
+}
+function writeSignup_(ss, d) {
+  var sheet = listSheet_(ss);
   var email = String(d.email || "").trim();
   if (email) { var v = sheet.getDataRange().getValues(); for (var i = 1; i < v.length; i++) if (String(v[i][2] || "").toLowerCase() === email.toLowerCase()) return; }
-  sheet.appendRow([new Date(), String(d.name || "").slice(0, 80), email, "'" + String(d.phone || ""), d.region || "", d.source || ""]);
+  var subCol = listSubCol_(sheet);
+  var row = [new Date(), String(d.name || "").slice(0, 80), email, "'" + String(d.phone || ""), d.region || "", d.source || ""];
+  while (row.length < subCol) row.push("");
+  row[subCol - 1] = "yes";
+  sheet.appendRow(row);
 }
 function readSignups_() {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(LIST_SHEET);
   if (!sheet) return [];
-  var v = sheet.getDataRange().getValues(), out = [];
-  for (var i = 1; i < v.length; i++) { var r = v[i]; if (!r[2] && !r[1]) continue; out.push({ ts: (r[0] instanceof Date) ? r[0].toISOString() : String(r[0] || ""), name: r[1] || "", email: r[2] || "", phone: String(r[3] || "").replace(/^'/, ""), region: r[4] || "", source: r[5] || "" }); }
+  var v = sheet.getDataRange().getValues(); if (v.length < 1) return [];
+  var headers = v[0].map(function (x) { return String(x).toLowerCase(); });
+  var iSub = findCol_(headers, ["subscribed", "status"]);
+  var out = [];
+  for (var i = 1; i < v.length; i++) {
+    var r = v[i]; if (!r[2] && !r[1]) continue;
+    var subRaw = (iSub > -1) ? String(r[iSub] || "").toLowerCase() : "";
+    var subscribed = !(subRaw === "no" || subRaw === "unsubscribed" || subRaw === "false");
+    out.push({ ts: (r[0] instanceof Date) ? r[0].toISOString() : String(r[0] || ""), name: r[1] || "", email: r[2] || "", phone: String(r[3] || "").replace(/^'/, ""), region: r[4] || "", source: r[5] || "", subscribed: subscribed });
+  }
   return out;
+}
+// Flip a subscriber to unsubscribed (by email). Returns true if found.
+function unsubscribe_(email) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(LIST_SHEET); if (!sheet) return false;
+  var subCol = listSubCol_(sheet);
+  var v = sheet.getDataRange().getValues();
+  var target = String(email || "").toLowerCase();
+  for (var i = 1; i < v.length; i++) {
+    if (String(v[i][2] || "").toLowerCase() === target) { sheet.getRange(i + 1, subCol).setValue("no"); return true; }
+  }
+  return false;
+}
+
+/* --------------------------- EMAIL CAMPAIGNS ----------------------- */
+var CAMPAIGN_HEADERS = ["Sent at", "Subject", "Audience", "Recipients", "Delivered", "Failed", "Sent by"];
+function campaignSheet_(ss) {
+  var sheet = ss.getSheetByName(CAMPAIGN_SHEET);
+  if (!sheet) { sheet = ss.insertSheet(CAMPAIGN_SHEET); sheet.appendRow(CAMPAIGN_HEADERS); sheet.getRange(1, 1, 1, CAMPAIGN_HEADERS.length).setFontWeight("bold"); sheet.setFrozenRows(1); }
+  return sheet;
+}
+function readCampaigns_() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CAMPAIGN_SHEET);
+  if (!sheet) return [];
+  var v = sheet.getDataRange().getValues(), out = [];
+  for (var i = 1; i < v.length; i++) { var r = v[i]; if (!r[1]) continue; out.push({ ts: (r[0] instanceof Date) ? r[0].toISOString() : String(r[0] || ""), subject: r[1] || "", audience: r[2] || "", recipients: Number(r[3]) || 0, delivered: Number(r[4]) || 0, failed: Number(r[5]) || 0 }); }
+  return out.reverse();
+}
+
+// Which region(s) an audience keyword includes.
+function audienceMatch_(audience, region) {
+  var a = String(audience || "all").toLowerCase(), rg = String(region || "").toLowerCase();
+  if (a === "all" || !a) return true;
+  if (a === "pakistan") return rg.indexOf("pakistan") > -1 || rg.indexOf("lahore") > -1;
+  if (a === "toronto")  return rg.indexOf("toronto") > -1 || rg.indexOf("canada") > -1;
+  return true;
+}
+
+// Branded HTML email. p = {headline, body, ctaText, ctaUrl, imageUrl, preheader}
+function campaignHtml_(p, toName, unsubUrl) {
+  var esc = function (s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); };
+  var firstName = String(toName || "").split(/\s+/)[0] || "there";
+  var bodyHtml = esc(p.body).replace(/\n/g, "<br>");
+  var img = p.imageUrl ? '<tr><td style="padding:0 0 22px"><img src="' + esc(p.imageUrl) + '" alt="" width="536" style="width:100%;max-width:536px;border-radius:14px;display:block"></td></tr>' : "";
+  var cta = (p.ctaText && p.ctaUrl) ? '<tr><td style="padding:6px 0 4px"><a href="' + esc(p.ctaUrl) + '" style="background:#b06a2c;color:#fff;text-decoration:none;font-weight:700;padding:14px 30px;border-radius:999px;display:inline-block;font-size:15px">' + esc(p.ctaText) + '</a></td></tr>' : "";
+  var pre = p.preheader ? '<div style="display:none;max-height:0;overflow:hidden;opacity:0">' + esc(p.preheader) + '</div>' : "";
+  return '<!doctype html><html><body style="margin:0;background:#f4ece0;font-family:Georgia,\'Times New Roman\',serif;color:#33241a">'
+    + pre
+    + '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4ece0;padding:26px 12px"><tr><td align="center">'
+    + '<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fffaf3;border-radius:20px;overflow:hidden;border:1px solid #ecdfcc">'
+    + '<tr><td style="background:#33241a;padding:22px 32px;text-align:center"><span style="color:#f4ece0;font-size:22px;font-weight:700;letter-spacing:.5px">Second Scoop<span style="color:#e0a15e">.</span></span></td></tr>'
+    + '<tr><td style="padding:34px 32px 8px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">'
+    + '<tr><td style="font-size:13px;color:#b06a2c;letter-spacing:2px;text-transform:uppercase;padding-bottom:6px">Hey ' + esc(firstName) + ' 👋</td></tr>'
+    + '<tr><td style="font-size:27px;line-height:1.2;font-weight:700;padding-bottom:16px">' + esc(p.headline) + '</td></tr>'
+    + img
+    + '<tr><td style="font-size:16px;line-height:1.65;color:#5a4636;padding-bottom:24px">' + bodyHtml + '</td></tr>'
+    + cta
+    + '</table></td></tr>'
+    + '<tr><td style="padding:26px 32px 30px;border-top:1px solid #f0e6d6;font-size:12px;color:#9a8871;line-height:1.6">'
+    + 'You’re getting this because you joined the Second Scoop list. The first scoop is never enough 🍪<br>'
+    + '<a href="' + esc(unsubUrl) + '" style="color:#9a8871;text-decoration:underline">Unsubscribe</a>'
+    + '</td></tr></table></td></tr></table></body></html>';
+}
+
+// Main send. p carries the campaign fields. Returns a summary object.
+function sendCampaign_(p) {
+  if (!emailReady_()) return { ok: false, error: "Email not connected. Run setupEmail() in Apps Script with your Brevo key." };
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var subject = String(p.subject || "News from Second Scoop").slice(0, 200);
+  var base = webappUrl_();
+
+  // TEST send → just the one address, no logging, no unsubscribe filtering.
+  if (p.test) {
+    var testUnsub = base + "?action=unsubscribe&e=" + encodeURIComponent(p.test) + "&t=" + unsubToken_(p.test);
+    var okT = brevoSend_(p.test, "Preview", "[TEST] " + subject, campaignHtml_(p, "there", testUnsub));
+    return { ok: okT, sent: okT ? 1 : 0, failed: okT ? 0 : 1, test: true };
+  }
+
+  var all = readSignups_();
+  var recips = all.filter(function (s) { return s.subscribed && /\S+@\S+\.\S+/.test(s.email) && audienceMatch_(p.audience, s.region); });
+  if (!recips.length) return { ok: true, sent: 0, failed: 0, skipped: 0, note: "No subscribers match that audience." };
+
+  var sent = 0, failed = 0;
+  for (var i = 0; i < recips.length; i++) {
+    var s = recips[i];
+    var unsub = base + "?action=unsubscribe&e=" + encodeURIComponent(s.email) + "&t=" + unsubToken_(s.email);
+    try { if (brevoSend_(s.email, s.name, subject, campaignHtml_(p, s.name, unsub))) sent++; else failed++; }
+    catch (err) { failed++; }
+  }
+  campaignSheet_(ss).appendRow([new Date(), subject, p.audience || "all", recips.length, sent, failed, "backend"]);
+  return { ok: true, sent: sent, failed: failed, recipients: recips.length };
 }
 
 /* ----------------------------- CONTACT MESSAGES -------------------- */
@@ -194,6 +358,25 @@ function doGet(e) {
   if (p.action === "delreview") { if (p.key !== READ_KEY) return out_(p.callback, { ok: false, error: "unauthorized" }); return out_(p.callback, { ok: delReview_(p.id) }); }
   if (p.action === "signups")   { if (p.key !== READ_KEY) return out_(p.callback, { ok: false, error: "unauthorized" }); return out_(p.callback, { ok: true, signups: readSignups_() }); }
   if (p.action === "messages")  { if (p.key !== READ_KEY) return out_(p.callback, { ok: false, error: "unauthorized" }); return out_(p.callback, { ok: true, messages: readMessages_() }); }
+  if (p.action === "campaigns") { if (p.key !== READ_KEY) return out_(p.callback, { ok: false, error: "unauthorized" }); return out_(p.callback, { ok: true, campaigns: readCampaigns_(), emailReady: emailReady_() }); }
+  if (p.action === "sendcampaign") {
+    if (p.key !== READ_KEY) return out_(p.callback, { ok: false, error: "unauthorized" });
+    var res = sendCampaign_({
+      subject: p.subject, audience: p.audience, headline: p.headline, body: p.body,
+      ctaText: p.ctaText, ctaUrl: p.ctaUrl, imageUrl: p.imageUrl, preheader: p.preheader, test: p.test
+    });
+    return out_(p.callback, res);
+  }
+  if (p.action === "unsubscribe") {
+    var okUn = (p.t === unsubToken_(p.e)) ? unsubscribe_(p.e) : false;
+    var msg = okUn ? "You’re unsubscribed. You won’t get any more Second Scoop emails." :
+      "We couldn’t process that unsubscribe link. Email us and we’ll remove you right away.";
+    return HtmlService.createHtmlOutput(
+      '<div style="font-family:Georgia,serif;max-width:460px;margin:60px auto;text-align:center;color:#33241a">' +
+      '<h1 style="font-size:24px">Second Scoop<span style="color:#e0a15e">.</span></h1>' +
+      '<p style="font-size:16px;line-height:1.6;color:#5a4636">' + msg + '</p></div>'
+    ).setTitle("Unsubscribe — Second Scoop");
+  }
   return out_(p.callback, { ok: true, service: "Second Scoop webhook" });
 }
 

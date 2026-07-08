@@ -744,7 +744,72 @@
       setTimeout(() => { if (!done) { cleanup(); reject("timeout"); } }, 15000);
     });
   }
-  function renderMailing() {
+  // Generic JSONP call to the Apps Script webhook for a mailing/campaign action.
+  function jsonpML(params) {
+    return new Promise((resolve, reject) => {
+      const url = (SS.getSettings().googleSheets || {}).webhookUrl;
+      const key = SS.read("ss_orders_key", "");
+      if (!url || !key) return reject("not configured");
+      const cb = "ssml_" + Math.random().toString(36).slice(2);
+      const sep = url.indexOf("?") > -1 ? "&" : "?";
+      const qs = Object.keys(params).map(k => k + "=" + encodeURIComponent(params[k])).join("&");
+      const s = document.createElement("script");
+      s.src = url + sep + "key=" + encodeURIComponent(key) + "&" + qs + "&callback=" + cb;
+      let done = false;
+      window[cb] = (data) => { done = true; cleanup(); (data && data.ok) ? resolve(data) : reject((data && data.error) || "error"); };
+      s.onerror = () => { if (!done) { cleanup(); reject("network"); } };
+      function cleanup() { try { delete window[cb]; } catch (e) { window[cb] = undefined; } s.remove(); }
+      document.body.appendChild(s);
+      setTimeout(() => { if (!done) { cleanup(); reject("timeout"); } }, 120000);   // sends can take a while
+    });
+  }
+
+  // Absolute URL for an image path so it renders inside email clients.
+  function absUrl(path) {
+    const p = String(path || "");
+    if (!p) return "";
+    if (/^https?:|^data:/.test(p)) return p;
+    return location.origin + "/" + p.replace(/^\//, "");
+  }
+  function mlProducts() {
+    try { return (SS.getCatalog() || []).map(p => ({ id: p.id, name: p.name, image: p.image })); }
+    catch (e) { return []; }
+  }
+  // Prefill templates. {product} is swapped for the chosen product name.
+  const ML_TEMPLATES = {
+    restock: { label: "🍪 Restock", subject: "It’s back — {product} just restocked", headline: "{product} is back in stock",
+      body: "Good news — {product} is back and ready to scoop.\n\nThese sell out fast, so grab yours before it disappears again.", cta: "Order now", path: "shop.html" },
+    drop: { label: "🚨 New drop", subject: "New drop: {product} is live", headline: "Fresh drop — {product}",
+      body: "We just dropped something new.\n\n{product} is live right now — limited batch. Remember: the first scoop is never enough.", cta: "Shop the drop", path: "shop.html" },
+    vault: { label: "🔓 Vault unlock", subject: "A new Vault scoop just unlocked", headline: "Something new in The Vault",
+      body: "A secret scoop just landed in The Vault.\n\nMembers only — tap in with your code before it’s gone.", cta: "Enter The Vault", path: "vault.html" },
+    custom: { label: "✍️ Custom", subject: "", headline: "", body: "", cta: "Shop now", path: "shop.html" }
+  };
+
+  // Build the same branded HTML we send, for the live preview.
+  function mlPreviewHtml(f, sampleName) {
+    const e = s => esc(String(s == null ? "" : s));
+    const first = String(sampleName || "there").split(/\s+/)[0] || "there";
+    const bodyHtml = e(f.body).replace(/\n/g, "<br>");
+    const img = f.imageUrl ? `<div style="padding:0 0 22px"><img src="${e(f.imageUrl)}" alt="" style="width:100%;max-width:536px;border-radius:14px;display:block"></div>` : "";
+    const cta = (f.ctaText && f.ctaUrl) ? `<div style="padding:6px 0 4px"><a href="#" style="background:#b06a2c;color:#fff;text-decoration:none;font-weight:700;padding:14px 30px;border-radius:999px;display:inline-block;font-size:15px">${e(f.ctaText)}</a></div>` : "";
+    return `<div style="background:#f4ece0;padding:22px 10px;font-family:Georgia,serif;color:#33241a">
+      <div style="max-width:600px;margin:0 auto;background:#fffaf3;border-radius:20px;overflow:hidden;border:1px solid #ecdfcc">
+        <div style="background:#33241a;padding:20px;text-align:center"><span style="color:#f4ece0;font-size:22px;font-weight:700">Second Scoop<span style="color:#e0a15e">.</span></span></div>
+        <div style="padding:32px 32px 8px">
+          <div style="font-size:13px;color:#b06a2c;letter-spacing:2px;text-transform:uppercase;padding-bottom:6px">Hey ${e(first)} 👋</div>
+          <div style="font-size:26px;line-height:1.2;font-weight:700;padding-bottom:16px">${e(f.headline) || "<span style='color:#c9b8a1'>Your headline…</span>"}</div>
+          ${img}
+          <div style="font-size:16px;line-height:1.65;color:#5a4636;padding-bottom:24px">${bodyHtml || "<span style='color:#c9b8a1'>Your message…</span>"}</div>
+          ${cta}
+        </div>
+        <div style="padding:24px 32px 28px;border-top:1px solid #f0e6d6;font-size:12px;color:#9a8871;line-height:1.6">You’re getting this because you joined the Second Scoop list. 🍪<br><span style="text-decoration:underline">Unsubscribe</span></div>
+      </div></div>`;
+  }
+
+  function renderMailing(prefillArg) {
+    const prefill = prefillArg || mlPrefill; mlPrefill = null;
+    const products = mlProducts();
     body().innerHTML = `
       <div class="ss-panel">
         <div class="ss-bk-actionbar">
@@ -753,43 +818,180 @@
           <button class="ss-btn ss-btn--sm ss-btn--ghost" id="ml-refresh">↻ Refresh</button>
           <button class="ss-btn ss-btn--sm" id="ml-csv">⬇ Export CSV</button>
         </div>
-        <p style="color:var(--ink-60);font-size:.9rem">Everyone who joins your list (homepage or footer signup) lands here — name, email, phone and where they signed up. Pulled live from your Google Sheet's “Mailing List” tab.</p>
+        <p style="color:var(--ink-60);font-size:.9rem">Everyone who joins your list lands here. Compose an announcement below and it emails your subscribers through Brevo — restocks, new drops and Vault unlocks.</p>
+        <div id="ml-emailwarn"></div>
+        <details style="margin-top:8px">
+          <summary style="cursor:pointer;color:var(--caramel);font-weight:700;font-size:.9rem">🔌 How to connect Brevo (one-time)</summary>
+          <ol style="color:var(--ink-60);font-size:.88rem;line-height:1.6;margin:.6em 0 0;padding-left:1.2em">
+            <li>Make a free account at <b>brevo.com</b>. Under <b>Senders, Domains &amp; Dedicated IPs</b>, add &amp; verify your sender email.</li>
+            <li>Go to <b>Settings → SMTP &amp; API → API Keys</b> and create a key.</li>
+            <li>Open your Google Apps Script, run the <b>setupEmail()</b> function once, pasting your key + verified sender email.</li>
+            <li>Re-deploy the Apps Script as a <b>New version</b>. Send a test below to confirm. ✅</li>
+          </ol>
+        </details>
+        <label class="ss-switch ss-switch--chip" style="margin-top:10px"><input type="checkbox" id="ml-autoannounce"><span>Offer to announce restocks &amp; new drops when I publish</span></label>
+      </div>
+
+      <div class="ss-panel" id="ml-compose-panel">
+        <h3 style="margin-top:0">✉️ Send an announcement</h3>
+        <div class="ss-form-grid" style="gap:14px">
+          <div style="grid-column:1/-1">
+            <label class="ss-label">Template</label>
+            <div class="ss-bk-actionbar" id="ml-tpls" style="gap:8px;flex-wrap:wrap">
+              ${Object.keys(ML_TEMPLATES).map(k => `<button type="button" class="ss-chip" data-tpl="${k}">${ML_TEMPLATES[k].label}</button>`).join("")}
+            </div>
+          </div>
+          <div>
+            <label class="ss-label">Feature a product <span style="color:var(--ink-40);font-weight:500">(optional — fills name, image &amp; link)</span></label>
+            <select class="ss-field" id="ml-product"><option value="">— none —</option>
+              ${products.map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join("")}</select>
+          </div>
+          <div>
+            <label class="ss-label">Audience</label>
+            <select class="ss-field" id="ml-audience">
+              <option value="all">Everyone</option>
+              <option value="pakistan">Pakistan only</option>
+              <option value="toronto">Toronto only</option>
+            </select>
+            <small style="color:var(--ink-60)" id="ml-aud-count">—</small>
+          </div>
+          <div style="grid-column:1/-1"><label class="ss-label">Subject line</label>
+            <input class="ss-field" id="ml-subject" maxlength="180" placeholder="It’s back — The OG Scoopie just restocked"></div>
+          <div style="grid-column:1/-1"><label class="ss-label">Headline (big text in the email)</label>
+            <input class="ss-field" id="ml-headline" maxlength="120" placeholder="The OG Scoopie is back in stock"></div>
+          <div style="grid-column:1/-1"><label class="ss-label">Message</label>
+            <textarea class="ss-field" id="ml-msg" rows="5" maxlength="800" placeholder="Write your announcement…"></textarea></div>
+          <div><label class="ss-label">Button text</label>
+            <input class="ss-field" id="ml-cta" maxlength="40" placeholder="Order now"></div>
+          <div><label class="ss-label">Button link</label>
+            <input class="ss-field" id="ml-ctaurl" placeholder="${location.origin}/shop.html"></div>
+          <div style="grid-column:1/-1"><label class="ss-label">Image URL <span style="color:var(--ink-40);font-weight:500">(optional)</span></label>
+            <input class="ss-field" id="ml-img" placeholder="https://second-scoop.com/assets/img/…"></div>
+        </div>
+        <div class="ss-bk-actionbar" style="margin-top:16px;gap:10px;flex-wrap:wrap">
+          <input class="ss-field" id="ml-test-email" placeholder="your@email.com" style="max-width:220px">
+          <button class="ss-btn ss-btn--sm ss-btn--ghost" id="ml-test">Send test to me</button>
+          <span style="flex:1"></span>
+          <button class="ss-btn ss-btn--lg" id="ml-send">Send to <span id="ml-send-n">list</span> →</button>
+        </div>
+      </div>
+
+      <div class="ss-panel">
+        <h3 style="margin-top:0">👀 Live preview</h3>
+        <div id="ml-preview" style="border-radius:14px;overflow:hidden;border:1px solid var(--line)"></div>
+      </div>
+
+      <div class="ss-panel">
+        <h3 style="margin-top:0">📜 Sent campaigns</h3>
+        <div id="ml-history"><p class="ss-seed">Loading…</p></div>
+      </div>
+
+      <div class="ss-panel">
+        <div class="ss-bk-actionbar"><h3 style="margin:0">👥 Subscribers</h3></div>
         <div id="ml-body"><p class="ss-seed">Loading…</p></div>
       </div>`;
+
     let rows = [];
+    const $ = id => document.getElementById(id);
+
+    function fields() {
+      return { subject: $("ml-subject").value.trim(), headline: $("ml-headline").value.trim(),
+        body: $("ml-msg").value, ctaText: $("ml-cta").value.trim(), ctaUrl: $("ml-ctaurl").value.trim(),
+        imageUrl: $("ml-img").value.trim(), preheader: $("ml-headline").value.trim(), audience: $("ml-audience").value };
+    }
+    function drawPreview() { $("ml-preview").innerHTML = mlPreviewHtml(fields(), (rows[0] && rows[0].name) || "Sana"); }
+    function audienceCount() {
+      const a = $("ml-audience").value;
+      const match = s => a === "all" || (a === "pakistan" ? /pakistan|lahore/i.test(s.region || "") : /toronto|canada/i.test(s.region || ""));
+      const n = rows.filter(s => s.subscribed !== false && match(s)).length;
+      $("ml-aud-count").textContent = n + " subscriber" + (n === 1 ? "" : "s");
+      $("ml-send-n").textContent = n + " " + (n === 1 ? "person" : "people");
+      return n;
+    }
+    function curProduct() { return products.find(p => p.id === $("ml-product").value); }
+    function applyTemplate(k) {
+      const t = ML_TEMPLATES[k]; if (!t) return;
+      const p = curProduct(), pname = p ? p.name : "our scoops";
+      const sub = s => String(s).replace(/\{product\}/g, pname);
+      $("ml-subject").value = sub(t.subject); $("ml-headline").value = sub(t.headline);
+      $("ml-msg").value = sub(t.body); $("ml-cta").value = t.cta;
+      $("ml-ctaurl").value = (p && k !== "vault") ? `${location.origin}/product.html?id=${encodeURIComponent(p.id)}` : `${location.origin}/${t.path}`;
+      if (p && p.image) $("ml-img").value = absUrl(p.image);
+      drawPreview();
+    }
+
+    ["ml-subject", "ml-headline", "ml-msg", "ml-cta", "ml-ctaurl", "ml-img"].forEach(id => $(id).addEventListener("input", drawPreview));
+    $("ml-audience").addEventListener("change", audienceCount);
+    $("ml-tpls").addEventListener("click", e => { const b = e.target.closest("[data-tpl]"); if (b) applyTemplate(b.getAttribute("data-tpl")); });
+    $("ml-product").addEventListener("change", () => { const p = curProduct(); if (p && p.image) $("ml-img").value = absUrl(p.image); if (p) $("ml-ctaurl").value = `${location.origin}/product.html?id=${encodeURIComponent(p.id)}`; drawPreview(); });
+
+    async function doSend(testEmail) {
+      const f = fields();
+      if (!testEmail && !(f.subject && f.headline && f.body)) return SSApp.toast("Add a subject, headline and message first.", "err");
+      const btn = testEmail ? $("ml-test") : $("ml-send");
+      const label = btn.innerHTML;
+      if (!testEmail && !confirm(`Send this to ${audienceCount()} ${$("ml-audience").value === "all" ? "" : $("ml-audience").value + " "}subscriber(s)?`)) return;
+      btn.disabled = true; btn.textContent = testEmail ? "Sending test…" : "Sending…";
+      try {
+        const params = { action: "sendcampaign", subject: f.subject, audience: f.audience, headline: f.headline,
+          body: f.body.slice(0, 800), ctaText: f.ctaText, ctaUrl: f.ctaUrl, imageUrl: f.imageUrl, preheader: f.preheader };
+        if (testEmail) params.test = testEmail;
+        const res = await jsonpML(params);
+        if (testEmail) SSApp.toast(res.sent ? "Test sent — check your inbox 📬" : "Test failed. Check your Brevo key/sender.", res.sent ? "ok" : "err");
+        else { SSApp.toast(`Sent to ${res.sent} of ${res.recipients || res.sent} 🎉${res.failed ? " · " + res.failed + " failed" : ""}`, "ok"); loadHistory(); }
+      } catch (err) { SSApp.toast("Couldn't send (" + esc(String(err)) + "). Re-deploy your Apps Script as a NEW version.", "err"); }
+      btn.disabled = false; btn.innerHTML = label;
+    }
+    $("ml-send").onclick = () => doSend(null);
+    $("ml-test").onclick = () => { const em = $("ml-test-email").value.trim(); if (!/\S+@\S+\.\S+/.test(em)) return SSApp.toast("Enter your email for the test.", "err"); doSend(em); };
+
     function table(list) {
       if (!list.length) return `<p class="ss-empty">No signups yet. When someone joins your list, they'll appear here. 🍪</p>`;
       return `<div class="ss-table-wrap"><table class="ss-table">
-        <thead><tr><th>Date</th><th>Name</th><th>Email</th><th>Phone</th><th>Region</th><th>Source</th></tr></thead>
+        <thead><tr><th>Date</th><th>Name</th><th>Email</th><th>Phone</th><th>Region</th><th>Status</th></tr></thead>
         <tbody>${list.map(s => `<tr>
           <td>${esc((s.ts || "").slice(0, 10))}</td>
           <td>${esc(s.name || "")}</td>
           <td><a href="mailto:${esc(s.email)}">${esc(s.email || "")}</a></td>
           <td>${esc(s.phone || "")}</td>
           <td>${esc((SS_REGIONS[s.region] && SS_REGIONS[s.region].name) || s.region || "")}</td>
-          <td>${esc(s.source || "")}</td></tr>`).join("")}</tbody></table></div>`;
+          <td>${s.subscribed === false ? '<span style="color:var(--ink-40)">unsubscribed</span>' : '<span style="color:#2e7d32">subscribed</span>'}</td></tr>`).join("")}</tbody></table></div>`;
     }
+    function bindGo() { body().querySelectorAll("[data-gosettings]").forEach(a => a.onclick = e => { e.preventDefault(); go("settings"); }); }
     function load() {
-      const mb = document.getElementById("ml-body");
-      if (!remoteConfigured()) { mb.innerHTML = `<div class="ss-livebar" style="background:var(--cream-3);color:var(--caramel)">Connect your Google Sheet first — set the Sheets URL + read key in <a href="#settings" data-gosettings>Settings</a>. (Also re-deploy your Apps Script so it has the new “signups” feature.)</div>`; bindGo(); return; }
+      const mb = $("ml-body");
+      if (!remoteConfigured()) { mb.innerHTML = `<div class="ss-livebar" style="background:var(--cream-3);color:var(--caramel)">Connect your Google Sheet first — set the Sheets URL + read key in <a href="#settings" data-gosettings>Settings</a>. Then re-deploy your Apps Script as a NEW version so it has the email features.</div>`; bindGo(); return; }
       mb.innerHTML = `<p class="ss-seed">Loading…</p>`;
       jsonpSignups().then(list => {
         rows = (list || []).slice().reverse();
-        document.getElementById("ml-count").textContent = rows.length + " people";
+        const subs = rows.filter(s => s.subscribed !== false).length;
+        $("ml-count").textContent = subs + " subscribed / " + rows.length + " total";
         mb.innerHTML = table(rows);
-      }).catch(err => {
-        mb.innerHTML = `<p class="ss-empty">Couldn't load (${esc(String(err))}). If you just added this feature, re-deploy your Apps Script as a NEW version.</p>`;
-      });
+        audienceCount(); drawPreview();
+      }).catch(err => { mb.innerHTML = `<p class="ss-empty">Couldn't load (${esc(String(err))}). If you just added this, re-deploy your Apps Script as a NEW version.</p>`; });
     }
-    function bindGo() { body().querySelectorAll("[data-gosettings]").forEach(a => a.onclick = e => { e.preventDefault(); go("settings"); }); }
-    document.getElementById("ml-refresh").onclick = load;
-    document.getElementById("ml-csv").onclick = () => {
+    function loadHistory() {
+      const h = $("ml-history"); if (!remoteConfigured()) { h.innerHTML = `<p class="ss-seed">Connect your sheet to see history.</p>`; return; }
+      jsonpML({ action: "campaigns" }).then(res => {
+        if (res.emailReady === false) $("ml-emailwarn").innerHTML = `<div class="ss-livebar" style="background:#fff4e5;color:#8a5a00">⚠️ Brevo isn’t connected yet. In your Apps Script, run <b>setupEmail()</b> once with your Brevo API key + verified sender. Until then, sends won’t go out.</div>`;
+        const c = res.campaigns || [];
+        h.innerHTML = c.length ? `<div class="ss-table-wrap"><table class="ss-table"><thead><tr><th>Sent</th><th>Subject</th><th>Audience</th><th>Delivered</th><th>Failed</th></tr></thead><tbody>${c.map(x => `<tr><td>${esc((x.ts || "").slice(0, 10))}</td><td>${esc(x.subject)}</td><td>${esc(x.audience)}</td><td>${x.delivered}</td><td>${x.failed || 0}</td></tr>`).join("")}</tbody></table></div>` : `<p class="ss-empty">No campaigns sent yet.</p>`;
+      }).catch(() => { h.innerHTML = `<p class="ss-empty">Couldn’t load history.</p>`; });
+    }
+    $("ml-refresh").onclick = () => { load(); loadHistory(); };
+    $("ml-csv").onclick = () => {
       if (!rows.length) return SSApp.toast("Nothing to export yet.", "err");
-      const head = ["Date", "Name", "Email", "Phone", "Region", "Source"];
-      const body = rows.map(s => [s.ts, s.name, s.email, s.phone, s.region, s.source].map(v => `"${String(v == null ? "" : v).replace(/"/g, '""')}"`).join(","));
-      download("second-scoop-mailing-list.csv", head.join(",") + "\n" + body.join("\n"), "text/csv");
+      const head = ["Date", "Name", "Email", "Phone", "Region", "Source", "Subscribed"];
+      const b = rows.map(s => [s.ts, s.name, s.email, s.phone, s.region, s.source, s.subscribed === false ? "no" : "yes"].map(v => `"${String(v == null ? "" : v).replace(/"/g, '""')}"`).join(","));
+      download("second-scoop-mailing-list.csv", head.join(",") + "\n" + b.join("\n"), "text/csv");
     };
-    load();
+
+    const aa = $("ml-autoannounce");
+    aa.checked = SS.read("ss_ml_autoannounce", true) !== false;
+    aa.onchange = () => SS.write("ss_ml_autoannounce", aa.checked);
+
+    drawPreview(); load(); loadHistory();
+    if (prefill) { applyTemplate(prefill.tpl || "custom"); if (prefill.productId) { $("ml-product").value = prefill.productId; applyTemplate(prefill.tpl || "custom"); } document.getElementById("ml-compose-panel").scrollIntoView({ behavior: "smooth" }); }
   }
 
   /* ===================================================== MESSAGES == */
@@ -2024,6 +2226,33 @@
     return path;
   }
 
+  // --- auto-announce: detect restocks / new drops between publishes ---
+  let mlPrefill = null;
+  function buyable_(reg) { return reg && (reg.status === "available" || reg.status === "preorder") && (reg.status === "preorder" || (Number(reg.inventory) || 0) > 0); }
+  function mlSnapshot() {
+    const snap = {};
+    (cat || []).forEach(p => Object.keys(p.regions || {}).forEach(rid => {
+      snap[p.id + "|" + rid] = { status: p.regions[rid].status, inv: Number(p.regions[rid].inventory) || 0 };
+    }));
+    return snap;
+  }
+  // Compare current catalog against the last published snapshot.
+  function mlDetectChanges(prev) {
+    const changes = {};   // id → {name, type, secret}
+    (cat || []).forEach(p => {
+      const ids = Object.keys(p.regions || {});
+      const existedBefore = ids.some(rid => prev[p.id + "|" + rid]);
+      ids.forEach(rid => {
+        const reg = p.regions[rid]; if (!buyable_(reg)) return;
+        const was = prev[p.id + "|" + rid];
+        if (!existedBefore) { changes[p.id] = { name: p.name, type: "drop", secret: !!p.secret }; return; }
+        const wasBuyable = was && ((was.status === "available" || was.status === "preorder") && (was.status === "preorder" || was.inv > 0));
+        if (!wasBuyable && !changes[p.id]) changes[p.id] = { name: p.name, type: "restock", secret: !!p.secret };
+      });
+    });
+    return Object.keys(changes).map(id => Object.assign({ id }, changes[id]));
+  }
+
   async function doPublish() {
     if (!publishConfigured()) {
       SSApp.toast("Set up publishing first — opening Settings.", "err");
@@ -2041,6 +2270,10 @@
       ["vault.js", genVault()],
       ["settings.js", genSettings()],
     ];
+    // Detect restock / new-drop BEFORE we overwrite the saved snapshot.
+    const prevSnap = SS.read("ss_ml_pub_snapshot", null);
+    const autoOn = SS.read("ss_ml_autoannounce", true) !== false;
+    const changes = (prevSnap && autoOn) ? mlDetectChanges(prevSnap) : [];   // skip on first publish / when off
     showPublishModal(files.map(f => f[0]));
     let done = 0;
     try {
@@ -2049,7 +2282,8 @@
         await commitFile(cfg, (cfg.dir || "assets/js/config").replace(/\/+$/, "") + "/" + name, content, "Update " + name + " via Second Scoop backend");
         setPublishStep(name, "done"); done++;
       }
-      finishPublishModal(true, `Published ${done}/${files.length} files. Your site will update in about a minute.`);
+      SS.write("ss_ml_pub_snapshot", mlSnapshot());
+      finishPublishModal(true, `Published ${done}/${files.length} files. Your site will update in about a minute.`, changes);
     } catch (err) {
       finishPublishModal(false, String(err));
     }
@@ -2070,10 +2304,25 @@
     const el = document.querySelector(`#pub-modal [data-step="${name}"]`);
     if (el) el.className = "ss-pub-step ss-pub-step--" + state;
   }
-  function finishPublishModal(ok, msg) {
+  function finishPublishModal(ok, msg, changes) {
     const res = document.getElementById("pub-result");
     const foot = document.getElementById("pub-foot");
     if (res) { res.className = "ss-pub-result " + (ok ? "ok" : "err"); res.textContent = (ok ? "✅ " : "⚠️ ") + msg; }
+    const hasChanges = ok && changes && changes.length;
+    if (res && hasChanges) {
+      const drop = changes.find(c => c.type === "drop"), pick = drop || changes[0];
+      const names = changes.slice(0, 3).map(c => c.name).join(", ") + (changes.length > 3 ? ` +${changes.length - 3} more` : "");
+      const kind = drop ? "new drop" : "restock";
+      const anEl = document.createElement("div");
+      anEl.style.cssText = "margin-top:14px;padding:14px;border-radius:12px;background:#fff4e5;color:#8a5a00;font-size:.9rem";
+      anEl.innerHTML = `📨 <b>${esc(names)}</b> just went live as a ${kind}. Want to email your list?
+        <div style="margin-top:10px"><button class="ss-btn ss-btn--sm" id="pub-announce">Compose announcement →</button></div>`;
+      res.appendChild(anEl);
+      setTimeout(() => { const b = document.getElementById("pub-announce"); if (b) b.onclick = () => {
+        mlPrefill = { tpl: pick.secret ? "vault" : pick.type, productId: pick.secret ? "" : pick.id };
+        closePublishModal(); go("mailing");
+      }; }, 0);
+    }
     if (foot) { foot.innerHTML = `<button class="ss-btn ss-btn--sm" id="pub-close">${ok ? "Done" : "Close"}</button>`; document.getElementById("pub-close").onclick = closePublishModal; }
     if (ok) { updateLiveBadge(); SSApp.toast("Published! Live in ~1 min 🚀", "ok"); }
   }
