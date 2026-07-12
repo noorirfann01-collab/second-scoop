@@ -1,5 +1,5 @@
 /* Second Scoop — products.js
-   Exported from the Backend on 29/06/2026, 14:38:06.
+   Exported from the Backend on 12/07/2026, 17:34:01.
    Replace the matching file in assets/js/config/ to publish. */
 
 window.SS_CATEGORIES = [
@@ -46,7 +46,17 @@ window.SS_PRODUCTS = [
         "status": "available",
         "price": 850,
         "inventory": 60,
-        "deliveryNotes": "Best eaten warm — microwave 15-30s before serving."
+        "deliveryNotes": "Best eaten warm — microwave 15-30s before serving.",
+        "sizes": [
+          {
+            "label": "200g",
+            "price": 850
+          },
+          {
+            "label": "700g",
+            "price": 2700
+          }
+        ]
       }
     }
   },
