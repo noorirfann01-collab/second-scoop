@@ -975,3 +975,18 @@ code{background:var(--cream-3);padding:.1em .4em;border-radius:5px;font-size:.88
 .ss-bundle-box{background:var(--cream-2);border:1px solid var(--line);border-left:4px solid var(--caramel);border-radius:var(--r-md);padding:14px 16px;margin:4px 0 18px}
 .ss-bundle-box-title{font-family:'Barber Chop',sans-serif;font-weight:700;color:var(--caramel);font-size:1rem;margin-bottom:.4em}
 .ss-bundle-box .ss-bundle-list li{font-size:.9rem}
+
+/* ---- backend blocked-dates calendar --------------------------------- */
+.ss-cal{max-width:340px;background:var(--white);border:1px solid var(--line);border-radius:var(--r-md);padding:10px 12px}
+.ss-cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;font-family:'Barber Chop',sans-serif;color:var(--choc)}
+.ss-cal-dow{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:2px}
+.ss-cal-dow span{text-align:center;font-size:.66rem;font-weight:700;color:var(--ink-40);text-transform:uppercase}
+.ss-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.ss-cal-cell{aspect-ratio:1;border:none;background:var(--cream-2);border-radius:8px;font-size:.82rem;font-weight:600;color:var(--choc);cursor:pointer;transition:background .12s,transform .1s}
+.ss-cal-cell:hover:not(:disabled){background:var(--blush);transform:translateY(-1px)}
+.ss-cal-cell.is-blocked{background:var(--caramel);color:var(--white)}
+.ss-cal-cell.is-blocked:hover{background:#a01a33}
+.ss-cal-cell.is-past{background:transparent;color:var(--ink-40);opacity:.4;cursor:not-allowed}
+.ss-cal-empty{background:transparent}
+.ss-chip--blocked{background:var(--blush);color:var(--choc)}
+.ss-chip--blocked b{margin-left:4px;cursor:pointer;color:var(--caramel)}

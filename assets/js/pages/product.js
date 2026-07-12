@@ -35,7 +35,7 @@
 
   const sizeBlock = (pv.sizes && pv.sizes.length) ? `
       <div class="ss-pdp-sizes" id="pdp-sizes">
-        <label class="ss-label">Choose your size</label>
+        <label class="ss-label">Choose your ${(pv.optionLabel || "size").toLowerCase()}</label>
         <div class="ss-size-opts">
           ${pv.sizes.map((s, i) => `<button class="ss-size-opt${i === 0 ? " is-active" : ""}" data-size="${s.label.replace(/"/g, "&quot;")}" data-price="${s.price}">
             <span class="ss-size-label">${s.label}</span><span class="ss-size-price">${SS.money(s.price)}</span></button>`).join("")}

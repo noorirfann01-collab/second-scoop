@@ -200,6 +200,7 @@
       reviews: p.reviews || { rating: 0, count: 0 },
       status: status, price: sizes ? cheapest : (r.price || 0), inventory: r.inventory,
       sizes: sizes,
+      optionLabel: String(p.optionLabel || "Size"),
       deliveryNotes: r.deliveryNotes || "",
       buyable: !comingSoon && (status === "available" || status === "preorder" || status === "closing"),
     };

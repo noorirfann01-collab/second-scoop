@@ -1177,7 +1177,7 @@
   function blankProduct(preset) {
     const regions = {}; REGION_IDS.forEach(rid => regions[rid] = { status: "available", price: 0, inventory: 0, deliveryNotes: "" });
     const category = (preset && preset.category) || (SS_CATEGORIES[1] || SS_CATEGORIES[0]).id;
-    return { id: "", name: "", category, tagline: "", description: "", longDescription: "", includes: [], bundle: category === "bundles", images: [], badge: null, featured: false, hero: false, secret: false, hidden: false, reviews: { rating: 0, count: 0 }, regions };
+    return { id: "", name: "", category, optionLabel: "Size", tagline: "", description: "", longDescription: "", includes: [], bundle: category === "bundles", images: [], badge: null, featured: false, hero: false, secret: false, hidden: false, reviews: { rating: 0, count: 0 }, regions };
   }
   function openEditor(index, preset) {
     const isNew = index === null;
@@ -1194,6 +1194,10 @@
           <div><label class="ss-label">Category</label><select class="ss-field" id="f-cat">${SS_CATEGORIES.map(c => `<option value="${c.id}" ${p.category === c.id ? "selected" : ""}>${c.name}</option>`).join("")}</select></div>
           <div><label class="ss-label">Badge</label><select class="ss-field" id="f-badge">${BADGES.map(b => `<option value="${b[0]}" ${(p.badge || "") === b[0] ? "selected" : ""}>${b[1]}</option>`).join("")}</select></div>
         </div>
+        <label class="ss-label" style="margin-top:12px">Option type <span style="color:var(--ink-40);font-weight:500">— what the choice below is called</span></label>
+        <input class="ss-field" id="f-optlabel" value="${esc(p.optionLabel || "Size")}" placeholder="e.g. Flavour, Size, Filling" list="optlabel-list">
+        <datalist id="optlabel-list"><option>Flavour</option><option>Size</option><option>Filling</option></datalist>
+        <small class="ss-seed">Shown to customers as "Choose your <b>${esc((p.optionLabel || "size")).toLowerCase()}</b>". Add the choices &amp; prices under each region below.</small>
         <label class="ss-label" style="margin-top:12px">Tagline</label><input class="ss-field" id="f-tag" value="${esc(p.tagline)}">
         <label class="ss-label" style="margin-top:12px">Short description (cards)</label><textarea class="ss-field" id="f-desc" style="min-height:64px">${esc(p.description)}</textarea>
         <label class="ss-label" style="margin-top:12px">Long description (product page)</label><textarea class="ss-field" id="f-long" style="min-height:90px">${esc(p.longDescription)}</textarea>
@@ -1253,7 +1257,7 @@
       const wrap = document.getElementById("rg-sizes-list-" + rid); if (!wrap) return;
       const arr = sizeState[rid], R = SS_REGIONS[rid];
       wrap.innerHTML = arr.length ? arr.map((s, i) => `<div class="ss-size-row" data-i="${i}">
-        <input class="ss-field ss-field--sm" data-sk="label" value="${esc(s.label || "")}" placeholder="Size name (e.g. Large)">
+        <input class="ss-field ss-field--sm" data-sk="label" value="${esc(s.label || "")}" placeholder="Choice name (e.g. Salted Caramel)">
         <input class="ss-field ss-field--sm" data-sk="price" type="number" min="0" step="${R.currency === "PKR" ? 1 : 0.01}" value="${s.price || 0}" placeholder="Price (${R.currency})">
         <button class="ss-icon-btn" type="button" data-sdel="${i}">✕</button></div>`).join("") : `<p class="ss-seed">No sizes — the single price above is used.</p>`;
       wrap.querySelectorAll(".ss-size-row").forEach(row => {
@@ -1280,10 +1284,10 @@
       <div id="rg-fields-${rid}" class="ss-region-fields"><div class="ss-grid2">
         <div><label class="ss-label">Price (${R.currency}) — used only if no sizes below</label><input class="ss-field" id="rg-price-${rid}" type="number" step="${R.currency === "PKR" ? 1 : 0.01}" min="0" value="${r.price || 0}"></div>
         <div><label class="ss-label">Inventory</label><input class="ss-field" id="rg-inv-${rid}" type="number" min="0" value="${r.inventory}"></div></div>
-        <label class="ss-label" style="margin-top:10px">Sizes &amp; prices (optional)</label>
+        <label class="ss-label" style="margin-top:10px">Choices &amp; prices (optional) — flavours, sizes, etc.</label>
         <div class="ss-sizes-edit" id="rg-sizes-list-${rid}"></div>
-        <button class="ss-chip" type="button" id="rg-size-add-${rid}" style="margin-top:6px">+ Add a size</button>
-        <small class="ss-seed">Add sizes (e.g. Regular / Large), each with its own price. Customers pick one and the price updates — and the <b>cheapest size shows as the product's main price</b>.</small>
+        <button class="ss-chip" type="button" id="rg-size-add-${rid}" style="margin-top:6px">+ Add a choice</button>
+        <small class="ss-seed">Each choice (e.g. a flavour like "Salted Caramel", or a size like "Large") has its own price. Customers pick one and the price updates — and the <b>cheapest choice shows as the product's starting price</b>. Leave empty to use the single price above.</small>
         <label class="ss-label" style="margin-top:10px">Availability</label><select class="ss-field" id="rg-status-${rid}">${STATUSES.map(s => `<option value="${s}" ${r.status === s ? "selected" : ""}>${STATUS_LABEL[s]}</option>`).join("")}</select>
         <label class="ss-label" style="margin-top:10px">Delivery / product note</label><input class="ss-field" id="rg-notes-${rid}" value="${esc(r.deliveryNotes || "")}"></div></div>`;
   }
@@ -1307,7 +1311,7 @@
     if (!Object.keys(regions).length) { SSApp.toast("Enable at least one region.", "err"); return; }
     const category = val("f-cat");
     const includes = val("f-includes").split("\n").map(s => s.trim()).filter(Boolean);
-    const product = { id, name, category, bundle: category === "bundles", includes, tagline: val("f-tag").trim(), description: val("f-desc").trim(), longDescription: val("f-long").trim(), images: images.slice(), badge: val("f-badge") || null, featured: chkd("f-featured"), hero: chkd("f-hero"), secret: chkd("f-secret"), hidden: chkd("f-hidden"), reviews: { rating: clampNum(val("f-rating"), 0, 5), count: Math.max(0, parseInt(val("f-rcount"), 10) || 0) }, regions };
+    const product = { id, name, category, optionLabel: (val("f-optlabel").trim() || "Size"), bundle: category === "bundles", includes, tagline: val("f-tag").trim(), description: val("f-desc").trim(), longDescription: val("f-long").trim(), images: images.slice(), badge: val("f-badge") || null, featured: chkd("f-featured"), hero: chkd("f-hero"), secret: chkd("f-secret"), hidden: chkd("f-hidden"), reviews: { rating: clampNum(val("f-rating"), 0, 5), count: Math.max(0, parseInt(val("f-rcount"), 10) || 0) }, regions };
     const prevCat = cat.slice();
     if (isNew) cat.push(product); else cat[index] = product;
     const ok = persistCatalog();
@@ -1462,9 +1466,10 @@
             <small class="ss-seed">e.g. the day pre-orders close. Blank = from tomorrow.</small></div>
           <div><label class="ss-label">Note shown under the date</label><input class="ss-field" id="ff-note" value="${esc(F.note || "")}"></div>
         </div>
-        <label class="ss-label" style="margin-top:10px">Blocked-out dates (one per line, YYYY-MM-DD)</label>
-        <textarea class="ss-field" id="ff-blocked" style="min-height:80px" placeholder="2026-06-25&#10;2026-06-30">${esc((F.blocked || []).join("\n"))}</textarea>
-        <small class="ss-seed">Customers can't choose these dates (closed days, holidays, etc.).</small>
+        <label class="ss-label" style="margin-top:14px">Blocked-out dates — tap a day to close it</label>
+        <div class="ss-cal" id="ff-cal"></div>
+        <div class="ss-cal-chips" id="ff-chips" style="margin-top:10px"></div>
+        <small class="ss-seed">Tap any day to block it (closed days, holidays, sold-out slots). Tap again to reopen. Blocked days are cherry-red; customers can't pick them at checkout.</small>
       </div>
 
       <div class="ss-panel" style="margin-bottom:14px"><h3>💳 Payment &amp; bank transfer</h3>
@@ -1500,6 +1505,41 @@
       </div>
       ${pageTextPanel("confirmation", "Thank-you page text")}
       <button class="ss-btn" id="sc-save">Save (go live)</button>`;
+
+    // --- click-to-block delivery calendar ---
+    let blocked = (F.blocked || []).map(s => String(s).trim()).filter(Boolean);
+    const calRef = new Date(); calRef.setDate(1); calRef.setHours(0, 0, 0, 0);
+    const MON = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const fmtD = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    function drawChips() {
+      const el = document.getElementById("ff-chips"); if (!el) return;
+      const sorted = blocked.slice().sort();
+      el.innerHTML = sorted.length
+        ? sorted.map(ds => `<span class="ss-chip ss-chip--sm ss-chip--blocked">${ds} <b data-rm="${ds}" title="Reopen this day">✕</b></span>`).join("")
+        : `<span class="ss-seed">No blocked dates — customers can pick any available day.</span>`;
+      el.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => { const i = blocked.indexOf(b.getAttribute("data-rm")); if (i > -1) blocked.splice(i, 1); drawChips(); drawCal(); });
+    }
+    function drawCal() {
+      const wrap = document.getElementById("ff-cal"); if (!wrap) return;
+      const y = calRef.getFullYear(), m = calRef.getMonth();
+      const startDay = new Date(y, m, 1).getDay();
+      const days = new Date(y, m + 1, 0).getDate();
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      let cells = "";
+      for (let i = 0; i < startDay; i++) cells += `<span class="ss-cal-cell ss-cal-empty"></span>`;
+      for (let d = 1; d <= days; d++) {
+        const date = new Date(y, m, d), ds = fmtD(date), past = date < today, on = blocked.indexOf(ds) > -1;
+        cells += `<button type="button" class="ss-cal-cell${on ? " is-blocked" : ""}${past ? " is-past" : ""}" data-d="${ds}" ${past ? "disabled" : ""}>${d}</button>`;
+      }
+      wrap.innerHTML = `<div class="ss-cal-head"><button type="button" class="ss-icon-btn" id="ff-prev">‹</button><strong>${MON[m]} ${y}</strong><button type="button" class="ss-icon-btn" id="ff-next">›</button></div>
+        <div class="ss-cal-dow"><span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span></div>
+        <div class="ss-cal-grid">${cells}</div>`;
+      document.getElementById("ff-prev").onclick = () => { calRef.setMonth(m - 1); drawCal(); };
+      document.getElementById("ff-next").onclick = () => { calRef.setMonth(m + 1); drawCal(); };
+      wrap.querySelectorAll("[data-d]").forEach(b => b.onclick = () => { const ds = b.getAttribute("data-d"), i = blocked.indexOf(ds); if (i > -1) blocked.splice(i, 1); else blocked.push(ds); drawChips(); drawCal(); });
+    }
+    drawCal(); drawChips();
+
     document.getElementById("sc-save").onclick = () => {
       P.enabled = chkd("pay-on"); P.heading = val("pay-head"); P.intro = val("pay-intro");
       P.bankName = val("pay-bank"); P.accountTitle = val("pay-title"); P.accountNumber = val("pay-acct"); P.iban = val("pay-iban");
@@ -1507,7 +1547,7 @@
       A.enabled = chkd("alg-on"); A.title = val("alg-title"); A.text = val("alg-text");
       F.earliest = val("ff-earliest").trim();
       F.note = val("ff-note");
-      F.blocked = val("ff-blocked").split("\n").map(s => s.trim()).filter(Boolean);
+      F.blocked = blocked.slice().sort();
       ["shop", "vault", "cart", "checkout", "confirmation"].forEach(savePageText);
       persistContent(); updateLiveBadge(); SSApp.toast("Saved — live ✍️", "ok");
     };
@@ -1900,7 +1940,7 @@
     };
   }
   function defaultTheme(k) {
-    return ({ choc: "#2e1a0e", caramel: "#b0763c", cookie: "#c68a4e", cream: "#fbf4e6", blush: "#f3c9c7", gold: "#c9a24b" })[k] || "#000000";
+    return ({ choc: "#2b1600", caramel: "#8b152c", cookie: "#ce9155", cream: "#ffeec4", blush: "#f8b6b8", gold: "#ffd583" })[k] || "#000000";
   }
 
   /* ==================================================== ANNOUNCE ==== */
