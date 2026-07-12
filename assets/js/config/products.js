@@ -1,5 +1,5 @@
 /* Second Scoop — products.js
-   Exported from the Backend on 13/07/2026, 01:46:37.
+   Exported from the Backend on 13/07/2026, 02:47:16.
    Replace the matching file in assets/js/config/ to publish. */
 
 window.SS_CATEGORIES = [
@@ -49,7 +49,7 @@ window.SS_PRODUCTS = [
     },
     "regions": {
       "pakistan": {
-        "status": "available",
+        "status": "closing",
         "price": 850,
         "inventory": 10,
         "deliveryNotes": "Best eaten warm — microwave 15-30s before serving.",
@@ -76,7 +76,7 @@ window.SS_PRODUCTS = [
     "description": "Our bakery-style flagship cookie: thick, soft in the middle, and packed wall-to-wall with chocolate.",
     "longDescription": "A proper bakery-style Chunkie — thick-cut, soft-centred and stacked with melting chocolate in every bite. Crisp at the edge, soft and chewy through the middle.",
     "images": [
-      "f93f77a6-358b-49b9-89b6-daf8bdd5fb33-mqa4s3c2.png"
+      "chatgpt-image-jul-13-2026-01-48-13-am-mri9mokg.jpg"
     ],
     "badge": "best-seller",
     "featured": true,
@@ -89,7 +89,7 @@ window.SS_PRODUCTS = [
     },
     "regions": {
       "pakistan": {
-        "status": "available",
+        "status": "closing",
         "price": 450,
         "inventory": 80,
         "deliveryNotes": "",
@@ -166,7 +166,7 @@ window.SS_PRODUCTS = [
     },
     "regions": {
       "pakistan": {
-        "status": "preorder",
+        "status": "closing",
         "price": 1650,
         "inventory": 5,
         "deliveryNotes": "Keep refrigerated.",
@@ -337,7 +337,7 @@ window.SS_PRODUCTS = [
     },
     "regions": {
       "pakistan": {
-        "status": "available",
+        "status": "coming-soon",
         "price": 2950,
         "inventory": 0,
         "deliveryNotes": ""
@@ -371,7 +371,7 @@ window.SS_PRODUCTS = [
     },
     "regions": {
       "pakistan": {
-        "status": "available",
+        "status": "coming-soon",
         "price": 5900,
         "inventory": 0,
         "deliveryNotes": ""
@@ -405,8 +405,8 @@ window.SS_PRODUCTS = [
     },
     "regions": {
       "pakistan": {
-        "status": "available",
-        "price": 9600,
+        "status": "coming-soon",
+        "price": 4950,
         "inventory": 0,
         "deliveryNotes": ""
       }
