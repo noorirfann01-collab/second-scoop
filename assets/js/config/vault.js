@@ -1,5 +1,5 @@
 /* Second Scoop — vault.js
-   Exported from the Backend on 13/07/2026, 02:47:16.
+   Exported from the Backend on 13/07/2026, 03:10:39.
    Replace the matching file in assets/js/config/ to publish. */
 
 window.SS_VAULT = {
