@@ -1,5 +1,5 @@
 /* Second Scoop — products.js
-   Exported from the Backend on 13/07/2026, 03:10:39.
+   Exported from the Backend on 13/07/2026, 03:11:58.
    Replace the matching file in assets/js/config/ to publish. */
 
 window.SS_CATEGORIES = [
@@ -30,6 +30,7 @@ window.SS_PRODUCTS = [
     "id": "og-scoopie",
     "name": "The OG Scoopie",
     "category": "scoopie",
+    "optionLabel": "Size",
     "bundle": false,
     "includes": [],
     "tagline": "The cookie you were never supposed to stop eating.",
@@ -51,7 +52,7 @@ window.SS_PRODUCTS = [
       "pakistan": {
         "status": "closing",
         "price": 850,
-        "inventory": 10,
+        "inventory": 5,
         "deliveryNotes": "Best eaten warm — microwave 15-30s before serving.",
         "sizes": [
           {
