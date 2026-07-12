@@ -1,5 +1,5 @@
 /* Second Scoop — products.js
-   Exported from the Backend on 13/07/2026, 03:11:58.
+   Exported from the Backend on 13/07/2026, 03:21:39.
    Replace the matching file in assets/js/config/ to publish. */
 
 window.SS_CATEGORIES = [
@@ -148,6 +148,7 @@ window.SS_PRODUCTS = [
     "id": "doughiginal-classic",
     "name": "The Doughiginal — Classic Chocolate Chip",
     "category": "doughiginals",
+    "optionLabel": "Size",
     "bundle": false,
     "includes": [],
     "tagline": "Egg-free. Safe to eat raw. Dangerously good.",
@@ -167,7 +168,7 @@ window.SS_PRODUCTS = [
     },
     "regions": {
       "pakistan": {
-        "status": "closing",
+        "status": "preorder",
         "price": 1650,
         "inventory": 5,
         "deliveryNotes": "Keep refrigerated.",
@@ -208,7 +209,7 @@ window.SS_PRODUCTS = [
     },
     "regions": {
       "pakistan": {
-        "status": "coming-soon",
+        "status": "preorder",
         "price": 1650,
         "inventory": 10,
         "deliveryNotes": "Keep refrigerated.",
