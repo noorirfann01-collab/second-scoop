@@ -7,6 +7,7 @@
   const r = SS.region();
   const zones = SS.deliveryZones();
   const pay = (SS.getContent().payment) || {};
+  const allergy = (SS.getContent().allergy) || {};
 
   // Valid Pakistani mobile: 03XX XXXXXXX (also accepts +92 / 0092 / 92 forms).
   function validPhone(raw) {
@@ -96,6 +97,12 @@
           ${pay.iban ? `<div><span>IBAN</span><strong>${pay.iban}</strong></div>` : ""}
         </div>
         ${pay.shareText ? `<div class="ss-pay-share"><span>📸</span><p>${pay.shareText}</p></div>` : ""}
+      </div>` : ""}
+
+      ${allergy.enabled !== false && allergy.text ? `
+      <div class="ss-allergy">
+        <span class="ss-allergy-ico">🥜</span>
+        <div><h4>${allergy.title || "Allergy information"}</h4><p>${allergy.text}</p></div>
       </div>` : ""}
     </div>
 

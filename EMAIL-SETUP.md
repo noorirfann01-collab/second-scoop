@@ -51,6 +51,48 @@ on/off with the checkbox at the top of the Mailing List tab.
 
 ---
 
+## 5. Daily recap email to yourself (free — no Brevo needed)
+
+Get a 10 PM recap of the day: orders + revenue, new signups, low-stock / sold-out, and new
+reviews & messages. This uses Gmail directly (not Brevo) and runs on Google's servers.
+
+1. In Apps Script, open `setupEmail()` and confirm the last line points at your inbox:
+   ```js
+   props.setProperty("ADMIN_EMAIL", "noorirfann01@gmail.com");
+   ```
+   Run `setupEmail()` once (already done if you set up Brevo above).
+2. In **Project Settings** (gear icon), set **Time zone → Asia/Karachi** so 10 PM = Lahore time.
+3. Run the function **`createDailyTrigger()`** once and approve the Gmail permission prompt.
+   That schedules `dailyAdminSummary()` to run every day at 10 PM.
+4. Want to see it now? Just run **`dailyAdminSummary()`** manually — a recap lands in your inbox.
+
+To change the time, edit `atHour(22)` in `createDailyTrigger()` (22 = 10 PM, 8 = 8 AM) and re-run it.
+Low-stock is read from your **live** site, so publish your latest inventory for it to be accurate.
+
+## 6. Automatic order emails to customers (Brevo)
+
+Customers now get two automatic emails:
+
+- **"Order received — please pay"** the moment they place an order — includes their order
+  number, items, total, and your **bank-transfer details** (pulled live from your site, so
+  whatever you set in Backend → Shop & Checkout → Payment is always what they see) plus the
+  "send a screenshot to confirm" instructions.
+- **"Payment confirmed"** when you mark the order **Paid** — whether you change it in the
+  backend Orders tab **or** type "Paid" straight into the Payment Status cell in your sheet.
+
+Setup:
+
+1. Make sure **Brevo is connected** (section 1–2 above) — these are customer-facing, so they
+   send from your Brevo sender for good deliverability.
+2. For the "mark Paid in the sheet" path, run **`createOrderEmailTriggers()`** once in Apps
+   Script and approve the prompt. (The backend "Paid" dropdown works without this.)
+3. Re-deploy the Apps Script as a **New version**.
+
+Each order can only ever get one "received" and one "paid" email — an **Emails Sent** column is
+added to your order tabs to prevent duplicates, even if a status is toggled back and forth.
+
+---
+
 ### Notes & limits
 - **Free plan: 300 emails/day.** If your list is bigger, sends beyond 300 that day will fail
   (shown as "failed" in the campaign log) — upgrade Brevo or split across days.

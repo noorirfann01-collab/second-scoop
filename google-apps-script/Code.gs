@@ -32,9 +32,10 @@ var READ_KEY = "scoop-read-2026";
 function setupEmail() {
   var props = PropertiesService.getScriptProperties();
   props.setProperty("BREVO_API_KEY", "PASTE-YOUR-BREVO-API-KEY-HERE");
-  props.setProperty("SENDER_EMAIL", "hello@second-scoop.com");   // must be verified in Brevo
+  props.setProperty("SENDER_EMAIL", "secondscooponline@gmail.com"); // must be verified in Brevo
   props.setProperty("SENDER_NAME",  "Second Scoop");
-  Logger.log("Saved. Sender + key stored in Script Properties.");
+  props.setProperty("ADMIN_EMAIL",  "noorirfann01@gmail.com");      // where the daily recap goes
+  Logger.log("Saved. Sender + key + admin email stored in Script Properties.");
 }
 function getProp_(k, dflt) {
   var v = PropertiesService.getScriptProperties().getProperty(k);
@@ -69,6 +70,245 @@ function brevoSend_(toEmail, toName, subject, html) {
   return code >= 200 && code < 300;
 }
 
+/* =====================================================================
+   DAILY ADMIN RECAP — free, sent through Gmail (MailApp). No Brevo needed.
+   ONE-TIME: run setupEmail() (sets ADMIN_EMAIL), then run createDailyTrigger()
+   and approve the permission prompt. Set the project timezone to Asia/Karachi
+   under Project Settings so 10 PM means Lahore time.
+   ===================================================================== */
+var PRODUCTS_URL = "https://second-scoop.com/assets/js/config/products.js";
+var CONTENT_URL = "https://second-scoop.com/assets/js/config/content.js";
+
+function createDailyTrigger() {
+  ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === "dailyAdminSummary") ScriptApp.deleteTrigger(t); });
+  ScriptApp.newTrigger("dailyAdminSummary").timeBased().everyDays(1).atHour(22).create();  // 22 = 10 PM (project timezone)
+  Logger.log("Daily 10 PM recap trigger created. (Set project timezone to Asia/Karachi.)");
+}
+
+// Turn any date-ish cell into yyyy-MM-dd in the given timezone.
+function dayStr_(val, tz) {
+  if (val instanceof Date) return Utilities.formatDate(val, tz, "yyyy-MM-dd");
+  var s = String(val || "").trim();
+  var m = s.match(/^(\d{4})-(\d{2})-(\d{2})/); if (m) return m[1] + "-" + m[2] + "-" + m[3];
+  var d = new Date(s); if (!isNaN(d)) return Utilities.formatDate(d, tz, "yyyy-MM-dd");
+  return "";
+}
+function esc_(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+function dailyAdminSummary() {
+  var to = getProp_("ADMIN_EMAIL"); if (!to) { Logger.log("Set ADMIN_EMAIL first (run setupEmail)."); return; }
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var tz = Session.getScriptTimeZone() || "Asia/Karachi";
+  var today = Utilities.formatDate(new Date(), tz, "yyyy-MM-dd");
+
+  // orders + revenue placed today
+  var ord = { count: 0, pk: 0, to: 0, list: [] };
+  [[PK_SHEET, "pk", "Rs"], [TO_SHEET, "to", "C$"]].forEach(function (cfg) {
+    var sheet = ss.getSheetByName(cfg[0]); if (!sheet) return;
+    var v = sheet.getDataRange().getValues(); if (v.length < 2) return;
+    var h = v[0].map(function (x) { return String(x).toLowerCase(); });
+    var iDate = findCol_(h, ["submission date"], ["delivery", "pickup"]);
+    var iRev = findCol_(h, ["revenue"]);
+    var iFirst = findCol_(h, ["first name", "full name"]);
+    var iOrder = findCol_(h, ["submission id", "order #", "order number", "order no"]);
+    for (var r = 1; r < v.length; r++) {
+      if (dayStr_(v[r][iDate], tz) !== today) continue;
+      var rev = Number(v[r][iRev]); if (!isFinite(rev) || rev < 0) rev = 0;
+      ord.count++; ord[cfg[1]] += rev;
+      ord.list.push({ who: v[r][iFirst], num: String(v[r][iOrder] || "").replace(/^'/, ""), rev: cfg[2] + " " + rev });
+    }
+  });
+
+  var subs = readSignups_().filter(function (s) { return dayStr_(s.ts, tz) === today; });
+  var revs = readReviews_(true).filter(function (x) { return dayStr_(x.ts, tz) === today; });
+  var msgs = readMessages_().filter(function (x) { return dayStr_(x.ts, tz) === today; });
+
+  // low stock / sold out from the live products.js
+  var low = [], sold = [];
+  try {
+    var txt = UrlFetchApp.fetch(PRODUCTS_URL, { muteHttpExceptions: true }).getContentText();
+    var mm = txt.match(/SS_PRODUCTS\s*=\s*(\[[\s\S]*\]);/);
+    if (mm) {
+      JSON.parse(mm[1]).forEach(function (p) {
+        var regs = p.regions || {};
+        Object.keys(regs).forEach(function (rid) {
+          var rg = regs[rid];
+          if (rg.status === "sold-out") sold.push(p.name + " (" + rid + ")");
+          else if (rg.status === "available" && Number(rg.inventory) > 0 && Number(rg.inventory) <= 10) low.push(p.name + " (" + rid + "): " + rg.inventory + " left");
+        });
+      });
+    }
+  } catch (e) {}
+
+  MailApp.sendEmail({ to: to, subject: "🍪 Second Scoop — daily recap " + today,
+    htmlBody: dailySummaryHtml_(today, ord, subs, revs, msgs, low, sold) });
+}
+
+function dailySummaryHtml_(day, ord, subs, revs, msgs, low, sold) {
+  function sec(t, inner) { return '<h3 style="margin:22px 0 8px;font-size:16px;color:#33241a">' + t + '</h3>' + inner; }
+  var ordInner = ord.count
+    ? '<p style="margin:0;font-size:15px;color:#5a4636">' + ord.count + ' order(s) · <b>Rs ' + ord.pk + '</b> Pakistan' + (ord.to ? ' · <b>C$ ' + ord.to + '</b> Toronto' : '') + '</p>'
+      + '<ul style="color:#5a4636;font-size:14px;padding-left:18px">' + ord.list.map(function (o) { return '<li>' + esc_(o.who) + ' — ' + esc_(o.num) + ' — ' + esc_(o.rev) + '</li>'; }).join('') + '</ul>'
+    : '<p style="margin:0;color:#9a8871">No orders today.</p>';
+  var subInner = subs.length
+    ? '<ul style="color:#5a4636;font-size:14px;padding-left:18px">' + subs.map(function (s) { return '<li>' + esc_(s.name) + ' — ' + esc_(s.email) + '</li>'; }).join('') + '</ul>'
+    : '<p style="margin:0;color:#9a8871">No new signups today.</p>';
+  var lowInner = (low.length || sold.length)
+    ? (sold.length ? '<p style="margin:0 0 4px;color:#b3261e"><b>Sold out:</b> ' + sold.map(esc_).join(', ') + '</p>' : '')
+      + (low.length ? '<ul style="color:#8a5a00;font-size:14px;padding-left:18px">' + low.map(function (x) { return '<li>' + esc_(x) + '</li>'; }).join('') + '</ul>' : '')
+    : '<p style="margin:0;color:#9a8871">Stock looks healthy.</p>';
+  var rmInner = (revs.length || msgs.length)
+    ? (revs.length ? '<p style="margin:0 0 4px;color:#5a4636"><b>' + revs.length + ' new review(s)</b></p>' : '')
+      + (msgs.length ? '<ul style="color:#5a4636;font-size:14px;padding-left:18px">' + msgs.map(function (m) { return '<li>' + esc_(m.name) + ': ' + esc_(String(m.message).slice(0, 80)) + '</li>'; }).join('') + '</ul>' : '')
+    : '<p style="margin:0;color:#9a8871">No new reviews or messages.</p>';
+  return '<div style="font-family:Georgia,serif;max-width:600px;margin:0 auto;background:#fffaf3;border:1px solid #ecdfcc;border-radius:16px;overflow:hidden">'
+    + '<div style="background:#33241a;padding:18px;text-align:center"><span style="color:#f4ece0;font-size:20px;font-weight:700">Second Scoop<span style="color:#e0a15e">.</span> — Daily Recap</span></div>'
+    + '<div style="padding:8px 26px 26px"><p style="color:#b06a2c;font-size:13px;letter-spacing:1px;text-transform:uppercase">' + day + '</p>'
+    + sec("🧾 Orders &amp; revenue", ordInner)
+    + sec("📨 New signups (" + subs.length + ")", subInner)
+    + sec("📦 Low stock / sold out", lowInner)
+    + sec("⭐ Reviews &amp; messages", rmInner)
+    + '</div></div>';
+}
+
+/* =====================================================================
+   ORDER CONFIRMATION EMAILS TO CUSTOMERS (via Brevo)
+   • "Order received — please pay" the moment an order is placed.
+   • "Payment confirmed" when you mark it Paid (backend OR sheet edit).
+   Needs Brevo connected (setupEmail). For the sheet-edit path, run
+   createOrderEmailTriggers() once and approve the prompt.
+   ===================================================================== */
+function isPaidStatus_(s) { s = String(s || "").toLowerCase(); return s.indexOf("paid") > -1 && s.indexOf("unpaid") < 0; }
+
+// Find (by keywords) or create a column; returns its 1-based index.
+function ensureCol_(sheet, headerName, keywords) {
+  var c = findCol_(headerRow_(sheet), keywords);
+  if (c > -1) return c + 1;
+  var col = sheet.getLastColumn() + 1;
+  sheet.getRange(1, col).setValue(headerName).setFontWeight("bold");
+  return col;
+}
+// Live bank/payment details from the site's content.js (single source of truth).
+function getPayment_() {
+  try {
+    var txt = UrlFetchApp.fetch(CONTENT_URL, { muteHttpExceptions: true }).getContentText();
+    var m = txt.match(/SS_CONTENT\s*=\s*(\{[\s\S]*\});/);
+    if (m) { var c = JSON.parse(m[1]); return c.payment || {}; }
+  } catch (e) {}
+  return {};
+}
+function money_(isTo, n) { return (isTo ? "C$ " : "Rs ") + (Number(n) || 0); }
+
+function orderEmailShell_(firstName, eyebrow, heading, innerHtml) {
+  return '<div style="font-family:Georgia,serif;max-width:600px;margin:0 auto;background:#fffaf3;border:1px solid #ecdfcc;border-radius:18px;overflow:hidden">'
+    + '<div style="background:#33241a;padding:20px;text-align:center"><span style="color:#f4ece0;font-size:21px;font-weight:700">Second Scoop<span style="color:#e0a15e">.</span></span></div>'
+    + '<div style="padding:30px 30px 12px">'
+    + '<div style="font-size:13px;color:#b06a2c;letter-spacing:2px;text-transform:uppercase;padding-bottom:6px">' + esc_(eyebrow) + '</div>'
+    + '<div style="font-size:25px;line-height:1.2;font-weight:700;padding-bottom:14px;color:#33241a">Hi ' + esc_(String(firstName || "there").split(/\s+/)[0]) + ' — ' + esc_(heading) + '</div>'
+    + innerHtml + '</div>'
+    + '<div style="padding:22px 30px 26px;border-top:1px solid #f0e6d6;font-size:12px;color:#9a8871;line-height:1.6">Second Scoop 🍪 The first scoop is never enough.</div></div>';
+}
+function orderLines_(num, products, totalStr, dateStr, methodStr) {
+  return '<table role="presentation" width="100%" style="font-size:15px;color:#5a4636;border-collapse:collapse">'
+    + '<tr><td style="padding:4px 0;color:#9a8871">Order</td><td style="padding:4px 0;text-align:right;font-weight:700">' + esc_(num) + '</td></tr>'
+    + '<tr><td style="padding:4px 0;color:#9a8871">Items</td><td style="padding:4px 0;text-align:right">' + esc_(products) + '</td></tr>'
+    + (methodStr ? '<tr><td style="padding:4px 0;color:#9a8871">Method</td><td style="padding:4px 0;text-align:right">' + esc_(methodStr) + '</td></tr>' : '')
+    + (dateStr ? '<tr><td style="padding:4px 0;color:#9a8871">Date</td><td style="padding:4px 0;text-align:right">' + esc_(dateStr) + '</td></tr>' : '')
+    + '<tr><td style="padding:8px 0 0;color:#9a8871;border-top:1px solid #f0e6d6">Total</td><td style="padding:8px 0 0;text-align:right;font-weight:700;border-top:1px solid #f0e6d6">' + esc_(totalStr) + '</td></tr>'
+    + '</table>';
+}
+function orderPlacedHtml_(firstName, num, products, totalStr, dateStr, methodStr, pay) {
+  var bank = '';
+  if (pay && (pay.bankName || pay.accountNumber || pay.iban)) {
+    bank = '<div style="margin-top:20px;background:#f7efe2;border-radius:12px;padding:16px 18px;font-size:14px;color:#5a4636;line-height:1.7">'
+      + '<b style="color:#33241a">' + esc_(pay.heading || "Payment — bank transfer in advance") + '</b><br>'
+      + (pay.bankName ? 'Bank: <b>' + esc_(pay.bankName) + '</b><br>' : '')
+      + (pay.accountTitle ? 'Account title: <b>' + esc_(pay.accountTitle) + '</b><br>' : '')
+      + (pay.accountNumber ? 'Account #: <b>' + esc_(pay.accountNumber) + '</b><br>' : '')
+      + (pay.iban ? 'IBAN: <b>' + esc_(pay.iban) + '</b>' : '')
+      + '</div>';
+    if (pay.shareText) bank += '<p style="margin:14px 0 0;font-size:13px;color:#8a6a48">📸 ' + esc_(pay.shareText) + '</p>';
+  }
+  var inner = '<p style="font-size:16px;line-height:1.6;color:#5a4636;margin:0 0 18px">Thanks for your order! We’ve received it and it’s reserved for you. To confirm it, please send your payment by bank transfer using the details below.</p>'
+    + orderLines_(num, products, totalStr, dateStr, methodStr) + bank;
+  return orderEmailShell_(firstName, "Order received", "we’ve got your order!", inner);
+}
+function orderPaidHtml_(firstName, num, products, totalStr, dateStr, methodStr) {
+  var inner = '<p style="font-size:16px;line-height:1.6;color:#5a4636;margin:0 0 18px">Your payment is confirmed and your order is locked in. 🎉 We’ll have it ready for your chosen date — thank you for scooping with us!</p>'
+    + orderLines_(num, products, totalStr, dateStr, methodStr);
+  return orderEmailShell_(firstName, "Payment confirmed", "you’re all set!", inner);
+}
+
+// Fired from doPost right after an order is written.
+function sendOrderPlacedEmail_(ss, sheetName, d) {
+  try {
+    if (!emailReady_()) return;
+    var email = String(d.email || "").trim();
+    if (!/\S+@\S+\.\S+/.test(email)) return;
+    var isTo = (sheetName === TO_SHEET);
+    var total = Number(d.grandTotal); if (!isFinite(total) || total <= 0) total = (Number(d.revenue) || 0) + (Number(d.deliveryFee) || 0);
+    var num = d.submissionId || d.orderNumber || "";
+    var html = orderPlacedHtml_(d.firstName, num, d.productsFormatted || "", money_(isTo, total), d.preferredDate || "", d.preferredMethod || "", getPayment_());
+    if (brevoSend_(email, d.firstName || email, "We’ve got your order " + num + " 🍪 — payment details inside", html)) {
+      var sheet = ss.getSheetByName(sheetName);
+      var col = ensureCol_(sheet, "Emails Sent", ["emails sent", "email sent", "confirmation sent"]);
+      sheet.getRange(sheet.getLastRow(), col).setValue("placed");
+    }
+  } catch (e) {}
+}
+
+// Read one order row into a tidy object.
+function rowOrder_(sheet, rowIdx1) {
+  var v = sheet.getDataRange().getValues(); var h = v[0].map(function (x) { return String(x).toLowerCase(); });
+  var row = v[rowIdx1 - 1];
+  function c(keys, exc) { var i = findCol_(h, keys, exc); return i > -1 ? row[i] : ""; }
+  var isTo = (sheet.getName() === TO_SHEET);
+  var grand = Number(c(["grand total"], ["sub", "product"]));
+  var rev = Number(c(["revenue"]));
+  var total = (isFinite(grand) && grand > 0) ? grand : ((isFinite(rev) ? rev : 0) + (Number(c(["delivery fee"])) || 0));
+  var pd = c(["pickup", "delivery date", "preferred date"], ["status"]);
+  return {
+    email: String(c(["email"]) || "").trim(), first: c(["first name", "full name"]),
+    num: String(c(["submission id", "order #", "order number", "order no"]) || "").replace(/^'/, ""),
+    products: c(["product"]), method: c(["preferred method", "method"]),
+    date: (pd instanceof Date) ? Utilities.formatDate(pd, Session.getScriptTimeZone() || "Asia/Karachi", "d MMM yyyy") : String(pd || ""),
+    total: total, isTo: isTo
+  };
+}
+// Fired when payment becomes Paid (backend or sheet edit). Dedupes.
+function sendPaidEmail_(sheet, rowIdx1) {
+  try {
+    if (!emailReady_()) return;
+    var o = rowOrder_(sheet, rowIdx1);
+    if (!/\S+@\S+\.\S+/.test(o.email)) return;
+    var col = ensureCol_(sheet, "Emails Sent", ["emails sent", "email sent", "confirmation sent"]);
+    var flags = String(sheet.getRange(rowIdx1, col).getValue() || "");
+    if (flags.indexOf("paid") > -1) return;   // already confirmed
+    var html = orderPaidHtml_(o.first, o.num, o.products, money_(o.isTo, o.total), o.date, o.method);
+    if (brevoSend_(o.email, o.first || o.email, "Payment confirmed ✅ — order " + o.num, html))
+      sheet.getRange(rowIdx1, col).setValue((flags ? flags + "," : "") + "paid");
+  } catch (e) {}
+}
+
+// Installable onEdit: emails the customer when YOU type "Paid" in the sheet.
+function createOrderEmailTriggers() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === "onPaymentEdit") ScriptApp.deleteTrigger(t); });
+  ScriptApp.newTrigger("onPaymentEdit").forSpreadsheet(ss).onEdit().create();
+  Logger.log("Payment-confirmation trigger installed.");
+}
+function onPaymentEdit(e) {
+  try {
+    if (!e || !e.range) return;
+    var sheet = e.range.getSheet(), name = sheet.getName();
+    if (name !== PK_SHEET && name !== TO_SHEET) return;
+    var iPay = findCol_(headerRow_(sheet), ["payment status"]);
+    if (iPay < 0 || e.range.getColumn() !== iPay + 1) return;
+    var val = (e.value != null) ? e.value : e.range.getValue();
+    if (isPaidStatus_(val)) sendPaidEmail_(sheet, e.range.getRow());
+  } catch (err) {}
+}
+
 /* ----------------------------- WRITE (incoming) -------------------- */
 function doPost(e) {
   var lock = LockService.getScriptLock();
@@ -84,7 +324,9 @@ function doPost(e) {
     var pk = (String(d.region).toLowerCase().indexOf("pakistan") > -1 ||
               String(d.region).toLowerCase().indexOf("lahore") > -1 ||
               String(d.regionId).toLowerCase() === "pakistan");
-    writeOrder_(ss, pk ? PK_SHEET : TO_SHEET, d, !pk);
+    var sheetName = pk ? PK_SHEET : TO_SHEET;
+    writeOrder_(ss, sheetName, d, !pk);
+    sendOrderPlacedEmail_(ss, sheetName, d);
     return out_(null, { ok: true, orderNumber: d.submissionId || d.orderNumber });
   } catch (err) {
     return out_(null, { ok: false, error: String(err) });
@@ -431,22 +673,28 @@ function collect_(sheet, region, currency, orders) {
 /* ----- inline status edits from the dashboard (header-driven) ------ */
 function setStatus_(orderNumber, status, field) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  return updateStatusIn_(ss.getSheetByName(PK_SHEET), orderNumber, status, field) ||
-         updateStatusIn_(ss.getSheetByName(TO_SHEET), orderNumber, status, field);
+  var names = [PK_SHEET, TO_SHEET];
+  for (var n = 0; n < names.length; n++) {
+    var sheet = ss.getSheetByName(names[n]); if (!sheet) continue;
+    var rowIdx = updateStatusIn_(sheet, orderNumber, status, field);
+    if (rowIdx) { if (field !== "order" && isPaidStatus_(status)) sendPaidEmail_(sheet, rowIdx); return true; }
+  }
+  return false;
 }
+// Returns the 1-based row it updated, or 0 if not found.
 function updateStatusIn_(sheet, orderNumber, status, field) {
-  if (!sheet) return false;
+  if (!sheet) return 0;
   var v = sheet.getDataRange().getValues(), headers = v[0].map(function (x) { return String(x).toLowerCase(); });
   var iOrder = findCol_(headers, ["submission id", "order #", "order number", "order no"]);
   var iPay = findCol_(headers, ["payment status"]);
   var iStatus = findCol_(headers, ["delivery status", "order status"]);
   var col = (field === "order") ? iStatus : iPay;
-  if (col < 0 || iOrder < 0) return false;
+  if (col < 0 || iOrder < 0) return 0;
   for (var i = 1; i < v.length; i++) {
     var on = String(v[i][iOrder] || "").replace(/^'/, "");
-    if (on && on === String(orderNumber)) { sheet.getRange(i + 1, col + 1).setValue(status); return true; }
+    if (on && on === String(orderNumber)) { sheet.getRange(i + 1, col + 1).setValue(status); return i + 1; }
   }
-  return false;
+  return 0;
 }
 
 /* JSON / JSONP output */

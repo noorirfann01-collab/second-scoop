@@ -76,6 +76,11 @@
           <span>🚚 ${SS.region().delivery.etaText}</span>
           <span>📍 Pickup available</span>
         </div>
+        ${(() => { const a = SS.getContent().allergy || {}; return (a.enabled !== false && a.text) ? `
+        <div class="ss-allergy ss-allergy--pdp">
+          <span class="ss-allergy-ico">🥜</span>
+          <div><h4>${a.title || "Allergy information"}</h4><p>${a.text}</p></div>
+        </div>` : ""; })()}
       </div>
     </div>`;
 

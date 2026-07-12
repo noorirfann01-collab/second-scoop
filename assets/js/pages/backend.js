@@ -1410,8 +1410,8 @@
 
   /* ============================================== SHOP & CHECKOUT === */
   function renderShopText() {
-    const C = content; C.payment = C.payment || {}; C.fulfilment = C.fulfilment || {};
-    const P = C.payment, F = C.fulfilment;
+    const C = content; C.payment = C.payment || {}; C.fulfilment = C.fulfilment || {}; C.allergy = C.allergy || {};
+    const P = C.payment, F = C.fulfilment, A = C.allergy;
     body().innerHTML = `
       <p style="color:var(--ink-60);margin:0 0 14px">Wording on your Shop, Vault, Cart, Checkout and the thank-you page customers see after ordering.</p>
 
@@ -1442,6 +1442,14 @@
         <textarea class="ss-field" id="pay-share" style="min-height:80px">${esc(P.shareText || "")}</textarea>
       </div>
 
+      <div class="ss-panel" style="margin-bottom:14px"><h3>🥜 Allergy note</h3>
+        <p style="color:var(--ink-60);font-size:.9rem">Shown at checkout and on every product page. Keep it honest — it protects you and your customers.</p>
+        <label class="ss-switch ss-switch--chip"><input type="checkbox" id="alg-on" ${A.enabled !== false ? "checked" : ""}><span>Show allergy note</span></label>
+        <label class="ss-label" style="margin-top:10px">Title</label><input class="ss-field" id="alg-title" value="${esc(A.title || "Allergy information")}">
+        <label class="ss-label" style="margin-top:10px">Note</label>
+        <textarea class="ss-field" id="alg-text" style="min-height:100px">${esc(A.text || "")}</textarea>
+      </div>
+
       ${pageTextPanel("shop", "Shop page")}
       ${pageTextPanel("vault", "Vault page")}
       ${pageTextPanel("cart", "Cart page")}
@@ -1456,6 +1464,7 @@
       P.enabled = chkd("pay-on"); P.heading = val("pay-head"); P.intro = val("pay-intro");
       P.bankName = val("pay-bank"); P.accountTitle = val("pay-title"); P.accountNumber = val("pay-acct"); P.iban = val("pay-iban");
       P.shareText = val("pay-share");
+      A.enabled = chkd("alg-on"); A.title = val("alg-title"); A.text = val("alg-text");
       F.earliest = val("ff-earliest").trim();
       F.note = val("ff-note");
       F.blocked = val("ff-blocked").split("\n").map(s => s.trim()).filter(Boolean);
