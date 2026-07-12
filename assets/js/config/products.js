@@ -1,5 +1,5 @@
 /* Second Scoop — products.js
-   Exported from the Backend on 12/07/2026, 21:46:38.
+   Exported from the Backend on 13/07/2026, 01:46:37.
    Replace the matching file in assets/js/config/ to publish. */
 
 window.SS_CATEGORIES = [
@@ -51,7 +51,7 @@ window.SS_PRODUCTS = [
       "pakistan": {
         "status": "available",
         "price": 850,
-        "inventory": 60,
+        "inventory": 10,
         "deliveryNotes": "Best eaten warm — microwave 15-30s before serving.",
         "sizes": [
           {
@@ -168,7 +168,7 @@ window.SS_PRODUCTS = [
       "pakistan": {
         "status": "preorder",
         "price": 1650,
-        "inventory": 70,
+        "inventory": 5,
         "deliveryNotes": "Keep refrigerated.",
         "sizes": [
           {
@@ -307,6 +307,108 @@ window.SS_PRODUCTS = [
         "price": 17,
         "inventory": 0,
         "deliveryNotes": "Dropping in the Vault soon."
+      }
+    }
+  },
+  {
+    "id": "the-second-scoop-sampler",
+    "name": "The Second Scoop Sampler",
+    "category": "bundles",
+    "bundle": true,
+    "includes": [
+      "1x OG Scoopies",
+      "1x 200g Doughiginal tub",
+      "1x Chunky cookie"
+    ],
+    "tagline": "Your first bite into the Second Scoop world.",
+    "description": "A little bit of everything: Scoopies, dough, and a Chunky. Perfect for first-timers.",
+    "longDescription": "Not sure where to start? This is the box that introduces you to the full Second Scoop experience. You get our warm, gooey Scoopies, a mini Doughiginal tub for spooning straight from the fridge, and a Chunky cookie for the classic cookie craving. It’s made for first-timers, indecisive dessert lovers, and anyone who wants to try the best of Second Scoop in one box.",
+    "images": [
+      "chatgpt-image-jul-13-2026-12-31-37-am-mri9k91z.jpg"
+    ],
+    "badge": null,
+    "featured": true,
+    "hero": false,
+    "secret": false,
+    "hidden": false,
+    "reviews": {
+      "rating": 0,
+      "count": 0
+    },
+    "regions": {
+      "pakistan": {
+        "status": "available",
+        "price": 2950,
+        "inventory": 0,
+        "deliveryNotes": ""
+      }
+    }
+  },
+  {
+    "id": "the-night-in-box",
+    "name": "The Night-In Box",
+    "category": "bundles",
+    "bundle": true,
+    "includes": [
+      "1x 700g OG Scoopie Tin",
+      "1x 500g Doughiginal tub",
+      "Optional add-on: chocolate/ salted caramel drizzle"
+    ],
+    "tagline": "Dessert plans, sorted.",
+    "description": "The ultimate movie night, girls’ night, or “I deserve this” dessert box.",
+    "longDescription": "The Night-In Box is made for staying in, getting cozy, and turning dessert into the main event. With warm-ready Scoopies and a full Doughiginal tub, this box is perfect for sharing with friends, serving after dinner, or keeping all to yourself for a proper Second Scoop night. Warm the Scoopies, grab a spoon, add ice cream if you want, and make it a whole moment.",
+    "images": [
+      "chatgpt-image-jul-13-2026-01-40-04-am-mri9crtx.jpg"
+    ],
+    "badge": null,
+    "featured": false,
+    "hero": false,
+    "secret": false,
+    "hidden": false,
+    "reviews": {
+      "rating": 0,
+      "count": 0
+    },
+    "regions": {
+      "pakistan": {
+        "status": "available",
+        "price": 5900,
+        "inventory": 0,
+        "deliveryNotes": ""
+      }
+    }
+  },
+  {
+    "id": "the-dough-dealer-box",
+    "name": "The Dough Dealer Box",
+    "category": "bundles",
+    "bundle": true,
+    "includes": [
+      "1x 200g Chocolate Chip Doughiginal tub",
+      "1x 200g Brownie Batter Doughiginal tub",
+      "1x 200g Milk & Cookies Doughiginal tub"
+    ],
+    "tagline": "For people who eat cookie dough like it’s a personality trait.",
+    "description": "Three Doughiginal tubs. Three flavours. One very serious cookie dough situation.",
+    "longDescription": "This one is for the edible cookie dough obsessed. The Dough Dealer Box brings together three Doughiginal tubs so you can spoon, share, gift, or hide them in the back of the fridge for later. It’s the easiest way to try multiple flavours and find your favourite Second Scoop tub.",
+    "images": [
+      "chatgpt-image-jul-13-2026-01-45-26-am-mri9jjb4.jpg"
+    ],
+    "badge": null,
+    "featured": false,
+    "hero": false,
+    "secret": false,
+    "hidden": false,
+    "reviews": {
+      "rating": 0,
+      "count": 0
+    },
+    "regions": {
+      "pakistan": {
+        "status": "available",
+        "price": 9600,
+        "inventory": 0,
+        "deliveryNotes": ""
       }
     }
   }
