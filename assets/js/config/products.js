@@ -1,280 +1,313 @@
-/* =====================================================================
-   SECOND SCOOP — PRODUCT CATALOG  (SINGLE SOURCE OF TRUTH)
-   ---------------------------------------------------------------------
-   This is the ONLY place products live. Every page reads from here.
-
-   HOW TO MANAGE PRODUCTS
-   ----------------------
-   • ADD a product .......... copy a block, give it a new unique `id`.
-   • REMOVE a product ....... delete its block (or set hidden:true).
-   • HIDE a product ......... hidden: true
-   • CHANGE price ........... edit regions.<region>.price
-   • CHANGE description ..... edit `description` / `longDescription`
-   • CHANGE images .......... edit `images` (filenames in /assets/img/)
-   • AVAILABILITY ........... regions.<region>.status:
-        "available" | "preorder" | "closing" | "sold-out" | "coming-soon"
-   • MARK SOLD OUT .......... status: "sold-out"
-   • MARK COMING SOON ....... status: "coming-soon"
-   • FEATURE on homepage .... featured: true
-   • SECRET (Vault only) .... secret: true  (also list it in vault.js)
-   • BADGE .................. badge: "best-seller" | "limited" | "new" | null
-
-   STATUS MEANINGS
-   ----------------
-     available    → buy now
-     preorder     → buy now, fulfilled on the next drop
-     closing      → preorder window closing soon
-     sold-out     → cannot add to cart
-     coming-soon  → teaser only, cannot add to cart
-
-   CATEGORIES: "scoopie" | "chunkies" | "doughiginals" | "secret"
-   ===================================================================== */
+/* Second Scoop — products.js
+   Exported from the Backend on 12/07/2026, 21:46:38.
+   Replace the matching file in assets/js/config/ to publish. */
 
 window.SS_CATEGORIES = [
-  { id: "scoopie",      name: "The OG Scoopie" },
-  { id: "chunkies",     name: "Chunkies" },
-  { id: "doughiginals", name: "The Doughiginals" },
-  { id: "bundles",      name: "Bundles & Boxes" },
-  { id: "secret",       name: "Secret Scoops" },
+  {
+    "id": "scoopie",
+    "name": "The OG Scoopie"
+  },
+  {
+    "id": "chunkies",
+    "name": "Chunkies"
+  },
+  {
+    "id": "doughiginals",
+    "name": "The Doughiginals"
+  },
+  {
+    "id": "bundles",
+    "name": "Bundles & Boxes"
+  },
+  {
+    "id": "secret",
+    "name": "Secret Scoops"
+  }
 ];
 
 window.SS_PRODUCTS = [
-
-  /* ============================ HERO ============================== */
   {
-    id: "og-scoopie",
-    name: "The OG Scoopie",
-    category: "scoopie",
-    tagline: "The cookie you were never supposed to stop eating.",
-    description: "A super soft, gooey, scoopable cookie baked in a tin and built to be eaten warm with a spoon.",
-    longDescription:
-      "This is the one. A molten-centred cookie baked low and slow in its own tin so the middle stays impossibly gooey. " +
-      "Microwave it for 15 seconds, grab a spoon, and go straight in. Crisp edges, a warm pull-apart middle, and pools of " +
-      "melting chocolate in every scoop. There's a reason the first scoop is never enough.",
-    images: ["og-scoopie.jpg"],
-    badge: "best-seller",
-    featured: true,
-    hero: true,
-    secret: false,
-    hidden: false,
-    reviews: { rating: 4.9, count: 318 },
-    regions: {
-      pakistan: { status: "preorder", price: 1200, inventory: 60, deliveryNotes: "Best eaten warm — microwave 15s before serving." },
-      toronto:  { status: "available", price: 14,  inventory: 40, deliveryNotes: "Reheat 15s for the full gooey experience." },
+    "id": "og-scoopie",
+    "name": "The OG Scoopie",
+    "category": "scoopie",
+    "bundle": false,
+    "includes": [],
+    "tagline": "The cookie you were never supposed to stop eating.",
+    "description": "A super soft, gooey, scoopable cookie baked in a tin and built to be eaten warm with a spoon.",
+    "longDescription": "This is the one. A molten-centred cookie baked low and slow in its own tin so the middle stays impossibly gooey. Microwave it for 15 seconds, grab a spoon, and go straight in. Crisp edges, a warm pull-apart middle, and pools of melting chocolate in every scoop. There's a reason the first scoop is never enough.",
+    "images": [
+      "chatgpt-image-jul-12-2026-09-34-00-pm-mri0mxuh.jpg"
+    ],
+    "badge": "best-seller",
+    "featured": true,
+    "hero": true,
+    "secret": false,
+    "hidden": false,
+    "reviews": {
+      "rating": 0,
+      "count": 0
     },
-  },
-
-  /* ========================== CHUNKIES =========================== */
-  {
-    id: "chunkie-choc-chip",
-    name: "Chunkie — Chocolate Chip",
-    category: "chunkies",
-    tagline: "Thick. Soft-centred. Loaded.",
-    description: "Our bakery-style flagship cookie: thick, soft in the middle, and packed wall-to-wall with chocolate.",
-    longDescription:
-      "A proper bakery-style Chunkie — thick-cut, soft-centred and stacked with melting chocolate in every bite. " +
-      "Crisp at the edge, dense and chewy through the middle. Sold in a pack so you don't have to share (you can, but you won't want to).",
-    images: ["chunkies.jpg"],
-    badge: "best-seller",
-    featured: true,
-    secret: false,
-    hidden: false,
-    reviews: { rating: 4.8, count: 204 },
-    regions: {
-      pakistan: { status: "available", price: 900, inventory: 80, deliveryNotes: "Pack of 4." },
-      toronto:  { status: "available", price: 12,  inventory: 55, deliveryNotes: "Pack of 4." },
-    },
+    "regions": {
+      "pakistan": {
+        "status": "available",
+        "price": 850,
+        "inventory": 60,
+        "deliveryNotes": "Best eaten warm — microwave 15-30s before serving.",
+        "sizes": [
+          {
+            "label": "200g",
+            "price": 850
+          },
+          {
+            "label": "700g",
+            "price": 2700
+          }
+        ]
+      }
+    }
   },
   {
-    id: "chunkie-seasonal",
-    name: "Chunkie — Seasonal Drop",
-    category: "chunkies",
-    tagline: "Here for a good time, not a long time.",
-    description: "A rotating limited-edition Chunkie. When it's gone, it's gone.",
-    longDescription:
-      "Our test kitchen's current obsession, released in tiny batches. The flavour rotates with the season and never sticks " +
-      "around long. Follow @secondscoopco so you don't miss the next one.",
-    images: ["chunkies.jpg"],
-    badge: "limited",
-    featured: false,
-    secret: false,
-    hidden: false,
-    reviews: { rating: 4.9, count: 76 },
-    regions: {
-      pakistan: { status: "coming-soon", price: 1100, inventory: 0, deliveryNotes: "Next drop announced soon." },
-      toronto:  { status: "closing",     price: 13,   inventory: 12, deliveryNotes: "Final batch of the season." },
+    "id": "chunkie-choc-chip",
+    "name": "The Classic Chunkie — Chocolate Chip",
+    "category": "chunkies",
+    "bundle": false,
+    "includes": [],
+    "tagline": "Thick. Soft-centred. Loaded.",
+    "description": "Our bakery-style flagship cookie: thick, soft in the middle, and packed wall-to-wall with chocolate.",
+    "longDescription": "A proper bakery-style Chunkie — thick-cut, soft-centred and stacked with melting chocolate in every bite. Crisp at the edge, soft and chewy through the middle.",
+    "images": [
+      "f93f77a6-358b-49b9-89b6-daf8bdd5fb33-mqa4s3c2.png"
+    ],
+    "badge": "best-seller",
+    "featured": true,
+    "hero": false,
+    "secret": false,
+    "hidden": false,
+    "reviews": {
+      "rating": 0,
+      "count": 0
     },
-  },
-
-  /* ======================= THE DOUGHIGINALS ====================== */
-  {
-    id: "doughiginal-classic",
-    name: "The Doughiginal — Classic Chocolate Chip",
-    category: "doughiginals",
-    tagline: "Egg-free. Safe to eat raw. Dangerously good.",
-    description: "Our signature edible cookie dough tub. Egg-free, heat-treated flour, ready to eat by the spoon.",
-    longDescription:
-      "The original tub that started the dough obsession. Made egg-free with heat-treated flour so it's completely safe " +
-      "to eat raw — rich, fudgy and loaded with chocolate chips. Eat it straight from the tub, chilled.",
-    images: ["doughiginal.jpg"],
-    badge: "best-seller",
-    featured: true,
-    secret: false,
-    hidden: false,
-    reviews: { rating: 4.9, count: 261 },
-    regions: {
-      pakistan: { status: "available", price: 1100, inventory: 70, deliveryNotes: "Keep refrigerated." },
-      toronto:  { status: "available", price: 13,   inventory: 50, deliveryNotes: "Keep refrigerated." },
-    },
-  },
-  {
-    id: "doughiginal-brownie-batter",
-    name: "The Doughiginal — Brownie Batter",
-    category: "doughiginals",
-    tagline: "All the batter. None of the guilt.",
-    description: "Deep, fudgy brownie-batter edible cookie dough. Egg-free and safe to eat raw.",
-    longDescription:
-      "For the brownie-batter scrapers. Deep cocoa, fudgy texture and chocolate chunks throughout — egg-free and safe " +
-      "to eat raw, straight from the tub.",
-    images: ["doughiginal.jpg"],
-    badge: "new",
-    featured: false,
-    secret: false,
-    hidden: false,
-    reviews: { rating: 4.8, count: 118 },
-    regions: {
-      pakistan: { status: "available", price: 1150, inventory: 45, deliveryNotes: "Keep refrigerated." },
-      toronto:  { status: "available", price: 13.5, inventory: 38, deliveryNotes: "Keep refrigerated." },
-    },
+    "regions": {
+      "pakistan": {
+        "status": "available",
+        "price": 450,
+        "inventory": 80,
+        "deliveryNotes": "",
+        "sizes": [
+          {
+            "label": "1 cookie",
+            "price": 450
+          },
+          {
+            "label": "4 Cookies",
+            "price": 1700
+          },
+          {
+            "label": "6 Cookies",
+            "price": 2550
+          }
+        ]
+      }
+    }
   },
   {
-    id: "doughiginal-milk-cookies",
-    name: "The Doughiginal — Milk & Cookies",
-    category: "doughiginals",
-    tagline: "Cookies, in your cookie dough.",
-    description: "Vanilla milk dough folded with crushed cookie pieces. Egg-free and safe to eat raw.",
-    longDescription:
-      "A creamy vanilla 'milk' dough folded with crunchy crushed cookie pieces — like dunking cookies in milk, in tub form. " +
-      "Egg-free and safe to eat raw.",
-    images: ["doughiginal.jpg"],
-    badge: null,
-    featured: false,
-    secret: false,
-    hidden: false,
-    reviews: { rating: 4.7, count: 89 },
-    regions: {
-      pakistan: { status: "available", price: 1150, inventory: 40, deliveryNotes: "Keep refrigerated." },
-      toronto:  { status: "available", price: 13.5, inventory: 30, deliveryNotes: "Keep refrigerated." },
+    "id": "chunkie-seasonal",
+    "name": "Chunkie — Seasonal Drop",
+    "category": "chunkies",
+    "tagline": "Here for a good time, not a long time.",
+    "description": "A rotating limited-edition Chunkie. When it's gone, it's gone.",
+    "longDescription": "Our test kitchen's current obsession, released in tiny batches. The flavour rotates with the season and never sticks around long. Follow @secondscoop so you don't miss the next one.",
+    "images": [
+      "chunkies.jpg"
+    ],
+    "badge": "limited",
+    "featured": false,
+    "secret": false,
+    "hidden": true,
+    "reviews": {
+      "rating": 4.9,
+      "count": 76
     },
-  },
-
-  /* ========================= SECRET SCOOPS ======================= */
-  /* These never appear anywhere until unlocked in The Vault.
-     Keep secret:true AND list the code in assets/js/config/vault.js  */
-  {
-    id: "secret-salted-caramel-scoopie",
-    name: "Salted Caramel Stuffed Scoopie",
-    category: "secret",
-    tagline: "A Vault exclusive. Molten caramel, sea salt, no rules.",
-    description: "The OG Scoopie, stuffed with a molten salted-caramel core. Vault members only.",
-    longDescription:
-      "Our gooey signature Scoopie, hiding a molten salted-caramel centre that erupts the moment you break in. " +
-      "Finished with flaky sea salt. Only ever sold through The Vault, in tiny numbers.",
-    images: ["og-scoopie.jpg"],
-    badge: "limited",
-    featured: false,
-    secret: true,
-    hidden: false,
-    reviews: { rating: 5.0, count: 41 },
-    regions: {
-      pakistan: { status: "available", price: 1500, inventory: 25, deliveryNotes: "Vault exclusive — limited batch." },
-      toronto:  { status: "available", price: 17,   inventory: 18, deliveryNotes: "Vault exclusive — limited batch." },
-    },
+    "regions": {
+      "pakistan": {
+        "status": "coming-soon",
+        "price": 1100,
+        "inventory": 0,
+        "deliveryNotes": "Next drop announced soon."
+      },
+      "toronto": {
+        "status": "closing",
+        "price": 13,
+        "inventory": 12,
+        "deliveryNotes": "Final batch of the season."
+      }
+    }
   },
   {
-    id: "secret-churro-scoopie",
-    name: "Stuffed Churro Scoopie",
-    category: "secret",
-    tagline: "Cinnamon-sugar chaos. Vault exclusive.",
-    description: "A churro-spiced Scoopie rolled in cinnamon sugar with a dulce-style core. Vault members only.",
-    longDescription:
-      "Warm cinnamon-sugar Scoopie with a soft dulce-style centre — churros and cookies in one tin. " +
-      "A rotating Vault exclusive that disappears fast.",
-    images: ["og-scoopie.jpg"],
-    badge: "limited",
-    featured: false,
-    secret: true,
-    hidden: false,
-    reviews: { rating: 5.0, count: 33 },
-    regions: {
-      pakistan: { status: "available",   price: 1500, inventory: 20, deliveryNotes: "Vault exclusive — limited batch." },
-      toronto:  { status: "coming-soon", price: 17,   inventory: 0,  deliveryNotes: "Dropping in the Vault soon." },
+    "id": "doughiginal-classic",
+    "name": "The Doughiginal — Classic Chocolate Chip",
+    "category": "doughiginals",
+    "bundle": false,
+    "includes": [],
+    "tagline": "Egg-free. Safe to eat raw. Dangerously good.",
+    "description": "Our signature edible cookie dough tub. Egg-free, heat-treated flour, ready to eat by the spoon.",
+    "longDescription": "The original tub that started the dough obsession. Made egg-free with heat-treated flour so it's completely safe to eat raw - made with real vanilla beans, and loaded with Callebaut chocolate. Eat it straight from the tub. Leave at room temperature for 15-20 mins, or dig in chilled.",
+    "images": [
+      "chatgpt-image-jul-12-2026-09-27-30-pm-mri0os9l.jpg"
+    ],
+    "badge": "best-seller",
+    "featured": true,
+    "hero": false,
+    "secret": false,
+    "hidden": false,
+    "reviews": {
+      "rating": 0,
+      "count": 0
     },
-  },
-
-  /* ============================ BUNDLES ========================== */
-  {
-    id: "bundle-sampler",
-    name: "The Sampler Box",
-    category: "bundles",
-    bundle: true,
-    tagline: "A little of everything, one perfect box.",
-    description: "Can't choose? This box has a bit of everything — the perfect way to meet the whole Second Scoop family.",
-    longDescription:
-      "The easiest way to fall in love with Second Scoop. A curated box built to show off the range — warm gooey " +
-      "Scoopies, a loaded Chunkie, and a tub of egg-free edible dough. Great for gifting, sharing, or keeping all to yourself.",
-    includes: ["2 × The OG Scoopie", "1 × Chunkie — Chocolate Chip", "1 × Doughiginal tub"],
-    images: [],
-    badge: "best-seller",
-    featured: true,
-    hidden: false,
-    reviews: { rating: 5.0, count: 41 },
-    regions: {
-      pakistan: { status: "available", price: 3500, inventory: 25, deliveryNotes: "Packed fresh — best enjoyed within 2 days." },
-      toronto:  { status: "available", price: 42,   inventory: 15, deliveryNotes: "Packed fresh — best enjoyed within 2 days." },
-    },
+    "regions": {
+      "pakistan": {
+        "status": "preorder",
+        "price": 1650,
+        "inventory": 70,
+        "deliveryNotes": "Keep refrigerated.",
+        "sizes": [
+          {
+            "label": "200g",
+            "price": 1650
+          },
+          {
+            "label": "500g",
+            "price": 3200
+          }
+        ]
+      }
+    }
   },
   {
-    id: "bundle-sharing",
-    name: "The Sharing Box",
-    category: "bundles",
-    bundle: true,
-    tagline: "Because one was never enough — times four.",
-    description: "Four of our signature Scoopies, boxed up for the table. Built for movie nights, gatherings, and generous moods.",
-    longDescription:
-      "Four OG Scoopies in one box, ready to warm and share. The centrepiece for movie nights and get-togethers — " +
-      "or a very good week of treating yourself. Reheat each for 15 seconds and dig in.",
-    includes: ["4 × The OG Scoopie"],
-    images: [],
-    badge: null,
-    featured: false,
-    hidden: false,
-    reviews: { rating: 4.9, count: 28 },
-    regions: {
-      pakistan: { status: "available", price: 4400, inventory: 20, deliveryNotes: "Reheat each Scoopie 15s before serving." },
-      toronto:  { status: "available", price: 52,   inventory: 12, deliveryNotes: "Reheat each Scoopie 15s before serving." },
+    "id": "doughiginal-brownie-batter",
+    "name": "The Doughiginal — Brownie Batter",
+    "category": "doughiginals",
+    "tagline": "All the batter. None of the guilt.",
+    "description": "Deep, fudgy brownie-batter edible cookie dough. Egg-free and safe to eat raw.",
+    "longDescription": "For the brownie-batter scrapers. Deep cocoa, fudgy texture and chocolate chunks throughout — egg-free and safe to eat raw, straight from the tub.",
+    "images": [
+      "doughiginal.jpg"
+    ],
+    "badge": "new",
+    "featured": false,
+    "secret": false,
+    "hidden": true,
+    "reviews": {
+      "rating": 4.8,
+      "count": 118
     },
+    "regions": {
+      "pakistan": {
+        "status": "available",
+        "price": 1150,
+        "inventory": 45,
+        "deliveryNotes": "Keep refrigerated."
+      },
+      "toronto": {
+        "status": "available",
+        "price": 13.5,
+        "inventory": 38,
+        "deliveryNotes": "Keep refrigerated."
+      }
+    }
   },
   {
-    id: "bundle-movie-night",
-    name: "Movie Night Bundle",
-    category: "bundles",
-    bundle: true,
-    tagline: "Chunkies, dough, and zero regrets.",
-    description: "Two loaded Chunkies plus a tub of edible dough — the ultimate stay-in dessert spread.",
-    longDescription:
-      "Everything you need for the perfect night in. Two thick, soft-centred Chunkies loaded with chocolate, " +
-      "plus a tub of egg-free Doughiginal to spoon straight from the fridge. Press play.",
-    includes: ["2 × Chunkie — Chocolate Chip", "1 × Doughiginal tub"],
-    images: [],
-    badge: "new",
-    featured: false,
-    hidden: false,
-    reviews: { rating: 4.8, count: 12 },
-    regions: {
-      pakistan: { status: "available", price: 2800, inventory: 18, deliveryNotes: "Chunkies are best slightly warmed." },
-      toronto:  { status: "available", price: 34,   inventory: 10, deliveryNotes: "Chunkies are best slightly warmed." },
+    "id": "doughiginal-milk-cookies",
+    "name": "The Doughiginal — Milk & Cookies",
+    "category": "doughiginals",
+    "tagline": "Cookies, in your cookie dough.",
+    "description": "Vanilla milk dough folded with crushed cookie pieces. Egg-free and safe to eat raw.",
+    "longDescription": "A creamy vanilla 'milk' dough folded with crunchy crushed cookie pieces — like dunking cookies in milk, in tub form. Egg-free and safe to eat raw.",
+    "images": [
+      "doughiginal.jpg"
+    ],
+    "badge": null,
+    "featured": false,
+    "secret": false,
+    "hidden": true,
+    "reviews": {
+      "rating": 4.7,
+      "count": 89
     },
+    "regions": {
+      "pakistan": {
+        "status": "available",
+        "price": 1150,
+        "inventory": 40,
+        "deliveryNotes": "Keep refrigerated."
+      },
+      "toronto": {
+        "status": "available",
+        "price": 13.5,
+        "inventory": 30,
+        "deliveryNotes": "Keep refrigerated."
+      }
+    }
   },
-
+  {
+    "id": "secret-salted-caramel-scoopie",
+    "name": "Salted Caramel Stuffed Scoopie",
+    "category": "secret",
+    "tagline": "A Vault exclusive. Molten caramel, sea salt, no rules.",
+    "description": "The OG Scoopie, stuffed with a molten salted-caramel core. Vault members only.",
+    "longDescription": "Our gooey signature Scoopie, hiding a molten salted-caramel centre that erupts the moment you break in. Finished with flaky sea salt. Only ever sold through The Vault, in tiny numbers.",
+    "images": [
+      "af5dc175-bc11-4198-a75f-c33d31f8d6a6-mqa4sww9.png"
+    ],
+    "badge": "limited",
+    "featured": false,
+    "hero": false,
+    "secret": true,
+    "hidden": false,
+    "reviews": {
+      "rating": 0,
+      "count": 0
+    },
+    "regions": {
+      "pakistan": {
+        "status": "available",
+        "price": 1050,
+        "inventory": 25,
+        "deliveryNotes": "Vault exclusive — limited batch."
+      }
+    }
+  },
+  {
+    "id": "secret-churro-scoopie",
+    "name": "Stuffed Churro Scoopie",
+    "category": "secret",
+    "tagline": "Cinnamon-sugar chaos. Vault exclusive.",
+    "description": "A churro-spiced Scoopie rolled in cinnamon sugar with a dulce-style core. Vault members only.",
+    "longDescription": "Warm cinnamon-sugar Scoopie with a soft dulce-style centre — churros and cookies in one tin. A rotating Vault exclusive that disappears fast.",
+    "images": [
+      "og-scoopie.jpg"
+    ],
+    "badge": "limited",
+    "featured": false,
+    "secret": true,
+    "hidden": true,
+    "reviews": {
+      "rating": 5,
+      "count": 33
+    },
+    "regions": {
+      "pakistan": {
+        "status": "available",
+        "price": 1500,
+        "inventory": 20,
+        "deliveryNotes": "Vault exclusive — limited batch."
+      },
+      "toronto": {
+        "status": "coming-soon",
+        "price": 17,
+        "inventory": 0,
+        "deliveryNotes": "Dropping in the Vault soon."
+      }
+    }
+  }
 ];
