@@ -1,5 +1,5 @@
 /* Second Scoop — products.js
-   Exported from the Backend on 13/07/2026, 02:47:16.
+   Exported from the Backend on 13/07/2026, 03:10:39.
    Replace the matching file in assets/js/config/ to publish. */
 
 window.SS_CATEGORIES = [
@@ -187,32 +187,40 @@ window.SS_PRODUCTS = [
     "id": "doughiginal-brownie-batter",
     "name": "The Doughiginal — Brownie Batter",
     "category": "doughiginals",
+    "optionLabel": "Size",
+    "bundle": false,
+    "includes": [],
     "tagline": "All the batter. None of the guilt.",
     "description": "Deep, fudgy brownie-batter edible cookie dough. Egg-free and safe to eat raw.",
     "longDescription": "For the brownie-batter scrapers. Deep cocoa, fudgy texture and chocolate chunks throughout — egg-free and safe to eat raw, straight from the tub.",
     "images": [
-      "doughiginal.jpg"
+      "chatgpt-image-jul-13-2026-02-55-49-am-mrichph2.jpg"
     ],
     "badge": "new",
     "featured": false,
+    "hero": false,
     "secret": false,
-    "hidden": true,
+    "hidden": false,
     "reviews": {
-      "rating": 4.8,
-      "count": 118
+      "rating": 5,
+      "count": 1
     },
     "regions": {
       "pakistan": {
-        "status": "available",
-        "price": 1150,
-        "inventory": 45,
-        "deliveryNotes": "Keep refrigerated."
-      },
-      "toronto": {
-        "status": "available",
-        "price": 13.5,
-        "inventory": 38,
-        "deliveryNotes": "Keep refrigerated."
+        "status": "coming-soon",
+        "price": 1650,
+        "inventory": 10,
+        "deliveryNotes": "Keep refrigerated.",
+        "sizes": [
+          {
+            "label": "200g",
+            "price": 1650
+          },
+          {
+            "label": "500g",
+            "price": 3200
+          }
+        ]
       }
     }
   },
@@ -220,32 +228,40 @@ window.SS_PRODUCTS = [
     "id": "doughiginal-milk-cookies",
     "name": "The Doughiginal — Milk & Cookies",
     "category": "doughiginals",
+    "optionLabel": "Size",
+    "bundle": false,
+    "includes": [],
     "tagline": "Cookies, in your cookie dough.",
     "description": "Vanilla milk dough folded with crushed cookie pieces. Egg-free and safe to eat raw.",
     "longDescription": "A creamy vanilla 'milk' dough folded with crunchy crushed cookie pieces — like dunking cookies in milk, in tub form. Egg-free and safe to eat raw.",
     "images": [
-      "doughiginal.jpg"
+      "chatgpt-image-jul-13-2026-03-05-24-am-mricjg1y.jpg"
     ],
     "badge": null,
     "featured": false,
+    "hero": false,
     "secret": false,
-    "hidden": true,
+    "hidden": false,
     "reviews": {
-      "rating": 4.7,
-      "count": 89
+      "rating": 0,
+      "count": 0
     },
     "regions": {
       "pakistan": {
-        "status": "available",
-        "price": 1150,
-        "inventory": 40,
-        "deliveryNotes": "Keep refrigerated."
-      },
-      "toronto": {
-        "status": "available",
-        "price": 13.5,
-        "inventory": 30,
-        "deliveryNotes": "Keep refrigerated."
+        "status": "preorder",
+        "price": 1650,
+        "inventory": 10,
+        "deliveryNotes": "Keep refrigerated.",
+        "sizes": [
+          {
+            "label": "200g",
+            "price": 1650
+          },
+          {
+            "label": "500g",
+            "price": 3200
+          }
+        ]
       }
     }
   },
