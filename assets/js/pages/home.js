@@ -249,19 +249,25 @@
   }
 
   // --- featured (OG hero first) ---
-  const featured = all.filter(p => p.featured)
+  const featured = all.filter(p => p.featured && !p.bundle)
     .sort((a, b) => (b.hero ? 1 : 0) - (a.hero ? 1 : 0));
   renderGrid("featured-grid", featured.length ? featured : all.slice(0, 4), true);
   const fl = document.getElementById("featured-shoplink");
   if (fl) fl.href = `shop.html?region=${region}`;
 
-  // --- best sellers ---
-  const best = all.filter(p => p.badge === "best-seller");
-  renderGrid("bestseller-grid", best.length ? best : all.slice(0, 3));
+  // --- best sellers (bundles never crowd this row) ---
+  const best = all.filter(p => p.badge === "best-seller" && !p.bundle);
+  renderGrid("bestseller-grid", best.length ? best : all.filter(p => !p.bundle).slice(0, 3));
+
+  // --- bundles & boxes (only show the section if there are any) ---
+  const bundles = all.filter(p => p.bundle);
+  const bundleSec = document.getElementById("home-bundles-sec");
+  if (bundles.length) { if (bundleSec) bundleSec.style.display = "block"; renderGrid("bundle-grid", bundles.slice(0, 3)); }
+  else if (bundleSec) bundleSec.remove();
 
   // --- limited drops ---
-  const limited = all.filter(p => p.badge === "limited" || p.status === "closing" || p.status === "coming-soon");
-  renderGrid("limited-grid", limited.length ? limited : all.slice(-3));
+  const limited = all.filter(p => !p.bundle && (p.badge === "limited" || p.status === "closing" || p.status === "coming-soon"));
+  renderGrid("limited-grid", limited.length ? limited : all.filter(p => !p.bundle).slice(-3));
 
   // --- countdown (next Thursday midnight) for limited drops ---
   startCountdown("drop-countdown");

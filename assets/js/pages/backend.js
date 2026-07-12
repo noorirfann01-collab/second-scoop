@@ -27,6 +27,7 @@
     { id: "messages", label: "Messages", icon: "💬" },
     { id: "reviews", label: "Reviews", icon: "⭐" },
     { id: "products", label: "Products", icon: "🍪" },
+    { id: "bundles", label: "Bundles", icon: "🎁" },
     { id: "vault", label: "The Vault", icon: "🔒" },
     { id: "homepage", label: "Home Page", icon: "🏠" },
     { id: "about", label: "About Page", icon: "📖" },
@@ -44,7 +45,7 @@
   // Page-based grouping — each page owns its content, no overlaps.
   const NAV_GROUPS = [
     { label: "Store", items: ["dashboard", "orders", "mailing", "messages", "reviews"] },
-    { label: "Catalog", items: ["products", "vault"] },
+    { label: "Catalog", items: ["products", "bundles", "vault"] },
     { label: "Pages", items: ["homepage", "about", "faq", "contact", "preorders", "popups", "shoptext"] },
     { label: "Look & setup", items: ["design", "menu", "announce", "settings", "export"] },
   ];
@@ -332,7 +333,7 @@
     const map = { dashboard: renderDashboard, orders: renderOrders, mailing: renderMailing, messages: renderMessages, reviews: renderReviews, products: renderProducts,
        homepage: renderHomepage, about: renderAbout, faq: renderFaq, contact: renderContact, preorders: renderPreorders,
        popups: renderPopups, shoptext: renderShopText, menu: renderMenu, vault: renderVault, design: renderDesign, announce: renderAnnounce,
-       settings: renderSettings, export: renderExport };
+       bundles: renderBundles, settings: renderSettings, export: renderExport };
     const fn = map[section] || renderDashboard;
     try {
       fn();
@@ -1094,6 +1095,36 @@
     </tr>`;
   }
 
+  /* ======================================================= BUNDLES == */
+  function renderBundles() {
+    const list = cat.filter(p => p.bundle || p.category === "bundles");
+    body().innerHTML = `
+      <div class="ss-panel" style="margin-bottom:14px"><h3 style="margin-top:0">🎁 Bundles &amp; Boxes</h3>
+        <p style="color:var(--ink-60);font-size:.9rem">Pre-set boxes sold at a fixed price — e.g. a sampler, a sharing box, a movie-night bundle. Each shows its contents on the card and product page, and adds to cart as one line. Bundles also appear on your homepage, a dedicated Bundles page, and in the Shop.</p>
+        <button class="ss-btn" id="b-add">+ New bundle</button>
+      </div>
+      <div class="ss-panel" style="padding:0;overflow:hidden"><div style="overflow-x:auto"><table class="ss-table ss-mgr-table">
+        <tr><th></th><th>Bundle</th><th>Includes</th><th>Flags</th>${REGION_IDS.map(rid => `<th>${SS_REGIONS[rid].flag} ${SS_REGIONS[rid].name}</th>`).join("")}<th>Actions</th></tr>
+        ${list.map(bundleRow).join("") || `<tr><td colspan="${5 + REGION_IDS.length}" style="text-align:center;padding:30px;color:var(--ink-40)">No bundles yet. Press <strong>+ New bundle</strong> to create one.</td></tr>`}
+      </table></div></div>`;
+    document.getElementById("b-add").onclick = () => openEditor(null, { category: "bundles" });
+    body().querySelectorAll("[data-act]").forEach(b => b.onclick = () => action(b.getAttribute("data-act"), b.getAttribute("data-id")));
+  }
+  function bundleRow(p) {
+    const thumb = (p.images && p.images[0]) ? `<img class="ss-mgr-thumb" src="${SS.imgSrc(p.images[0])}" onerror="this.style.visibility='hidden'">` : `<div class="ss-mgr-thumb ss-mgr-thumb--empty">🎁</div>`;
+    const inc = (p.includes && p.includes.length) ? `<ul style="margin:0;padding-left:1.1em;font-size:.82rem;color:var(--ink-60)">${p.includes.map(i => `<li>${esc(i)}</li>`).join("")}</ul>` : `<span class="ss-seed">No contents set</span>`;
+    const flags = [p.hidden ? `<span class="ss-tag ss-tag--off">Hidden</span>` : "", p.featured ? `<span class="ss-tag">Featured</span>` : "", p.badge ? `<span class="ss-tag ss-tag--blush">${(BADGES.find(b => b[0] === p.badge) || ["", p.badge])[1]}</span>` : ""].join("");
+    const cells = REGION_IDS.map(rid => { const r = p.regions && p.regions[rid]; if (!r) return `<td><span class="ss-tag ss-tag--off">—</span></td>`; return `<td><strong>${SS.money(r.price, rid)}</strong><br><span class="ss-statusdot ss-statusdot--${r.status}">${STATUS_LABEL[r.status]}</span><br><span class="ss-seed">${r.inventory} stock</span></td>`; }).join("");
+    return `<tr><td>${thumb}</td><td><strong>${esc(p.name || "(untitled)")}</strong><br><span class="ss-seed">${esc(p.id)}</span></td>
+      <td style="max-width:240px">${inc}</td><td><div class="ss-tags">${flags || "—"}</div></td>${cells}
+      <td><div class="ss-mgr-actions">
+        <button class="ss-chip ss-chip--sm" data-act="edit" data-id="${p.id}">Edit</button>
+        <button class="ss-chip ss-chip--sm" data-act="dup" data-id="${p.id}">Duplicate</button>
+        <button class="ss-chip ss-chip--sm" data-act="hide" data-id="${p.id}">${p.hidden ? "Show" : "Hide"}</button>
+        <button class="ss-chip ss-chip--sm ss-chip--danger" data-act="del" data-id="${p.id}">Delete</button>
+      </div></td></tr>`;
+  }
+
   /* ====================================================== PRODUCTS == */
   function renderProducts() {
     const list = cat.filter(p => !productSearch || (p.name + " " + p.id + " " + p.category).toLowerCase().includes(productSearch));
@@ -1139,17 +1170,18 @@
   function action(act, id) {
     const i = cat.findIndex(p => p.id === id); if (i < 0) return;
     if (act === "edit") return openEditor(i);
-    if (act === "hide") { cat[i].hidden = !cat[i].hidden; persistCatalog(); updateLiveBadge(); renderProducts(); SSApp.toast(cat[i].hidden ? "Hidden" : "Visible", "ok"); }
-    if (act === "dup") { const c2 = clone(cat[i]); c2.id = uniqueId(cat[i].id + "-copy"); c2.name = cat[i].name + " (copy)"; c2.hero = false; cat.splice(i + 1, 0, c2); persistCatalog(); updateLiveBadge(); renderProducts(); SSApp.toast("Duplicated", "ok"); }
-    if (act === "del") { if (confirm(`Delete "${cat[i].name}"?`)) { cat.splice(i, 1); persistCatalog(); updateLiveBadge(); renderProducts(); SSApp.toast("Deleted", "ok"); } }
+    if (act === "hide") { cat[i].hidden = !cat[i].hidden; persistCatalog(); updateLiveBadge(); renderSection(); SSApp.toast(cat[i].hidden ? "Hidden" : "Visible", "ok"); }
+    if (act === "dup") { const c2 = clone(cat[i]); c2.id = uniqueId(cat[i].id + "-copy"); c2.name = cat[i].name + " (copy)"; c2.hero = false; cat.splice(i + 1, 0, c2); persistCatalog(); updateLiveBadge(); renderSection(); SSApp.toast("Duplicated", "ok"); }
+    if (act === "del") { if (confirm(`Delete "${cat[i].name}"?`)) { cat.splice(i, 1); persistCatalog(); updateLiveBadge(); renderSection(); SSApp.toast("Deleted", "ok"); } }
   }
-  function blankProduct() {
+  function blankProduct(preset) {
     const regions = {}; REGION_IDS.forEach(rid => regions[rid] = { status: "available", price: 0, inventory: 0, deliveryNotes: "" });
-    return { id: "", name: "", category: (SS_CATEGORIES[1] || SS_CATEGORIES[0]).id, tagline: "", description: "", longDescription: "", images: [], badge: null, featured: false, hero: false, secret: false, hidden: false, reviews: { rating: 0, count: 0 }, regions };
+    const category = (preset && preset.category) || (SS_CATEGORIES[1] || SS_CATEGORIES[0]).id;
+    return { id: "", name: "", category, tagline: "", description: "", longDescription: "", includes: [], bundle: category === "bundles", images: [], badge: null, featured: false, hero: false, secret: false, hidden: false, reviews: { rating: 0, count: 0 }, regions };
   }
-  function openEditor(index) {
+  function openEditor(index, preset) {
     const isNew = index === null;
-    const p = isNew ? blankProduct() : clone(cat[index]);
+    const p = isNew ? blankProduct(preset) : clone(cat[index]);
     drawer.innerHTML = `
       <div class="ss-drawer-head"><h3>${isNew ? "Add product" : "Edit product"}</h3><button class="ss-icon-btn" id="m-close">✕</button></div>
       <div class="ss-drawer-body">
@@ -1165,6 +1197,10 @@
         <label class="ss-label" style="margin-top:12px">Tagline</label><input class="ss-field" id="f-tag" value="${esc(p.tagline)}">
         <label class="ss-label" style="margin-top:12px">Short description (cards)</label><textarea class="ss-field" id="f-desc" style="min-height:64px">${esc(p.description)}</textarea>
         <label class="ss-label" style="margin-top:12px">Long description (product page)</label><textarea class="ss-field" id="f-long" style="min-height:90px">${esc(p.longDescription)}</textarea>
+        <div class="ss-fieldset" id="f-includes-wrap" style="margin-top:12px${p.category === "bundles" ? "" : ";display:none"}">
+          <label class="ss-label">🎁 Bundle contents — what's inside (one per line)</label>
+          <textarea class="ss-field" id="f-includes" style="min-height:80px" placeholder="2 × The OG Scoopie&#10;1 × Chunkie — Chocolate Chip&#10;1 × Doughiginal tub">${esc((p.includes || []).join("\n"))}</textarea>
+          <small class="ss-seed">Shown on the bundle's card and product page. Set the box price below.</small></div>
         <div class="ss-toggles">${chk("f-featured", "Featured", p.featured)}${chk("f-hero", "Hero (big card)", p.hero)}${chk("f-secret", "Secret (Vault only)", p.secret)}${chk("f-hidden", "Hidden", p.hidden)}</div>
         <div class="ss-grid2"><div><label class="ss-label">Rating (0–5)</label><input class="ss-field" id="f-rating" type="number" step="0.1" min="0" max="5" value="${p.reviews ? p.reviews.rating : 0}"></div>
           <div><label class="ss-label"># reviews</label><input class="ss-field" id="f-rcount" type="number" min="0" value="${p.reviews ? p.reviews.count : 0}"></div></div>
@@ -1232,6 +1268,8 @@
       if (ab) ab.onclick = () => { sizeState[rid].push({ label: "", price: 0 }); drawSizes(rid); };
     });
 
+    const catSel = document.getElementById("f-cat");
+    if (catSel) catSel.onchange = () => { const w = document.getElementById("f-includes-wrap"); if (w) w.style.display = catSel.value === "bundles" ? "block" : "none"; };
     document.getElementById("m-close").onclick = closeDrawer;
     document.getElementById("m-cancel").onclick = closeDrawer;
     document.getElementById("m-save").onclick = () => saveProduct(index, isNew, images, sizeState);
@@ -1267,7 +1305,9 @@
       regions[rid] = reg;
     });
     if (!Object.keys(regions).length) { SSApp.toast("Enable at least one region.", "err"); return; }
-    const product = { id, name, category: val("f-cat"), tagline: val("f-tag").trim(), description: val("f-desc").trim(), longDescription: val("f-long").trim(), images: images.slice(), badge: val("f-badge") || null, featured: chkd("f-featured"), hero: chkd("f-hero"), secret: chkd("f-secret"), hidden: chkd("f-hidden"), reviews: { rating: clampNum(val("f-rating"), 0, 5), count: Math.max(0, parseInt(val("f-rcount"), 10) || 0) }, regions };
+    const category = val("f-cat");
+    const includes = val("f-includes").split("\n").map(s => s.trim()).filter(Boolean);
+    const product = { id, name, category, bundle: category === "bundles", includes, tagline: val("f-tag").trim(), description: val("f-desc").trim(), longDescription: val("f-long").trim(), images: images.slice(), badge: val("f-badge") || null, featured: chkd("f-featured"), hero: chkd("f-hero"), secret: chkd("f-secret"), hidden: chkd("f-hidden"), reviews: { rating: clampNum(val("f-rating"), 0, 5), count: Math.max(0, parseInt(val("f-rcount"), 10) || 0) }, regions };
     const prevCat = cat.slice();
     if (isNew) cat.push(product); else cat[index] = product;
     const ok = persistCatalog();
@@ -1277,8 +1317,8 @@
       SSApp.toast("Couldn't save — an uploaded image is too large. Use a smaller photo, or save it as a file in assets/img/ and reference the filename.", "err");
       return;
     }
-    closeDrawer(); updateLiveBadge(); renderProducts();
-    SSApp.toast(isNew ? "Product saved (preview). Press Publish to go live 🍪" : "Saved (preview). Press Publish to go live 🍪", "ok");
+    closeDrawer(); updateLiveBadge(); renderSection();
+    SSApp.toast(isNew ? "Saved (preview). Press Publish to go live 🍪" : "Saved (preview). Press Publish to go live 🍪", "ok");
   }
 
   /* ========================================================= VAULT == */
@@ -1755,7 +1795,7 @@
   }
 
   /* ================================================ MENU & REGIONS == */
-  const NAV_ITEMS = [["home", "Home"], ["shop", "Shop"], ["vault", "The Vault"], ["popups", "Popups"],
+  const NAV_ITEMS = [["home", "Home"], ["shop", "Shop"], ["bundles", "Bundles"], ["vault", "The Vault"], ["popups", "Popups"],
     ["preorders", "Pre-Orders"], ["about", "About"], ["faq", "FAQ"], ["contact", "Contact"]];
   function renderMenu() {
     const C = content; C.nav = C.nav || {};

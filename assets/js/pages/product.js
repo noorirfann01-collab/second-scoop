@@ -68,6 +68,11 @@
         ${reviews}
         <div class="ss-pdp-price" id="pdp-price">${SS.money(pv.price)}</div>
         <p class="ss-pdp-long">${pv.longDescription || pv.description}</p>
+        ${pv.bundle && pv.includes && pv.includes.length ? `
+        <div class="ss-bundle-box">
+          <div class="ss-bundle-box-title">🎁 What's inside</div>
+          <ul class="ss-bundle-list">${pv.includes.map(i => `<li>${i}</li>`).join("")}</ul>
+        </div>` : ""}
         ${sizeBlock}
         ${buyBlock}
         ${pv.deliveryNotes ? `<div class="ss-pdp-notes">🥄 <span>${pv.deliveryNotes}</span></div>` : ""}

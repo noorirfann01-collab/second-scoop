@@ -77,6 +77,7 @@
   const NAV = [
     { key: "home", label: "Home", href: "index.html" },
     { key: "shop", label: "Shop", href: "shop.html" },
+    { key: "bundles", label: "Bundles", href: "bundles.html" },
     { key: "vault", label: "The Vault", href: "vault.html", vault: true },
     { key: "popups", label: "Popups", href: "popups.html" },
     { key: "preorders", label: "Pre-Orders", href: "preorders.html" },
@@ -225,13 +226,14 @@
         <div class="ss-card-img ${img ? "" : "ss-noimg"}" data-cat="${pv.category}">${imgEl}
           <span class="ss-card-fallback">${pv.name}</span>
         </div>
-        ${topBadge(pv)}
+        ${pv.bundle ? `<span class="ss-badge ss-badge--bundle">🎁 Bundle</span>` : topBadge(pv)}
         ${statusBadge(pv)}
       </a>
       <div class="ss-card-body">
         <div class="ss-card-cat">${SS.categoryName(pv.category)}</div>
         <h3 class="ss-card-title"><a href="product.html?id=${pv.id}">${pv.name}</a></h3>
         <p class="ss-card-desc">${pv.description}</p>
+        ${pv.bundle && pv.includes && pv.includes.length ? `<ul class="ss-bundle-list">${pv.includes.map(i => `<li>${i}</li>`).join("")}</ul>` : ""}
         <div class="ss-card-meta">${reviews}${lowStock(pv)}</div>
         <div class="ss-card-foot">
           <span class="ss-card-price">${pv.sizes && pv.sizes.length ? `<small style="font-weight:600;color:var(--ink-60)">from </small>` : ""}${SS.money(pv.price)}</span>

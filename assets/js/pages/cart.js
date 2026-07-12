@@ -50,7 +50,7 @@
         </div>
       </div>
       <div class="ss-cart-line-right">
-        <strong style="font-family:'Fredoka';font-size:1.15rem">${SS.money(l.lineTotal)}</strong>
+        <strong style="font-family:'Barber Chop';font-size:1.15rem">${SS.money(l.lineTotal)}</strong>
         <button class="ss-cart-remove" data-remove>Remove</button>
       </div>
     </div>`;
