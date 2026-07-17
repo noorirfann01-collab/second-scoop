@@ -1,5 +1,5 @@
 /* Second Scoop — products.js
-   Exported from the Backend on 14/07/2026, 01:55:03.
+   Exported from the Backend on 18/07/2026, 01:34:33.
    Replace the matching file in assets/js/config/ to publish. */
 
 window.SS_CATEGORIES = [
