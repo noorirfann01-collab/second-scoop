@@ -1,5 +1,5 @@
 /* Second Scoop — content.js
-   Exported from the Backend on 14/07/2026, 01:55:03.
+   Exported from the Backend on 18/07/2026, 01:34:33.
    Replace the matching file in assets/js/config/ to publish. */
 
 window.SS_CONTENT = {
@@ -90,11 +90,6 @@ window.SS_CONTENT = {
       "2026-07-15",
       "2026-07-16",
       "2026-07-17",
-      "2026-07-18",
-      "2026-07-19",
-      "2026-07-20",
-      "2026-07-21",
-      "2026-07-22",
       "2026-07-23",
       "2026-07-24",
       "2026-07-25",
