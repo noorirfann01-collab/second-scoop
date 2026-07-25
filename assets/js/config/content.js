@@ -1,5 +1,5 @@
 /* Second Scoop — content.js
-   Exported from the Backend on 25/07/2026, 12:30:59.
+   Exported from the Backend on 25/07/2026, 12:43:59.
    Replace the matching file in assets/js/config/ to publish. */
 
 window.SS_CONTENT = {
@@ -84,26 +84,14 @@ window.SS_CONTENT = {
     ]
   },
   "fulfilment": {
-    "earliest": "2026-08-06",
+    "earliest": "2026-08-26",
     "blocked": [
       "2026-07-14",
       "2026-07-15",
       "2026-07-16",
       "2026-07-17",
       "2026-07-23",
-      "2026-07-24",
-      "2026-07-25",
-      "2026-07-26",
-      "2026-07-27",
-      "2026-07-28",
-      "2026-07-29",
-      "2026-07-30",
-      "2026-07-31",
-      "2026-08-01",
-      "2026-08-02",
-      "2026-08-03",
-      "2026-08-04",
-      "2026-08-05"
+      "2026-07-24"
     ],
     "note": ""
   },
