@@ -1,5 +1,5 @@
 /* Second Scoop — products.js
-   Exported from the Backend on 18/07/2026, 01:34:33.
+   Exported from the Backend on 25/07/2026, 12:30:59.
    Replace the matching file in assets/js/config/ to publish. */
 
 window.SS_CATEGORIES = [
@@ -50,7 +50,7 @@ window.SS_PRODUCTS = [
     },
     "regions": {
       "pakistan": {
-        "status": "closing",
+        "status": "available",
         "price": 850,
         "inventory": 5,
         "deliveryNotes": "Best eaten warm — microwave 15-30s before serving.",
@@ -168,9 +168,9 @@ window.SS_PRODUCTS = [
     },
     "regions": {
       "pakistan": {
-        "status": "preorder",
+        "status": "sold-out",
         "price": 1650,
-        "inventory": 5,
+        "inventory": 0,
         "deliveryNotes": "Keep refrigerated.",
         "sizes": [
           {
@@ -209,9 +209,9 @@ window.SS_PRODUCTS = [
     },
     "regions": {
       "pakistan": {
-        "status": "preorder",
+        "status": "sold-out",
         "price": 1650,
-        "inventory": 10,
+        "inventory": 0,
         "deliveryNotes": "Keep refrigerated.",
         "sizes": [
           {
@@ -250,9 +250,9 @@ window.SS_PRODUCTS = [
     },
     "regions": {
       "pakistan": {
-        "status": "preorder",
+        "status": "sold-out",
         "price": 1650,
-        "inventory": 10,
+        "inventory": 0,
         "deliveryNotes": "Keep refrigerated.",
         "sizes": [
           {
