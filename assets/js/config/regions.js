@@ -1,5 +1,5 @@
 /* Second Scoop — regions.js
-   Exported from the Backend on 25/07/2026, 12:43:59.
+   Exported from the Backend on 01/08/2026, 00:45:35.
    Replace the matching file in assets/js/config/ to publish. */
 
 window.SS_REGIONS = {
