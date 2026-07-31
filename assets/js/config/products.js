@@ -1,5 +1,5 @@
 /* Second Scoop — products.js
-   Exported from the Backend on 25/07/2026, 12:43:59.
+   Exported from the Backend on 01/08/2026, 00:45:35.
    Replace the matching file in assets/js/config/ to publish. */
 
 window.SS_CATEGORIES = [
@@ -71,6 +71,7 @@ window.SS_PRODUCTS = [
     "id": "chunkie-choc-chip",
     "name": "The Classic Chunkie — Chocolate Chip",
     "category": "chunkies",
+    "optionLabel": "Size",
     "bundle": false,
     "includes": [],
     "tagline": "Thick. Soft-centred. Loaded.",
@@ -90,7 +91,7 @@ window.SS_PRODUCTS = [
     },
     "regions": {
       "pakistan": {
-        "status": "closing",
+        "status": "preorder",
         "price": 450,
         "inventory": 80,
         "deliveryNotes": "",
@@ -168,9 +169,9 @@ window.SS_PRODUCTS = [
     },
     "regions": {
       "pakistan": {
-        "status": "sold-out",
+        "status": "preorder",
         "price": 1650,
-        "inventory": 0,
+        "inventory": 10,
         "deliveryNotes": "Keep refrigerated.",
         "sizes": [
           {
@@ -209,9 +210,9 @@ window.SS_PRODUCTS = [
     },
     "regions": {
       "pakistan": {
-        "status": "sold-out",
+        "status": "preorder",
         "price": 1650,
-        "inventory": 0,
+        "inventory": 10,
         "deliveryNotes": "Keep refrigerated.",
         "sizes": [
           {
@@ -250,9 +251,9 @@ window.SS_PRODUCTS = [
     },
     "regions": {
       "pakistan": {
-        "status": "sold-out",
+        "status": "preorder",
         "price": 1650,
-        "inventory": 0,
+        "inventory": 10,
         "deliveryNotes": "Keep refrigerated.",
         "sizes": [
           {
@@ -332,6 +333,7 @@ window.SS_PRODUCTS = [
     "id": "the-second-scoop-sampler",
     "name": "The Second Scoop Sampler",
     "category": "bundles",
+    "optionLabel": "Size",
     "bundle": true,
     "includes": [
       "1x OG Scoopies",
@@ -355,8 +357,8 @@ window.SS_PRODUCTS = [
     },
     "regions": {
       "pakistan": {
-        "status": "coming-soon",
-        "price": 2950,
+        "status": "preorder",
+        "price": 2946,
         "inventory": 0,
         "deliveryNotes": ""
       }
@@ -366,6 +368,7 @@ window.SS_PRODUCTS = [
     "id": "the-night-in-box",
     "name": "The Night-In Box",
     "category": "bundles",
+    "optionLabel": "Size",
     "bundle": true,
     "includes": [
       "1x 700g OG Scoopie Tin",
@@ -389,7 +392,7 @@ window.SS_PRODUCTS = [
     },
     "regions": {
       "pakistan": {
-        "status": "coming-soon",
+        "status": "preorder",
         "price": 5900,
         "inventory": 0,
         "deliveryNotes": ""
@@ -400,6 +403,7 @@ window.SS_PRODUCTS = [
     "id": "the-dough-dealer-box",
     "name": "The Dough Dealer Box",
     "category": "bundles",
+    "optionLabel": "Size",
     "bundle": true,
     "includes": [
       "1x 200g Chocolate Chip Doughiginal tub",
@@ -423,7 +427,7 @@ window.SS_PRODUCTS = [
     },
     "regions": {
       "pakistan": {
-        "status": "coming-soon",
+        "status": "preorder",
         "price": 4950,
         "inventory": 0,
         "deliveryNotes": ""
