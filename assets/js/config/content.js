@@ -1,5 +1,5 @@
 /* Second Scoop — content.js
-   Exported from the Backend on 01/08/2026, 00:45:35.
+   Exported from the Backend on 03/08/2026, 12:58:39.
    Replace the matching file in assets/js/config/ to publish. */
 
 window.SS_CONTENT = {
@@ -96,9 +96,9 @@ window.SS_CONTENT = {
     "heading": "Payment — bank transfer in advance",
     "intro": "All orders are confirmed once payment is received in advance by bank transfer.",
     "bankName": "HABIB METROPOLITAN BANK LTD",
-    "accountTitle": "Aisha Irfan",
-    "accountNumber": "6-99-64-29313-714-108727",
-    "iban": "PK31MPBL9964287140108727",
+    "accountTitle": "Noor Irfan",
+    "accountNumber": "6-99-64-29311-714-432519",
+    "iban": "PK90MPBL9964267140432519",
     "shareText": "After paying, send a screenshot of your transfer — along with your name and order number — to our Instagram (@secondscoopco). Your order isn't confirmed until we receive it."
   },
   "allergy": {
