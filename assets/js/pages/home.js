@@ -292,6 +292,11 @@
         <button class="ss-carousel-arrow next" aria-label="Next">›</button>
         <div class="ss-carousel-dots">${imgs.map((_, i) => `<span class="ss-carousel-dot${i === 0 ? " on" : ""}" data-i="${i}"></span>`).join("")}</div>` : ""}
       </div>`;
+    // click a gallery photo → open the whole gallery as a fullscreen carousel
+    wrap.querySelectorAll(".ss-carousel-slide img").forEach((im, k) => {
+      im.classList.add("ss-lb-open");
+      im.addEventListener("click", () => SSApp.openLightbox(imgs, k));
+    });
     const track = wrap.querySelector(".ss-carousel-track");
     const dots = wrap.querySelectorAll(".ss-carousel-dot");
     let idx = 0, timer = null;

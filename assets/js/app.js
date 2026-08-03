@@ -78,6 +78,7 @@
     { key: "home", label: "Home", href: "index.html" },
     { key: "shop", label: "Shop", href: "shop.html" },
     { key: "bundles", label: "Bundles", href: "bundles.html" },
+    { key: "reviews", label: "Reviews", href: "reviews.html" },
     { key: "vault", label: "The Vault", href: "vault.html", vault: true },
     { key: "popups", label: "Popups", href: "popups.html" },
     { key: "preorders", label: "Pre-Orders", href: "preorders.html" },
@@ -582,5 +583,45 @@
     if (opts.regionGate !== false) setTimeout(() => showRegionGate(), 150);     // first-visit country pick
   }
 
-  window.SSApp = { mount, productCard, toast, logoHTML, logoMarkSVG, wordmarkImg, refreshCartCount, statusBadge, topBadge, applyTheme, initScrollFX, initTilt, initSwapTitles, showRegionGate, applyText };
+  /* ---------------------------------------------- image lightbox --- */
+  // Fullscreen carousel. images = ["file.jpg", ...] or [{src, caption}, ...].
+  function openLightbox(images, start) {
+    const items = (images || []).map(x => (typeof x === "string" ? { src: x } : x)).filter(x => x && x.src);
+    if (!items.length) return;
+    let i = Math.max(0, Math.min(start || 0, items.length - 1));
+    const multi = items.length > 1;
+    const ov = document.createElement("div");
+    ov.className = "ss-lb";
+    ov.innerHTML = `
+      <button class="ss-lb-btn ss-lb-close" aria-label="Close">✕</button>
+      <button class="ss-lb-btn ss-lb-nav ss-lb-prev" aria-label="Previous" style="${multi ? "" : "display:none"}">‹</button>
+      <figure class="ss-lb-stage"><img class="ss-lb-img" alt=""><figcaption class="ss-lb-cap"></figcaption></figure>
+      <button class="ss-lb-btn ss-lb-nav ss-lb-next" aria-label="Next" style="${multi ? "" : "display:none"}">›</button>
+      <div class="ss-lb-count"></div>`;
+    document.body.appendChild(ov);
+    document.body.style.overflow = "hidden";
+    requestAnimationFrame(() => ov.classList.add("is-open"));
+    const imgEl = ov.querySelector(".ss-lb-img"), capEl = ov.querySelector(".ss-lb-cap"), countEl = ov.querySelector(".ss-lb-count");
+    const src = s => (window.SS && SS.imgSrc) ? SS.imgSrc(s) : s;
+    function show() {
+      const it = items[i];
+      imgEl.src = src(it.src); imgEl.alt = it.caption || "";
+      capEl.textContent = it.caption || ""; capEl.style.display = it.caption ? "" : "none";
+      countEl.textContent = multi ? `${i + 1} / ${items.length}` : "";
+    }
+    function go(d) { i = (i + d + items.length) % items.length; show(); }
+    function close() { ov.classList.remove("is-open"); document.removeEventListener("keydown", key); setTimeout(() => ov.remove(), 180); document.body.style.overflow = ""; }
+    function key(e) { if (e.key === "Escape") close(); else if (e.key === "ArrowLeft" && multi) go(-1); else if (e.key === "ArrowRight" && multi) go(1); }
+    ov.querySelector(".ss-lb-close").onclick = close;
+    ov.querySelector(".ss-lb-prev").onclick = e => { e.stopPropagation(); go(-1); };
+    ov.querySelector(".ss-lb-next").onclick = e => { e.stopPropagation(); go(1); };
+    ov.addEventListener("click", e => { if (e.target === ov || e.target.classList.contains("ss-lb-stage")) close(); });
+    document.addEventListener("keydown", key);
+    let sx = null;
+    ov.addEventListener("touchstart", e => { sx = e.touches[0].clientX; }, { passive: true });
+    ov.addEventListener("touchend", e => { if (sx == null || !multi) return; const dx = e.changedTouches[0].clientX - sx; if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1); sx = null; }, { passive: true });
+    show();
+  }
+
+  window.SSApp = { mount, productCard, toast, logoHTML, logoMarkSVG, wordmarkImg, refreshCartCount, statusBadge, topBadge, applyTheme, initScrollFX, initTilt, initSwapTitles, showRegionGate, applyText, openLightbox };
 })();

@@ -4,3 +4,5 @@ Allow: /
 Disallow: /backend.html
 Disallow: /admin.html
 Disallow: /manager.html
+
+Sitemap: https://second-scoop.com/sitemap.xml

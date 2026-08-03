@@ -990,3 +990,27 @@ code{background:var(--cream-3);padding:.1em .4em;border-radius:5px;font-size:.88
 .ss-cal-empty{background:transparent}
 .ss-chip--blocked{background:var(--blush);color:var(--choc)}
 .ss-chip--blocked b{margin-left:4px;cursor:pointer;color:var(--caramel)}
+
+/* ---- image lightbox / carousel -------------------------------------- */
+.ss-lb-open{cursor:zoom-in}
+.ss-lb{position:fixed;inset:0;z-index:2000;display:flex;align-items:center;justify-content:center;background:rgba(43,22,0,.92);backdrop-filter:blur(6px);opacity:0;transition:opacity .18s ease;padding:clamp(12px,4vw,48px)}
+.ss-lb.is-open{opacity:1}
+.ss-lb-stage{margin:0;max-width:min(1400px,94vw);max-height:88vh;display:flex;flex-direction:column;align-items:center;gap:12px}
+.ss-lb-img{max-width:100%;max-height:82vh;border-radius:14px;box-shadow:0 30px 80px rgba(0,0,0,.5);object-fit:contain;background:var(--cream)}
+.ss-lb-cap{color:var(--cream);font-family:'Barber Chop',sans-serif;font-size:1rem;text-align:center;text-shadow:0 1px 6px rgba(0,0,0,.4)}
+.ss-lb-btn{position:absolute;background:rgba(255,238,196,.14);color:var(--cream);border:1px solid rgba(255,238,196,.25);border-radius:999px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,transform .15s;backdrop-filter:blur(4px)}
+.ss-lb-btn:hover{background:var(--caramel);transform:scale(1.06);border-color:transparent}
+.ss-lb-close{top:clamp(12px,3vw,28px);right:clamp(12px,3vw,28px);width:46px;height:46px;font-size:1.3rem}
+.ss-lb-nav{top:50%;transform:translateY(-50%);width:54px;height:54px;font-size:2rem;line-height:1}
+.ss-lb-nav:hover{transform:translateY(-50%) scale(1.06)}
+.ss-lb-prev{left:clamp(8px,2vw,24px)}
+.ss-lb-next{right:clamp(8px,2vw,24px)}
+.ss-lb-count{position:absolute;bottom:clamp(12px,3vw,26px);left:50%;transform:translateX(-50%);color:var(--cream);font-weight:700;font-size:.85rem;letter-spacing:.06em;background:rgba(43,22,0,.4);padding:.35em .9em;border-radius:999px}
+@media (max-width:600px){.ss-lb-nav{width:44px;height:44px;font-size:1.6rem}}
+
+/* ---- reviews page summary ------------------------------------------- */
+.ss-rev-summary{display:flex;justify-content:center}
+.ss-rev-avg{display:flex;align-items:center;gap:18px;background:var(--cream-2);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px 28px}
+.ss-rev-avg-num{font-family:'Barber Chop',sans-serif;font-size:3rem;line-height:1;color:var(--caramel)}
+.ss-rev-avg-stars{color:var(--gold);font-size:1.4rem;letter-spacing:2px}
+.ss-rev-avg-count{color:var(--ink-60);font-size:.9rem;margin-top:.2em}

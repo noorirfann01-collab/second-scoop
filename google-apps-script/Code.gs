@@ -32,7 +32,7 @@ var READ_KEY = "scoop-read-2026";
 function setupEmail() {
   var props = PropertiesService.getScriptProperties();
   props.setProperty("BREVO_API_KEY", "PASTE-YOUR-BREVO-API-KEY-HERE");
-  props.setProperty("SENDER_EMAIL", "secondscooponline@gmail.com"); // must be verified in Brevo
+  props.setProperty("SENDER_EMAIL", "hello@second-scoop.com");      // your authenticated domain sender
   props.setProperty("SENDER_NAME",  "Second Scoop");
   props.setProperty("ADMIN_EMAIL",  "noorirfann01@gmail.com");      // where the daily recap goes
   Logger.log("Saved. Sender + key + admin email stored in Script Properties.");

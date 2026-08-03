@@ -1835,7 +1835,7 @@
   }
 
   /* ================================================ MENU & REGIONS == */
-  const NAV_ITEMS = [["home", "Home"], ["shop", "Shop"], ["bundles", "Bundles"], ["vault", "The Vault"], ["popups", "Popups"],
+  const NAV_ITEMS = [["home", "Home"], ["shop", "Shop"], ["bundles", "Bundles"], ["reviews", "Reviews"], ["vault", "The Vault"], ["popups", "Popups"],
     ["preorders", "Pre-Orders"], ["about", "About"], ["faq", "FAQ"], ["contact", "Contact"]];
   function renderMenu() {
     const C = content; C.nav = C.nav || {};
@@ -2284,7 +2284,7 @@
   // (2) one-click GitHub token → commits via API; (3) download fallback.
   async function uploadImageToGitHub(file) {
     if (file.size > 40 * 1024 * 1024) throw "Image is over 40MB — please use one under 40MB.";
-    file = await optimizeImage(file, 1600, 0.82);   // fast-loading version
+    file = await optimizeImage(file, 2400, 0.86);   // crisp on 4K/retina, still web-fast
     const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
     const base = (file.name.replace(/\.[^.]+$/, "") || "image").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "image";
     const name = base + "-" + Date.now().toString(36) + "." + ext;
@@ -2316,7 +2316,9 @@
   }
 
   // --- auto-announce: detect restocks / new drops between publishes ---
-  let mlPrefill = null;
+  // NOTE: var (not let) so it's hoisted — renderMailing() can run during boot
+  // (when landing directly on #mailing) before this line executes.
+  var mlPrefill = null;
   function buyable_(reg) { return reg && (reg.status === "available" || reg.status === "preorder") && (reg.status === "preorder" || (Number(reg.inventory) || 0) > 0); }
   function mlSnapshot() {
     const snap = {};

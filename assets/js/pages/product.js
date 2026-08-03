@@ -89,6 +89,42 @@
       </div>
     </div>`;
 
+  // --- SEO: meta description + Product structured data (rich results) ---
+  function absImg(s) { const u = pv.imageSrc || (s ? SS.imgSrc(s) : ""); return u ? (/^https?:/.test(u) ? u : location.origin + "/" + u.replace(/^\//, "")) : ""; }
+  function setMeta(desc) {
+    let m = document.querySelector('meta[name="description"]');
+    if (!m) { m = document.createElement("meta"); m.setAttribute("name", "description"); document.head.appendChild(m); }
+    m.setAttribute("content", String(desc || "").slice(0, 300));
+  }
+  function setLD(obj) {
+    let s = document.getElementById("pdp-ld");
+    if (!s) { s = document.createElement("script"); s.type = "application/ld+json"; s.id = "pdp-ld"; document.head.appendChild(s); }
+    s.textContent = JSON.stringify(obj);
+  }
+  const seoLD = {
+    "@context": "https://schema.org/", "@type": "Product",
+    name: pv.name, description: (pv.longDescription || pv.description || "").slice(0, 500),
+    brand: { "@type": "Brand", name: "Second Scoop" },
+    image: absImg(pv.image) ? [absImg(pv.image)] : undefined,
+    offers: {
+      "@type": "Offer", priceCurrency: (SS.region().currency || "PKR"), price: Number(pv.price) || 0,
+      availability: pv.buyable ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      url: location.href
+    }
+  };
+  setMeta(pv.description || pv.tagline || "");
+  setLD(seoLD);
+
+  // click the product photo → open it (and any extra photos) as a fullscreen carousel
+  (function () {
+    const media = document.querySelector(".ss-pdp-media img");
+    if (!media) return;
+    const imgs = (pv.images && pv.images.length ? pv.images : [pv.image]).filter(Boolean);
+    if (!imgs.length) return;
+    media.classList.add("ss-lb-open");
+    media.addEventListener("click", () => SSApp.openLightbox(imgs.map(s => ({ src: s, caption: pv.name })), 0));
+  })();
+
   // qty + size + add
   let qty = 1;
   let size = (pv.sizes && pv.sizes.length) ? pv.sizes[0].label : "";
@@ -164,6 +200,8 @@
         if (badge) badge.textContent = count ? `★ ${avg.toFixed(1)} rated (${count})` : "★ New";
         const top = document.getElementById("pdp-rating-top");
         if (top && count) { top.style.display = "block"; top.innerHTML = `★ ${avg.toFixed(1)} <em>· ${count} review${count > 1 ? "s" : ""}</em>`; }
+        // add star rating to the Product structured data (shows stars in Google results)
+        if (count) { try { setLD(Object.assign({}, seoLD, { aggregateRating: { "@type": "AggregateRating", ratingValue: avg.toFixed(1), reviewCount: count } })); } catch (e) {} }
       }).catch(() => { listEl.innerHTML = ""; });
     }
     load();
