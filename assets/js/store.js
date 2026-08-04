@@ -197,6 +197,7 @@
       imageSrc: imgSrc((p.images && p.images[0]) || null),
       badge: comingSoon ? "" : p.badge, featured: !!p.featured, hero: !!p.hero, secret: !!p.secret,
       bundle: !!p.bundle, includes: Array.isArray(p.includes) ? p.includes : [],
+      topping: !!p.topping,
       reviews: p.reviews || { rating: 0, count: 0 },
       status: status, price: sizes ? cheapest : (r.price || 0), inventory: r.inventory,
       sizes: sizes,

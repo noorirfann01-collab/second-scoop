@@ -1014,3 +1014,14 @@ code{background:var(--cream-3);padding:.1em .4em;border-radius:5px;font-size:.88
 .ss-rev-avg-num{font-family:'Barber Chop',sans-serif;font-size:3rem;line-height:1;color:var(--caramel)}
 .ss-rev-avg-stars{color:var(--gold);font-size:1.4rem;letter-spacing:2px}
 .ss-rev-avg-count{color:var(--ink-60);font-size:.9rem;margin-top:.2em}
+
+/* ---- product-page toppings / add-ons -------------------------------- */
+.ss-toppings{margin:16px 0 4px}
+.ss-toppings-title{font-family:'Barber Chop',sans-serif;font-weight:700;color:var(--caramel);font-size:1rem;margin-bottom:.5em}
+.ss-toppings-list{display:flex;flex-wrap:wrap;gap:8px}
+.ss-topping{display:inline-flex;align-items:center;gap:8px;background:var(--cream-2);border:1px solid var(--line);border-radius:var(--r-pill);padding:.5em .95em;cursor:pointer;font-weight:600;font-size:.88rem;color:var(--choc);transition:background .15s,border-color .15s,transform .1s}
+.ss-topping:hover{background:var(--blush);border-color:transparent}
+.ss-topping:active{transform:scale(.96)}
+.ss-topping.is-added{background:var(--caramel);color:var(--white);border-color:transparent}
+.ss-topping-add{color:var(--caramel);font-weight:800}
+.ss-topping:hover .ss-topping-add,.ss-topping.is-added .ss-topping-add{color:inherit}

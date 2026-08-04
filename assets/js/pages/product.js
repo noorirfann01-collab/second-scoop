@@ -53,6 +53,20 @@
       </div>`
     : `<div class="ss-pdp-buy"><button class="ss-btn ss-btn--ghost ss-btn--lg" disabled>${pv.status === "coming-soon" ? "Coming Soon" : "Sold Out"}</button></div>`;
 
+  // paid add-ons (toppings) — shown on real products, not on toppings themselves
+  const toppings = pv.topping ? [] : SS.productsForRegion(region)
+    .map(p => SS.productView(p, region)).filter(t => t && t.topping && t.buyable);
+  const toppingsBlock = toppings.length ? `
+      <div class="ss-toppings">
+        <div class="ss-toppings-title">🍫 Add a topping</div>
+        <div class="ss-toppings-list">
+          ${toppings.map(t => `<button type="button" class="ss-topping" data-top="${t.id}">
+            <span class="ss-topping-name">${t.name}</span>
+            <span class="ss-topping-add">+ ${SS.money(t.price)}</span>
+          </button>`).join("")}
+        </div>
+      </div>` : "";
+
   root.innerHTML = `
     <div class="ss-breadcrumb" style="padding-top:20px">
       <a href="index.html">Home</a> / <a href="shop.html?region=${region}">Shop</a> / ${pv.name}
@@ -75,6 +89,7 @@
         </div>` : ""}
         ${sizeBlock}
         ${buyBlock}
+        ${toppingsBlock}
         ${pv.deliveryNotes ? `<div class="ss-pdp-notes">🥄 <span>${pv.deliveryNotes}</span></div>` : ""}
         <div class="ss-pdp-trust">
           <span id="pdp-rating-badge">★ New</span>
@@ -124,6 +139,12 @@
     media.classList.add("ss-lb-open");
     media.addEventListener("click", () => SSApp.openLightbox(imgs.map(s => ({ src: s, caption: pv.name })), 0));
   })();
+
+  // topping add-ons → add each straight to cart
+  root.querySelectorAll("[data-top]").forEach(b => b.addEventListener("click", () => {
+    const t = SS.productView(SS.getProduct(b.getAttribute("data-top")), region);
+    if (t && SS.addToCart(t.id, 1)) { SSApp.refreshCartCount(); SSApp.toast(`Added ${t.name} 🍫`, "ok"); b.classList.add("is-added"); setTimeout(() => b.classList.remove("is-added"), 900); }
+  }));
 
   // qty + size + add
   let qty = 1;

@@ -6,7 +6,7 @@
 
   const region = SS.getRegion();
   const r = SS.region();
-  const products = SS.productsForRegion(region).map(p => SS.productView(p, region));
+  const products = SS.productsForRegion(region).map(p => SS.productView(p, region)).filter(p => p && !p.topping);
 
   // header copy
   document.getElementById("shop-eyebrow").textContent = `${r.flag} ${r.name} · ${r.currency}`;
@@ -19,7 +19,7 @@
   let activeCat = "all";
   let query = "";
   const cats = [{ id: "all", name: "All" }].concat(
-    SS_CATEGORIES.filter(c => c.id !== "secret" && products.some(p => p.category === c.id))
+    SS_CATEGORIES.filter(c => c.id !== "secret" && c.id !== "toppings" && products.some(p => p.category === c.id))
   );
   const filtersEl = document.getElementById("shop-filters");
   if (SS_SETTINGS.features.filtering) {

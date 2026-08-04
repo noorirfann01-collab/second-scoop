@@ -28,6 +28,7 @@
     { id: "reviews", label: "Reviews", icon: "⭐" },
     { id: "products", label: "Products", icon: "🍪" },
     { id: "bundles", label: "Bundles", icon: "🎁" },
+    { id: "toppings", label: "Toppings", icon: "🍫" },
     { id: "vault", label: "The Vault", icon: "🔒" },
     { id: "homepage", label: "Home Page", icon: "🏠" },
     { id: "about", label: "About Page", icon: "📖" },
@@ -45,7 +46,7 @@
   // Page-based grouping — each page owns its content, no overlaps.
   const NAV_GROUPS = [
     { label: "Store", items: ["dashboard", "orders", "mailing", "messages", "reviews"] },
-    { label: "Catalog", items: ["products", "bundles", "vault"] },
+    { label: "Catalog", items: ["products", "bundles", "toppings", "vault"] },
     { label: "Pages", items: ["homepage", "about", "faq", "contact", "preorders", "popups", "shoptext"] },
     { label: "Look & setup", items: ["design", "menu", "announce", "settings", "export"] },
   ];
@@ -333,7 +334,7 @@
     const map = { dashboard: renderDashboard, orders: renderOrders, mailing: renderMailing, messages: renderMessages, reviews: renderReviews, products: renderProducts,
        homepage: renderHomepage, about: renderAbout, faq: renderFaq, contact: renderContact, preorders: renderPreorders,
        popups: renderPopups, shoptext: renderShopText, menu: renderMenu, vault: renderVault, design: renderDesign, announce: renderAnnounce,
-       bundles: renderBundles, settings: renderSettings, export: renderExport };
+       bundles: renderBundles, toppings: renderToppings, settings: renderSettings, export: renderExport };
     const fn = map[section] || renderDashboard;
     try {
       fn();
@@ -1125,6 +1126,35 @@
       </div></td></tr>`;
   }
 
+  /* ====================================================== TOPPINGS == */
+  function renderToppings() {
+    const list = cat.filter(p => p.topping || p.category === "toppings");
+    body().innerHTML = `
+      <div class="ss-panel" style="margin-bottom:14px"><h3 style="margin-top:0">🍫 Toppings &amp; add-ons</h3>
+        <p style="color:var(--ink-60);font-size:.9rem">Paid extras customers can add on a product's page — drizzles, crunch, an extra cookie, etc. They add straight to the cart as their own line and count in your revenue. Toppings stay out of the main shop grid.</p>
+        <button class="ss-btn" id="t-add">+ New topping</button>
+      </div>
+      <div class="ss-panel" style="padding:0;overflow:hidden"><div style="overflow-x:auto"><table class="ss-table ss-mgr-table">
+        <tr><th></th><th>Topping</th><th>Flags</th>${REGION_IDS.map(rid => `<th>${SS_REGIONS[rid].flag} ${SS_REGIONS[rid].name}</th>`).join("")}<th>Actions</th></tr>
+        ${list.map(toppingRow).join("") || `<tr><td colspan="${4 + REGION_IDS.length}" style="text-align:center;padding:30px;color:var(--ink-40)">No toppings yet. Press <strong>+ New topping</strong> to add one (e.g. Chocolate Drizzle +Rs 100).</td></tr>`}
+      </table></div></div>`;
+    document.getElementById("t-add").onclick = () => openEditor(null, { category: "toppings" });
+    body().querySelectorAll("[data-act]").forEach(b => b.onclick = () => action(b.getAttribute("data-act"), b.getAttribute("data-id")));
+  }
+  function toppingRow(p) {
+    const flags = [p.hidden ? `<span class="ss-tag ss-tag--off">Hidden</span>` : `<span class="ss-tag">Live</span>`].join("");
+    const cells = REGION_IDS.map(rid => { const r = p.regions && p.regions[rid]; if (!r) return `<td><span class="ss-tag ss-tag--off">—</span></td>`; return `<td><strong>${SS.money(r.price, rid)}</strong><br><span class="ss-statusdot ss-statusdot--${r.status}">${STATUS_LABEL[r.status]}</span></td>`; }).join("");
+    return `<tr><td>${(p.images && p.images[0]) ? `<img class="ss-mgr-thumb" src="${SS.imgSrc(p.images[0])}" onerror="this.style.visibility='hidden'">` : `<div class="ss-mgr-thumb ss-mgr-thumb--empty">🍫</div>`}</td>
+      <td><strong>${esc(p.name || "(untitled)")}</strong><br><span class="ss-seed">${esc(p.description || "")}</span></td>
+      <td><div class="ss-tags">${flags}</div></td>${cells}
+      <td><div class="ss-mgr-actions">
+        <button class="ss-chip ss-chip--sm" data-act="edit" data-id="${p.id}">Edit</button>
+        <button class="ss-chip ss-chip--sm" data-act="dup" data-id="${p.id}">Duplicate</button>
+        <button class="ss-chip ss-chip--sm" data-act="hide" data-id="${p.id}">${p.hidden ? "Show" : "Hide"}</button>
+        <button class="ss-chip ss-chip--sm ss-chip--danger" data-act="del" data-id="${p.id}">Delete</button>
+      </div></td></tr>`;
+  }
+
   /* ====================================================== PRODUCTS == */
   function renderProducts() {
     const list = cat.filter(p => !productSearch || (p.name + " " + p.id + " " + p.category).toLowerCase().includes(productSearch));
@@ -1177,7 +1207,7 @@
   function blankProduct(preset) {
     const regions = {}; REGION_IDS.forEach(rid => regions[rid] = { status: "available", price: 0, inventory: 0, deliveryNotes: "" });
     const category = (preset && preset.category) || (SS_CATEGORIES[1] || SS_CATEGORIES[0]).id;
-    return { id: "", name: "", category, optionLabel: "Size", tagline: "", description: "", longDescription: "", includes: [], bundle: category === "bundles", images: [], badge: null, featured: false, hero: false, secret: false, hidden: false, reviews: { rating: 0, count: 0 }, regions };
+    return { id: "", name: "", category, optionLabel: "Size", tagline: "", description: "", longDescription: "", includes: [], bundle: category === "bundles", topping: category === "toppings", images: [], badge: null, featured: false, hero: false, secret: false, hidden: false, reviews: { rating: 0, count: 0 }, regions };
   }
   function openEditor(index, preset) {
     const isNew = index === null;
@@ -1311,7 +1341,7 @@
     if (!Object.keys(regions).length) { SSApp.toast("Enable at least one region.", "err"); return; }
     const category = val("f-cat");
     const includes = val("f-includes").split("\n").map(s => s.trim()).filter(Boolean);
-    const product = { id, name, category, optionLabel: (val("f-optlabel").trim() || "Size"), bundle: category === "bundles", includes, tagline: val("f-tag").trim(), description: val("f-desc").trim(), longDescription: val("f-long").trim(), images: images.slice(), badge: val("f-badge") || null, featured: chkd("f-featured"), hero: chkd("f-hero"), secret: chkd("f-secret"), hidden: chkd("f-hidden"), reviews: { rating: clampNum(val("f-rating"), 0, 5), count: Math.max(0, parseInt(val("f-rcount"), 10) || 0) }, regions };
+    const product = { id, name, category, topping: category === "toppings", optionLabel: (val("f-optlabel").trim() || "Size"), bundle: category === "bundles", includes, tagline: val("f-tag").trim(), description: val("f-desc").trim(), longDescription: val("f-long").trim(), images: images.slice(), badge: val("f-badge") || null, featured: chkd("f-featured"), hero: chkd("f-hero"), secret: chkd("f-secret"), hidden: chkd("f-hidden"), reviews: { rating: clampNum(val("f-rating"), 0, 5), count: Math.max(0, parseInt(val("f-rcount"), 10) || 0) }, regions };
     const prevCat = cat.slice();
     if (isNew) cat.push(product); else cat[index] = product;
     const ok = persistCatalog();
