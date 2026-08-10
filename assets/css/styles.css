@@ -1031,3 +1031,8 @@ code{background:var(--cream-3);padding:.1em .4em;border-radius:5px;font-size:.88
 .ss-check{display:flex;align-items:center;gap:8px;background:var(--cream-2);border:1px solid var(--line);border-radius:var(--r-sm);padding:.45em .7em;cursor:pointer;font-size:.85rem;color:var(--choc)}
 .ss-check input{width:16px;height:16px;accent-color:var(--caramel)}
 .ss-check:hover{border-color:var(--caramel)}
+
+/* ---- backend: per-product topping editor rows ----------------------- */
+.ss-topping-edit{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+.ss-topping-edit input[data-tk]{flex:2;min-width:0}
+.ss-topping-edit input[data-tp]{flex:1;min-width:0}

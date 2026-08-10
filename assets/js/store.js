@@ -197,7 +197,10 @@
       imageSrc: imgSrc((p.images && p.images[0]) || null),
       badge: comingSoon ? "" : p.badge, featured: !!p.featured, hero: !!p.hero, secret: !!p.secret,
       bundle: !!p.bundle, includes: Array.isArray(p.includes) ? p.includes : [],
-      topping: !!p.topping, forProducts: Array.isArray(p.forProducts) ? p.forProducts : [],
+      // per-product add-ons, priced in this region's currency
+      toppings: (Array.isArray(p.toppings) ? p.toppings : [])
+        .map(t => ({ name: String(t.name || ""), price: Number((t.prices && t.prices[rid]) != null ? t.prices[rid] : t.price) || 0 }))
+        .filter(t => t.name && t.price > 0),
       reviews: p.reviews || { rating: 0, count: 0 },
       status: status, price: sizes ? cheapest : (r.price || 0), inventory: r.inventory,
       sizes: sizes,
@@ -242,6 +245,17 @@
     saveCart(c);
     return true;
   }
+  // Add a per-product topping/add-on (priced at add time in the current region).
+  function addTopping(name, price) {
+    name = String(name || "").trim(); price = Number(price) || 0;
+    if (!name || price <= 0) return false;
+    const key = "top::" + name.toLowerCase();
+    const c = getCart(); c.region = getRegion();
+    const cur = c.items[key] ? c.items[key].qty : 0;
+    c.items[key] = { topping: true, name: name, price: price, qty: cur + 1 };
+    saveCart(c);
+    return true;
+  }
   function setQty(key, qty) {
     const c = getCart();
     if (qty <= 0) { delete c.items[key]; }
@@ -265,6 +279,12 @@
     const rid = c.region;
     const lines = [];
     Object.entries(c.items).forEach(([key, it]) => {
+      if (it.topping) {                                   // per-product add-on line
+        const tp = Number(it.price) || 0;
+        lines.push({ key, id: key, size: "", name: it.name, qty: it.qty, price: tp,
+                     lineTotal: tp * it.qty, image: "", status: "available", secret: false, topping: true });
+        return;
+      }
       const id = it.id || String(key).split("::")[0];
       const pv = productView(getProduct(id), rid);
       if (!pv) return;
@@ -542,7 +562,7 @@
     getVault, saveVault, resetVault, saveAnnounce, getAnnounce, resetAnnounce,
     getContent, saveContent, resetContent, getSettings, saveSettings, resetSettings,
     regionById, saveRegionPatch, resetRegions, deepMerge,
-    getCart, saveCart, addToCart, setQty, removeFromCart, clearCart, cartCount, cartDetail, deliveryFee, deliveryZones,
+    getCart, saveCart, addToCart, addTopping, setQty, removeFromCart, clearCart, cartCount, cartDetail, deliveryFee, deliveryZones,
     vaultUnlocks, tryVaultCode, unlockedSecretProducts, isUnlocked, clearVaultUnlocks,
     genOrderNumber, placeOrder, getOrders, updateOrderStatus, flattenForSheet,
     getCustomers, addSignup, getSignups, addMessage, getMessages,

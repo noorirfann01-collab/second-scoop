@@ -53,16 +53,13 @@
       </div>`
     : `<div class="ss-pdp-buy"><button class="ss-btn ss-btn--ghost ss-btn--lg" disabled>${pv.status === "coming-soon" ? "Coming Soon" : "Sold Out"}</button></div>`;
 
-  // paid add-ons (toppings) — only the ones assigned to THIS product
-  // (a topping with no product list is offered on every product)
-  const toppings = pv.topping ? [] : SS.productsForRegion(region)
-    .map(p => SS.productView(p, region))
-    .filter(t => t && t.topping && t.buyable && (!t.forProducts.length || t.forProducts.indexOf(pv.id) > -1));
+  // paid add-ons (toppings) — this product's own list, set in the backend
+  const toppings = pv.toppings || [];
   const toppingsBlock = toppings.length ? `
       <div class="ss-toppings">
         <div class="ss-toppings-title">🍫 Add a topping</div>
         <div class="ss-toppings-list">
-          ${toppings.map(t => `<button type="button" class="ss-topping" data-top="${t.id}">
+          ${toppings.map((t, i) => `<button type="button" class="ss-topping" data-top="${i}">
             <span class="ss-topping-name">${t.name}</span>
             <span class="ss-topping-add">+ ${SS.money(t.price)}</span>
           </button>`).join("")}
@@ -142,10 +139,10 @@
     media.addEventListener("click", () => SSApp.openLightbox(imgs.map(s => ({ src: s, caption: pv.name })), 0));
   })();
 
-  // topping add-ons → add each straight to cart
+  // topping add-ons → add each straight to cart as its own line
   root.querySelectorAll("[data-top]").forEach(b => b.addEventListener("click", () => {
-    const t = SS.productView(SS.getProduct(b.getAttribute("data-top")), region);
-    if (t && SS.addToCart(t.id, 1)) { SSApp.refreshCartCount(); SSApp.toast(`Added ${t.name} 🍫`, "ok"); b.classList.add("is-added"); setTimeout(() => b.classList.remove("is-added"), 900); }
+    const t = toppings[+b.getAttribute("data-top")];
+    if (t && SS.addTopping(t.name, t.price)) { SSApp.refreshCartCount(); SSApp.toast(`Added ${t.name} 🍫`, "ok"); b.classList.add("is-added"); setTimeout(() => b.classList.remove("is-added"), 900); }
   }));
 
   // qty + size + add
