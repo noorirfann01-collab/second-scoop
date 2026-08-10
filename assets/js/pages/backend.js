@@ -1145,7 +1145,7 @@
     const flags = [p.hidden ? `<span class="ss-tag ss-tag--off">Hidden</span>` : `<span class="ss-tag">Live</span>`].join("");
     const cells = REGION_IDS.map(rid => { const r = p.regions && p.regions[rid]; if (!r) return `<td><span class="ss-tag ss-tag--off">—</span></td>`; return `<td><strong>${SS.money(r.price, rid)}</strong><br><span class="ss-statusdot ss-statusdot--${r.status}">${STATUS_LABEL[r.status]}</span></td>`; }).join("");
     return `<tr><td>${(p.images && p.images[0]) ? `<img class="ss-mgr-thumb" src="${SS.imgSrc(p.images[0])}" onerror="this.style.visibility='hidden'">` : `<div class="ss-mgr-thumb ss-mgr-thumb--empty">🍫</div>`}</td>
-      <td><strong>${esc(p.name || "(untitled)")}</strong><br><span class="ss-seed">${esc(p.description || "")}</span></td>
+      <td><strong>${esc(p.name || "(untitled)")}</strong><br><span class="ss-seed">${(p.forProducts && p.forProducts.length) ? "On: " + p.forProducts.map(id => { const x = cat.find(c => c.id === id); return x ? esc(x.name) : id; }).join(", ") : "On: all products"}</span></td>
       <td><div class="ss-tags">${flags}</div></td>${cells}
       <td><div class="ss-mgr-actions">
         <button class="ss-chip ss-chip--sm" data-act="edit" data-id="${p.id}">Edit</button>
@@ -1207,7 +1207,7 @@
   function blankProduct(preset) {
     const regions = {}; REGION_IDS.forEach(rid => regions[rid] = { status: "available", price: 0, inventory: 0, deliveryNotes: "" });
     const category = (preset && preset.category) || (SS_CATEGORIES[1] || SS_CATEGORIES[0]).id;
-    return { id: "", name: "", category, optionLabel: "Size", tagline: "", description: "", longDescription: "", includes: [], bundle: category === "bundles", topping: category === "toppings", images: [], badge: null, featured: false, hero: false, secret: false, hidden: false, reviews: { rating: 0, count: 0 }, regions };
+    return { id: "", name: "", category, optionLabel: "Size", tagline: "", description: "", longDescription: "", includes: [], bundle: category === "bundles", topping: category === "toppings", forProducts: [], images: [], badge: null, featured: false, hero: false, secret: false, hidden: false, reviews: { rating: 0, count: 0 }, regions };
   }
   function openEditor(index, preset) {
     const isNew = index === null;
@@ -1235,6 +1235,10 @@
           <label class="ss-label">🎁 Bundle contents — what's inside (one per line)</label>
           <textarea class="ss-field" id="f-includes" style="min-height:80px" placeholder="2 × The OG Scoopie&#10;1 × Chunkie — Chocolate Chip&#10;1 × Doughiginal tub">${esc((p.includes || []).join("\n"))}</textarea>
           <small class="ss-seed">Shown on the bundle's card and product page. Set the box price below.</small></div>
+        <div class="ss-fieldset" id="f-topprods-wrap" style="margin-top:12px${p.category === "toppings" ? "" : ";display:none"}">
+          <label class="ss-label">🍫 Offer this topping on which products?</label>
+          <div class="ss-topprods">${cat.filter(x => !x.topping && !x.secret && !x.bundle).map(x => `<label class="ss-check"><input type="checkbox" class="f-topprod" value="${esc(x.id)}" ${(p.forProducts || []).indexOf(x.id) > -1 ? "checked" : ""}><span>${esc(x.name)}</span></label>`).join("") || `<span class="ss-seed">Add some products first.</span>`}</div>
+          <small class="ss-seed">Tick the products this add-on appears on. Leave <b>all unticked</b> to offer it on every product.</small></div>
         <div class="ss-toggles">${chk("f-featured", "Featured", p.featured)}${chk("f-hero", "Hero (big card)", p.hero)}${chk("f-secret", "Secret (Vault only)", p.secret)}${chk("f-hidden", "Hidden", p.hidden)}</div>
         <div class="ss-grid2"><div><label class="ss-label">Rating (0–5)</label><input class="ss-field" id="f-rating" type="number" step="0.1" min="0" max="5" value="${p.reviews ? p.reviews.rating : 0}"></div>
           <div><label class="ss-label"># reviews</label><input class="ss-field" id="f-rcount" type="number" min="0" value="${p.reviews ? p.reviews.count : 0}"></div></div>
@@ -1303,7 +1307,10 @@
     });
 
     const catSel = document.getElementById("f-cat");
-    if (catSel) catSel.onchange = () => { const w = document.getElementById("f-includes-wrap"); if (w) w.style.display = catSel.value === "bundles" ? "block" : "none"; };
+    if (catSel) catSel.onchange = () => {
+      const w = document.getElementById("f-includes-wrap"); if (w) w.style.display = catSel.value === "bundles" ? "block" : "none";
+      const tw = document.getElementById("f-topprods-wrap"); if (tw) tw.style.display = catSel.value === "toppings" ? "block" : "none";
+    };
     document.getElementById("m-close").onclick = closeDrawer;
     document.getElementById("m-cancel").onclick = closeDrawer;
     document.getElementById("m-save").onclick = () => saveProduct(index, isNew, images, sizeState);
@@ -1341,7 +1348,8 @@
     if (!Object.keys(regions).length) { SSApp.toast("Enable at least one region.", "err"); return; }
     const category = val("f-cat");
     const includes = val("f-includes").split("\n").map(s => s.trim()).filter(Boolean);
-    const product = { id, name, category, topping: category === "toppings", optionLabel: (val("f-optlabel").trim() || "Size"), bundle: category === "bundles", includes, tagline: val("f-tag").trim(), description: val("f-desc").trim(), longDescription: val("f-long").trim(), images: images.slice(), badge: val("f-badge") || null, featured: chkd("f-featured"), hero: chkd("f-hero"), secret: chkd("f-secret"), hidden: chkd("f-hidden"), reviews: { rating: clampNum(val("f-rating"), 0, 5), count: Math.max(0, parseInt(val("f-rcount"), 10) || 0) }, regions };
+    const forProducts = category === "toppings" ? Array.from(document.querySelectorAll(".f-topprod:checked")).map(c => c.value) : [];
+    const product = { id, name, category, topping: category === "toppings", forProducts, optionLabel: (val("f-optlabel").trim() || "Size"), bundle: category === "bundles", includes, tagline: val("f-tag").trim(), description: val("f-desc").trim(), longDescription: val("f-long").trim(), images: images.slice(), badge: val("f-badge") || null, featured: chkd("f-featured"), hero: chkd("f-hero"), secret: chkd("f-secret"), hidden: chkd("f-hidden"), reviews: { rating: clampNum(val("f-rating"), 0, 5), count: Math.max(0, parseInt(val("f-rcount"), 10) || 0) }, regions };
     const prevCat = cat.slice();
     if (isNew) cat.push(product); else cat[index] = product;
     const ok = persistCatalog();

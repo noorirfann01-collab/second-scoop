@@ -53,9 +53,11 @@
       </div>`
     : `<div class="ss-pdp-buy"><button class="ss-btn ss-btn--ghost ss-btn--lg" disabled>${pv.status === "coming-soon" ? "Coming Soon" : "Sold Out"}</button></div>`;
 
-  // paid add-ons (toppings) — shown on real products, not on toppings themselves
+  // paid add-ons (toppings) — only the ones assigned to THIS product
+  // (a topping with no product list is offered on every product)
   const toppings = pv.topping ? [] : SS.productsForRegion(region)
-    .map(p => SS.productView(p, region)).filter(t => t && t.topping && t.buyable);
+    .map(p => SS.productView(p, region))
+    .filter(t => t && t.topping && t.buyable && (!t.forProducts.length || t.forProducts.indexOf(pv.id) > -1));
   const toppingsBlock = toppings.length ? `
       <div class="ss-toppings">
         <div class="ss-toppings-title">🍫 Add a topping</div>
