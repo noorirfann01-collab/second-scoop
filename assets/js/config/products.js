@@ -65,7 +65,8 @@ window.SS_PRODUCTS = [
       { name: "Signature Crunch",       prices: { pakistan: 150, toronto: 3 } },
     ],
     regions: {
-      pakistan: { status: "preorder", price: 1200, inventory: 60, deliveryNotes: "Best eaten warm — microwave 15s before serving." },
+      pakistan: { status: "available", price: 850, inventory: 5, deliveryNotes: "Best eaten warm — microwave 15s before serving.",
+        sizes: [{ label: "200g", price: 850 }, { label: "700g", price: 2700 }] },
       toronto:  { status: "available", price: 14,  inventory: 40, deliveryNotes: "Reheat 15s for the full gooey experience." },
     },
   },
