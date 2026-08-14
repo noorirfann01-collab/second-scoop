@@ -152,7 +152,10 @@
           fulfilment: /pick ?up/i.test(o.preferredMethod || "") ? "pickup" : "delivery",
           preferredDate: o.preferredDate || "", notes: "",
         },
-        lines, subtotal, deliveryFee: feeFromMethod(o.preferredMethod, o.deliveryFee), grandTotal: subtotal,
+        lines, subtotal, deliveryFee: feeFromMethod(o.preferredMethod, o.deliveryFee),
+        // revenue now INCLUDES the delivery charge (delivery is income). Older orders
+        // had no delivery fee, so in practice this only affects orders from August on.
+        grandTotal: subtotal + feeFromMethod(o.preferredMethod, o.deliveryFee),
         orderStatus: sheetOrderStatus || (cancelled ? "Cancelled" : "New"),
         paymentStatus: o.paymentStatus || "Pending",
         vaultProducts: "", _remote: true,
@@ -502,10 +505,10 @@
         ${kpi("Pending", pending, "in progress")}
         ${kpi("Completed", statusCount.Delivered || 0, "delivered")}
         ${kpi("Comped", c.comped.length, compedValue ? SS.money(compedValue, "pakistan") + " given free" : "free orders")}
-        ${kpi("Avg Order Value", blendedAOV(c.revByRegion), "products only")}
+        ${kpi("Avg Order Value", blendedAOV(c.revByRegion), "per order (incl. delivery)")}
       </div>
       <div class="ss-kpi-grid">
-        ${kpi("Delivery Charges", delLabel(c.rev), "collected (separate from products)", true)}
+        ${kpi("Delivery Charges", delLabel(c.rev), "collected — now included in revenue", true)}
         ${kpi("This Month — Delivery", delLabel(month), "delivery fees this month")}
         ${kpi("This Year — Delivery", delLabel(year), "delivery fees this year")}
       </div>
