@@ -152,10 +152,11 @@
           fulfilment: /pick ?up/i.test(o.preferredMethod || "") ? "pickup" : "delivery",
           preferredDate: o.preferredDate || "", notes: "",
         },
-        lines, subtotal, deliveryFee: feeFromMethod(o.preferredMethod, o.deliveryFee),
-        // revenue now INCLUDES the delivery charge (delivery is income). Older orders
-        // had no delivery fee, so in practice this only affects orders from August on.
-        grandTotal: subtotal + feeFromMethod(o.preferredMethod, o.deliveryFee),
+        // A cancelled order collected nothing — no delivery charge shown or counted.
+        lines, subtotal, deliveryFee: cancelled ? 0 : feeFromMethod(o.preferredMethod, o.deliveryFee),
+        // revenue INCLUDES the delivery charge (delivery is income), except on cancelled
+        // orders. Older orders had no delivery fee, so this mainly affects August on.
+        grandTotal: subtotal + (cancelled ? 0 : feeFromMethod(o.preferredMethod, o.deliveryFee)),
         orderStatus: sheetOrderStatus || (cancelled ? "Cancelled" : "New"),
         paymentStatus: o.paymentStatus || "Pending",
         vaultProducts: "", _remote: true,
@@ -443,7 +444,7 @@
   }
   function blendedAOV(byRegion) {
     const parts = [];
-    REGION_IDS.forEach(rid => { const a = byRegion[rid]; if (a && a.length) parts.push(SS.money(a.reduce((s, o) => s + o.grandTotal, 0) / a.length, rid)); });
+    REGION_IDS.forEach(rid => { const a = byRegion[rid]; if (a && a.length) parts.push(SS.money(a.reduce((s, o) => s + (Number(o.subtotal) || 0), 0) / a.length, rid)); });
     return parts.length ? parts.join(" / ") : SS.money(0, "pakistan");
   }
 
@@ -505,7 +506,7 @@
         ${kpi("Pending", pending, "in progress")}
         ${kpi("Completed", statusCount.Delivered || 0, "delivered")}
         ${kpi("Comped", c.comped.length, compedValue ? SS.money(compedValue, "pakistan") + " given free" : "free orders")}
-        ${kpi("Avg Order Value", blendedAOV(c.revByRegion), "per order (incl. delivery)")}
+        ${kpi("Avg Order Value", blendedAOV(c.revByRegion), "per order · products only")}
       </div>
       <div class="ss-kpi-grid">
         ${kpi("Delivery Charges", delLabel(c.rev), "collected — now included in revenue", true)}
