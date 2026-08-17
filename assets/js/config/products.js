@@ -1,5 +1,5 @@
 /* Second Scoop — products.js
-   Exported from the Backend on 15/08/2026, 00:51:55.
+   Exported from the Backend on 18/08/2026, 01:25:27.
    Replace the matching file in assets/js/config/ to publish. */
 
 window.SS_CATEGORIES = [
@@ -334,6 +334,7 @@ window.SS_PRODUCTS = [
     "id": "the-second-scoop-sampler",
     "name": "The Second Scoop Sampler",
     "category": "bundles",
+    "toppings": [],
     "optionLabel": "Size",
     "bundle": true,
     "includes": [
@@ -358,9 +359,9 @@ window.SS_PRODUCTS = [
     },
     "regions": {
       "pakistan": {
-        "status": "preorder",
+        "status": "available",
         "price": 2946,
-        "inventory": 0,
+        "inventory": 10,
         "deliveryNotes": ""
       }
     }
@@ -369,6 +370,7 @@ window.SS_PRODUCTS = [
     "id": "the-night-in-box",
     "name": "The Night-In Box",
     "category": "bundles",
+    "toppings": [],
     "optionLabel": "Size",
     "bundle": true,
     "includes": [
@@ -393,9 +395,9 @@ window.SS_PRODUCTS = [
     },
     "regions": {
       "pakistan": {
-        "status": "preorder",
+        "status": "available",
         "price": 5900,
-        "inventory": 0,
+        "inventory": 50,
         "deliveryNotes": ""
       }
     }
@@ -404,6 +406,7 @@ window.SS_PRODUCTS = [
     "id": "the-dough-dealer-box",
     "name": "The Dough Dealer Box",
     "category": "bundles",
+    "toppings": [],
     "optionLabel": "Size",
     "bundle": true,
     "includes": [
@@ -428,9 +431,9 @@ window.SS_PRODUCTS = [
     },
     "regions": {
       "pakistan": {
-        "status": "preorder",
+        "status": "available",
         "price": 4950,
-        "inventory": 0,
+        "inventory": 50,
         "deliveryNotes": ""
       }
     }
