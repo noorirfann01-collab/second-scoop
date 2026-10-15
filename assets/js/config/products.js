@@ -1,5 +1,5 @@
 /* Second Scoop — products.js
-   Exported from the Backend on 18/08/2026, 01:25:27.
+   Exported from the Backend on 15/10/2026, 09:53:26.
    Replace the matching file in assets/js/config/ to publish. */
 
 window.SS_CATEGORIES = [
@@ -433,6 +433,38 @@ window.SS_PRODUCTS = [
       "pakistan": {
         "status": "available",
         "price": 4950,
+        "inventory": 50,
+        "deliveryNotes": ""
+      }
+    }
+  },
+  {
+    "id": "the-messy-smore",
+    "name": "The Messy Smore",
+    "category": "doughiginals",
+    "toppings": [],
+    "optionLabel": "Size",
+    "bundle": false,
+    "includes": [],
+    "tagline": "LIMITED EDITION COLLAB",
+    "description": "Creamy marshmallow ice cream loaded with crunchy graham crackers, rich Second Scoop Brownie Batter edible cookie dough, and chocolate swirls. A messy twist on your favourite campfire classic.",
+    "longDescription": "Your childhood campfire favourite, with a messy little upgrade.\n\nCreamy marshmallow ice cream loaded with crunchy graham cracker pieces, rich Second Scoop Brownie Batter edible cookie dough, and swirls of chocolate sauce.\n\nGooey, chocolatey, crunchy, and unapologetically messy.",
+    "images": [
+      "9c1b25d8-77a7-4fad-9b01-6a02a0e33c9d-mv9lg9kz.jpg"
+    ],
+    "badge": "limited",
+    "featured": false,
+    "hero": false,
+    "secret": true,
+    "hidden": false,
+    "reviews": {
+      "rating": 0,
+      "count": 0
+    },
+    "regions": {
+      "pakistan": {
+        "status": "available",
+        "price": 1900,
         "inventory": 50,
         "deliveryNotes": ""
       }
