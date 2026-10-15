@@ -1,5 +1,5 @@
 /* Second Scoop — vault.js
-   Exported from the Backend on 18/08/2026, 01:25:27.
+   Exported from the Backend on 15/10/2026, 09:53:26.
    Replace the matching file in assets/js/config/ to publish. */
 
 window.SS_VAULT = {
@@ -22,6 +22,13 @@ window.SS_VAULT = {
         "code": "CHURRO",
         "products": [],
         "label": "Churro Drop"
+      },
+      {
+        "code": "CAMPFIRE404",
+        "products": [
+          "the-messy-smore"
+        ],
+        "label": "FALL DROP"
       }
     ],
     "toronto": [
