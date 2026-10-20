@@ -1,5 +1,5 @@
 /* Second Scoop — products.js
-   Exported from the Backend on 15/10/2026, 09:53:26.
+   Exported from the Backend on 20/10/2026, 10:00:55.
    Replace the matching file in assets/js/config/ to publish. */
 
 window.SS_CATEGORIES = [
@@ -453,9 +453,9 @@ window.SS_PRODUCTS = [
       "9c1b25d8-77a7-4fad-9b01-6a02a0e33c9d-mv9lg9kz.jpg"
     ],
     "badge": "limited",
-    "featured": false,
-    "hero": false,
-    "secret": true,
+    "featured": true,
+    "hero": true,
+    "secret": false,
     "hidden": false,
     "reviews": {
       "rating": 0,
@@ -465,7 +465,7 @@ window.SS_PRODUCTS = [
       "pakistan": {
         "status": "available",
         "price": 1900,
-        "inventory": 50,
+        "inventory": 40,
         "deliveryNotes": ""
       }
     }
